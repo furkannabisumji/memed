@@ -3,7 +3,17 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
-export default function MemeCard({ meme }: { meme: any }) {
+export default function MemeCard({ meme }: {
+    meme: {
+        id: number;
+        title: string;
+        creator: string;
+        image: string;
+        likes: number;
+        price: number;
+        tokenSymbol: string;
+    }
+}) {
     return (
         <Link href={`/meme/${meme.id}`} className="group">
             <div className="relative overflow-hidden rounded-md transition-all bg-white border-2 border-black group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -29,6 +39,6 @@ export default function MemeCard({ meme }: { meme: any }) {
                 </div>
             </div>
         </Link>
-        
+
     )
 }

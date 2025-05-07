@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Filter, Search, TrendingUp, Zap } from "lucide-react"
+import { Filter, Search, TrendingUp } from "lucide-react"
 import Header from "@/components/shared/Header"
 import Footer from "@/components/shared/Footer"
 import MemeCard from "@/components/meme/MemeCard"

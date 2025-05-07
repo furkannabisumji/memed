@@ -1,11 +1,11 @@
 import Image from 'next/image'
-import React from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { Button } from '../ui/button'
-import { ChevronRight, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
+import { ChevronRight, Trash2, Upload } from 'lucide-react'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-export default function CreateMemeForm({ memeImage, setMemeImage, handleImageUpload, isUploading, handlePrevStep, handleNextStep }: any) {
+export default function CreateMemeForm({ memeImage, setMemeImage, handlePrevStep, handleNextStep }: { memeImage: string | null, setMemeImage: Dispatch<SetStateAction<string | null>>, handlePrevStep: () => void, handleNextStep: () => void }) {
     return (
         <div className="p-8 border-2 border-black">
             <h1 className="mb-6 text-4xl font-black text-black">Create Your Meme</h1>
@@ -60,7 +60,7 @@ export default function CreateMemeForm({ memeImage, setMemeImage, handleImageUpl
                         )}
                     </div>
 
-                    
+
                 </div>
             </div>
 
@@ -76,7 +76,7 @@ export default function CreateMemeForm({ memeImage, setMemeImage, handleImageUpl
                 <Button
                     onClick={handleNextStep}
                     className="gap-2 bg-primary hover:shadow-2xl hover:bg-primary/90"
-                    // disabled={!memeImage}
+                // disabled={!memeImage}
                 >
                     Next
                     <ChevronRight className="w-4 h-4" />

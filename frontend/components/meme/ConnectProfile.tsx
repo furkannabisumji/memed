@@ -1,4 +1,4 @@
-import Image from 'next/image'
+
 import React from 'react'
 import { Button } from '../ui/button'
 import { LinkIcon, Loader2 } from 'lucide-react'
@@ -8,7 +8,7 @@ export default function ConnectProfile({ handleConnectLens, isConnected }: { han
         <div className="p-8 border-2 border-black">
             <h1 className="mb-6 text-4xl font-black text-black">Connect Your Lens Profile</h1>
             <p className="mb-8 text-lg text-gray-600">
-                To create a meme token, you'll need to connect your Lens profile. This will allow you to mint tokens
+                To create a meme token, you&apos;ll need to connect your Lens profile. This will allow you to mint tokens
                 and earn from engagement.
             </p>
 
