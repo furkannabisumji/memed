@@ -1,17 +1,17 @@
 
 import React from 'react'
 import { Button } from '../ui/button'
-import { ChevronRight, Loader2, Rocket } from 'lucide-react'
+import { Loader2, Rocket } from 'lucide-react'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Slider } from '../ui/slider'
 import Image from 'next/image'
 
-export default function TokenSettingForm({ handlePrevStep, handleMint, isMinting,memeImage }: any) {
+export default function TokenSettingForm({ handlePrevStep, handleMint, isMinting, memeImage }: { handlePrevStep: () => void, handleMint: () => void, isMinting: boolean, memeImage: string | null }) {
     return (
         <div className="p-8 border-2 border-black">
             <h1 className="mb-6 text-4xl font-black text-black">Token Settings</h1>
-            <p className="mb-8 text-lg text-gray-600">Configure your meme token's properties and economics.</p>
+            <p className="mb-8 text-lg text-gray-600">Configure your meme token&apos;s properties and economics.</p>
 
             <div className="grid gap-8 mb-8 md:grid-cols-2">
                 <div>

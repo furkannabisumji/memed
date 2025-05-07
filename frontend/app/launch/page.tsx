@@ -19,7 +19,7 @@ export default function LaunchPage() {
   const [memeImage, setMemeImage] = useState<string | null>(null)
   const [step, setStep] = useState(1)
   const [isConnected, setIsConnected] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
+  // const [isUploading, setIsUploading] = useState(false)
   const [isMinting, setIsMinting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
@@ -34,14 +34,14 @@ export default function LaunchPage() {
     }, 1500)
   }
 
-  const handleImageUpload = () => {
-    setIsUploading(true)
-    // Simulate upload delay
-    setTimeout(() => {
-      setMemeImage("/placeholder.svg?height=400&width=400")
-      setIsUploading(false)
-    }, 1500)
-  }
+  // const handleImageUpload = () => {
+    // setIsUploading(true)
+    // // Simulate upload delay
+    // setTimeout(() => {
+    //   setMemeImage("/placeholder.svg?height=400&width=400")
+    //   setIsUploading(false)
+    // }, 1500)
+  // }
 
 
 
@@ -168,14 +168,12 @@ export default function LaunchPage() {
               )}
               {step === 2 && (
                 <CreateMemeForm memeImage={memeImage} setMemeImage={setMemeImage}
-                  handleImageUpload={handleImageUpload}
-                  isUploading={isUploading}
                   handlePrevStep={handlePrevStep}
                   handleNextStep={handleNextStep}
                 />
               )}
               {step === 3 && (
-                <TokenSettingForm handlePrevStep={handlePrevStep} handleNextStep={handleNextStep} handleMint={handleMint} isMinting={isMinting} />
+                <TokenSettingForm handlePrevStep={handlePrevStep}  handleMint={handleMint} isMinting={isMinting} memeImage={memeImage}/>
               )}
             </motion.div>
           </div>
