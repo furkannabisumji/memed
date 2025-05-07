@@ -27,6 +27,7 @@
 }
 
 @theme inline {
+  --shadow-2xl:3px 3px 0px rgba(0, 0, 0, 1); 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -141,5 +142,41 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+}
+
+.bg-primary {
+  background-color: #28D358;
+}
+.bg-secondary {
+  background-color: #28d35829;
+}
+
+.coin-floating {
+  animation: floatAndRotate 3s ease-in-out infinite;
+}
+.coin-floating-2 {
+  animation: floatAndRotate2 5s ease-in infinite;
+}
+@media (max-width: 640px) {
+  .coin-floating, .coin-floating-2 {
+    width: 150px; /* Reduce size to 50% on mobile */
+  }
+}
+@keyframes floatAndRotate {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(8deg);
+  }
+}
+@keyframes floatAndRotate2 {
+  0%, 100% {
+    transform: translateY(0) rotate(100deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(108deg);
   }
 }
