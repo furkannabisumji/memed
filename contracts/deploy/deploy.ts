@@ -10,7 +10,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     verify: true,
   });*/
 
-  await deployContract("MemedFactory", ["0xF077fd1bAC70e6D58b1aF77284FBFC5B75Ce168B"], {
+  await deployContract("MemedFactory", [], {
     hre,
     wallet,
     verify: true,
