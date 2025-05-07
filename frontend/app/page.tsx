@@ -22,9 +22,6 @@ export default function Home() {
 
 
       {/* Footer */}
-      <svg width="100%" height="" viewBox="0 0 1512 63" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0.75 63C586.747 -21.2189 917.837 -20.7808 1512.75 63H0.75Z" fill="#28D358" />
-      </svg>
       <Footer />
     </>
   );
