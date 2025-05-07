@@ -20,6 +20,27 @@ const getFollowerStats = async (req, res, next) => {
   }
 };
 
+
+const getMintableCheck = async (req, res, next) => {
+  try {
+    const { handle } = req.params;
+    const result = await lensService.getFollowerStats(handle);
+
+    if(result.value.followers > 50000) {
+      res.json({ isMintable: true });
+    } else {
+      res.json({ isMintable: false });
+    }
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    if (error.message === 'Account not found') {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
-  getFollowerStats
+  getFollowerStats,
+  getMintableCheck
 }; 
