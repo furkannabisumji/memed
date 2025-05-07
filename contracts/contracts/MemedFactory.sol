@@ -6,7 +6,6 @@ import "./MemedToken.sol";
 
 contract MemedFactory is Ownable {
     MemedToken public memedToken;
-    address immutable airdrop;
     struct TokenData {
         address token;
         string name;
@@ -44,10 +43,6 @@ contract MemedFactory is Ownable {
         uint timestamp
     );
 
-    constructor(address _airdrop) Ownable() {
-        airdrop = _airdrop;
-    }
-
     function createMeme(
         string calldata _lensUsername,
         string calldata _name,
@@ -56,7 +51,7 @@ contract MemedFactory is Ownable {
         string calldata _image
     ) external onlyOwner {
         require(tokenData[_lensUsername].token == address(0), "already minted");
-        memedToken = new MemedToken(_name, _ticker, address(this), airdrop);
+        memedToken = new MemedToken(_name, _ticker, address(this));
         tokenData[_lensUsername] = TokenData({
             token: address(memedToken),
             name: _name,
