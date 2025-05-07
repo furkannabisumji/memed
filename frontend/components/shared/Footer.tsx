@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Github, Twitter, DiscIcon as Discord } from "lucide-react"
 
 export default function Footer() {
   return (
