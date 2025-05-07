@@ -8,7 +8,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { ArrowUp } from 'lucide-react'
 
 export default function LeaderboardTable() {
     return (
