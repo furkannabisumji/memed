@@ -1,11 +1,10 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Filter, Search, TrendingUp, Zap } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+import { Filter, Search, TrendingUp } from "lucide-react"
 import Header from "@/components/shared/Header"
 import Footer from "@/components/shared/Footer"
+import MemeCard from "@/components/meme/MemeCard"
 
 export default function ExplorePage() {
   return (
@@ -27,7 +26,7 @@ export default function ExplorePage() {
               <Filter size={16} />
               <span>Filters</span>
             </Button>
-            <Button className="gap-2 bg-primary hover:bg-primary/90">
+            <Button className="gap-2 bg-primary hover:bg-primary/90 hover:shadow-2xl">
               <TrendingUp size={16} />
               <span>Trending</span>
             </Button>
@@ -58,30 +57,7 @@ export default function ExplorePage() {
             <TabsContent value="all" className="mt-8">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {allMemes.map((meme) => (
-                  <Link key={meme.id} href={`/meme/${meme.id}`} className="group">
-                    <div className="relative overflow-hidden transition-all bg-white border-2 border-black group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="relative aspect-square">
-                        <Image
-                          src={meme.image || "/fallback.png"}
-                          alt={meme.title}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 transition-transform bg-white border-t-2 border-black">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-bold text-black">{meme.title}</h3>
-                            <p className="text-sm text-gray-600">@{meme.creator}</p>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1 text-white bg-primary rounded-full">
-                            <Zap size={14} />
-                            <span className="font-bold">${meme.tokenSymbol}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <MemeCard key={meme.id} meme={meme} />
                 ))}
               </div>
             </TabsContent>
@@ -89,30 +65,7 @@ export default function ExplorePage() {
             <TabsContent value="tokens" className="mt-8">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {tokenMemes.map((meme) => (
-                  <Link key={meme.id} href={`/meme/${meme.id}`} className="group">
-                    <div className="relative overflow-hidden transition-all bg-white border-2 border-black group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="relative aspect-square">
-                        <Image
-                          src={meme.image || "/placeholder.svg"}
-                          alt={meme.title}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 transition-transform bg-white border-t-2 border-black">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-bold text-black">{meme.title}</h3>
-                            <p className="text-sm text-gray-600">@{meme.creator}</p>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1 text-white bg-primary rounded-full">
-                            <Zap size={14} />
-                            <span className="font-bold">${meme.tokenSymbol}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <MemeCard key={meme.id} meme={meme} />
                 ))}
               </div>
             </TabsContent>
@@ -120,64 +73,11 @@ export default function ExplorePage() {
             <TabsContent value="creators" className="mt-8">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {creatorMemes.map((meme) => (
-                  <Link key={meme.id} href={`/meme/${meme.id}`} className="group">
-                    <div className="relative overflow-hidden transition-all bg-white border-2 border-black group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="relative aspect-square">
-                        <Image
-                          src={meme.image || "/placeholder.svg"}
-                          alt={meme.title}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 transition-transform bg-white border-t-2 border-black">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-bold text-black">{meme.title}</h3>
-                            <p className="text-sm text-gray-600">@{meme.creator}</p>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1 text-white bg-primary rounded-full">
-                            <Zap size={14} />
-                            <span className="font-bold">${meme.tokenSymbol}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <MemeCard key={meme.id} meme={meme} />
                 ))}
               </div>
             </TabsContent>
 
-            <TabsContent value="collections" className="mt-8">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {collectionMemes.map((meme) => (
-                  <Link key={meme.id} href={`/meme/${meme.id}`} className="group">
-                    <div className="relative overflow-hidden transition-all bg-white border-2 border-black group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="relative aspect-square">
-                        <Image
-                          src={meme.image || "/placeholder.svg"}
-                          alt={meme.title}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 transition-transform bg-white border-t-2 border-black">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-bold text-black">{meme.title}</h3>
-                            <p className="text-sm text-gray-600">@{meme.creator}</p>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1 text-white bg-primary rounded-full">
-                            <Zap size={14} />
-                            <span className="font-bold">${meme.tokenSymbol}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </TabsContent>
           </Tabs>
 
           <div className="flex justify-center mt-12">
@@ -232,15 +132,6 @@ const allMemes = [
     tokenSymbol: "STONK",
   },
   {
-    id: 5,
-    title: "Distracted Boyfriend",
-    creator: "MemeClassics",
-    image: "/fallback.png",
-    likes: 876,
-    price: 0.04,
-    tokenSymbol: "DISTRACT",
-  },
-  {
     id: 6,
     title: "This is Fine",
     creator: "FireMemer",
@@ -253,4 +144,3 @@ const allMemes = [
 
 const tokenMemes = allMemes.filter((_, index) => index % 2 === 0)
 const creatorMemes = allMemes.filter((_, index) => index % 3 === 0)
-const collectionMemes = allMemes.filter((_, index) => index % 4 === 0)
