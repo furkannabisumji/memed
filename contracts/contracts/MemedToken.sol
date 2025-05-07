@@ -8,15 +8,15 @@ import "./MemedFactory.sol";
 contract MemedToken is ERC20, Ownable {
     MemedFactory factory;
     uint256 public constant MAX_SUPPLY = 1_000_000_000 * 1e18;
+    address constant airdrop =  0xF077fd1bAC70e6D58b1aF77284FBFC5B75Ce168B;
 
     constructor(
         string memory _name,
         string memory _ticker,
-        address _factory,
-        address _to
+        address _factory
     ) ERC20(_name, _ticker) Ownable() {
         factory = MemedFactory(_factory);
-        _mint(_to, MAX_SUPPLY);
+        _mint(airdrop, MAX_SUPPLY);
     }
 
     function _transfer(
@@ -25,12 +25,12 @@ contract MemedToken is ERC20, Ownable {
         uint256 amount
     ) internal override {
         super._transfer(from, to, amount);
-        if (balanceOf(from) >= 100 * 10 ** decimals()) {
+        if (from != airdrop && balanceOf(from) >= 100 * 10 ** decimals()) {
             factory.follow(from);
         } else {
             factory.unfollow(from);
         }
-        if (balanceOf(to) >= 100 * 10 ** decimals()) {
+        if (to != airdrop && balanceOf(to) >= 100 * 10 ** decimals()) {
             factory.follow(to);
         } else {
             factory.unfollow(to);
