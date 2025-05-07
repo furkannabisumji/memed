@@ -5,7 +5,7 @@
     "clean:upgradable": "rimraf ./.upgradable/zkSync-era-test-node.json",
     "clean:artifacts": "hardhat clean",
     "clean": "yarn clean:artifacts && yarn clean:upgradable",
-    "deploy": "hardhat deploy-zksync",
+    "deploy": "npx hardhat deploy-zksync --script deploy.ts --network lensTestnet",
     "lint": "hardhat check",
     "test": "yarn clean:upgradable && hardhat test"
   },
