@@ -81,10 +81,6 @@ export default function ExplorePage() {
                     className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
                     ref={(el) => {
                       tabRefs.current[tab] = el
-                      // Update underline position when tabs are rendered
-                      if (el && tab === activeTab) {
-                        setTimeout(updateUnderlinePosition, 0)
-                      }
                     }}
                   >
                     {tab === "all"
@@ -97,7 +93,6 @@ export default function ExplorePage() {
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {/* Sliding underline */}
               <div
                 className="absolute bottom-0 h-0.5 bg-black transition-all duration-300 ease-in-out"
                 style={{
