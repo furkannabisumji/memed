@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Albert_Sans } from "next/font/google";
 import { useAccount } from "wagmi";
 import { getUsers } from "@/lib/lens";
-import { ConnectButton } from "./ConnectButton";
+import { AccountButton } from "./AccountButton";
 const albertsans = Albert_Sans({
   weight: ["300", "400", "500", "700"],
   subsets: ["latin"],
@@ -37,7 +37,7 @@ export default function Header() {
           </Link>
         </nav>
         <div className="cta-button flex items-center gap-3 absolute h-full ">
-          <ConnectButton />
+          <AccountButton />
         </div>
       </div>
 
@@ -51,7 +51,7 @@ export default function Header() {
           </Link>
         </nav>
         <div className="cta-button flex items-center gap-1 h-full ">
-          <ConnectButton />
+          <AccountButton />
         </div>
       </div>
     </header>
