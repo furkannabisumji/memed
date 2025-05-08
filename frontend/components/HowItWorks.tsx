@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 
 export default function HowItWorks() {
     return (
-        <div className='bg-secondary flex flex-col md:flex-row'>
+        <div className='bg-secondary flex flex-col md:flex-row' id='process'>
             <div className="process md:w-1/2 py-20 md:px-20 px-5">
                 <Card className='bg-white py-32'>
                     

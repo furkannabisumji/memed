@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from './ui/button'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function LandingHero() {
     return (
@@ -13,8 +14,12 @@ export default function LandingHero() {
             </div>
             <p className='text-center'>Launch a meme profile on Lens. Mint tokens. Earn through engagement.</p>
             <div className="cta-button flex items-center gap-3 h-full font-clash">
-                <Button className='py-3 hover:shadow-2xl h-full md:px-8 font-bold'>Launch your meme</Button>
-                <Button className='py-3 hover:shadow-2xl h-full md:px-8 border border-black font-bold' variant={'outline'}>Learn How it works</Button>
+                <Link href={'/launch'}>
+                    <Button className='py-3 hover:shadow-2xl h-full md:px-8 font-bold'>Launch your meme</Button>
+                </Link>
+                <Link href={'#process'}>
+                    <Button className='py-3 hover:shadow-2xl h-full md:px-8 border border-black font-bold' variant={'outline'}>Learn How it works</Button>
+                </Link>
             </div>
         </div>
     )

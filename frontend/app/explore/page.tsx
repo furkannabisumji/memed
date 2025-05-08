@@ -1,3 +1,4 @@
+'use client'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -5,8 +6,46 @@ import { Filter, Search, TrendingUp } from "lucide-react"
 import Header from "@/components/shared/Header"
 import Footer from "@/components/shared/Footer"
 import MemeCard from "@/components/meme/MemeCard"
+import { useEffect, useRef, useState } from "react"
 
 export default function ExplorePage() {
+  const [activeTab, setActiveTab] = useState("all")
+  const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
+  const tabsListRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
+    all: null,
+    tokens: null,
+    creators: null,
+  })
+
+  // Function to update the underline position based on the active tab
+  const updateUnderlinePosition = () => {
+    const activeTabElement = tabRefs.current[activeTab]
+    const tabsListElement = tabsListRef.current
+
+    if (activeTabElement && tabsListElement) {
+      const tabRect = activeTabElement.getBoundingClientRect()
+      const listRect = tabsListElement.getBoundingClientRect()
+
+      setUnderlineStyle({
+        left: tabRect.left - listRect.left,
+        width: tabRect.width,
+      })
+    }
+  }
+
+  // Update underline position on window resize
+  useEffect(() => {
+    window.addEventListener("resize", updateUnderlinePosition)
+    return () => {
+      window.removeEventListener("resize", updateUnderlinePosition)
+    }
+  }, [updateUnderlinePosition])
+
+  // Update underline position when active tab changes
+  useEffect(() => {
+    updateUnderlinePosition()
+  }, [activeTab])
   return (
     <>
       <Header />
@@ -32,28 +71,36 @@ export default function ExplorePage() {
             </Button>
           </div>
 
-          <Tabs defaultValue="all" className="mb-8">
-            <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
-              <TabsTrigger
-                value="all"
-                className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary"
-              >
-                All Memes
-              </TabsTrigger>
-              <TabsTrigger
-                value="tokens"
-                className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary"
-              >
-                Tokens
-              </TabsTrigger>
-              <TabsTrigger
-                value="creators"
-                className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary"
-              >
-                Creators
-              </TabsTrigger>
-            </TabsList>
-
+          <Tabs defaultValue="all" className="mb-8" onValueChange={setActiveTab} value={activeTab}>
+            <div className="relative" ref={tabsListRef}>
+              <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
+                {["all", "tokens", "creators"].map((tab) => (
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                    ref={(el) => {
+                      tabRefs.current[tab] = el
+                    }}
+                  >
+                    {tab === "all"
+                      ? "All Memes"
+                      : tab === "tokens"
+                        ? "Tokens"
+                        : tab === "creators"
+                          ? "Creators"
+                          : "Collections"}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <div
+                className="absolute bottom-0 h-0.5 bg-black transition-all duration-300 ease-in-out"
+                style={{
+                  left: underlineStyle.left,
+                  width: underlineStyle.width,
+                }}
+              />
+            </div>
             <TabsContent value="all" className="mt-8">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {allMemes.map((meme) => (
