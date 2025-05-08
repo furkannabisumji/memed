@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { Albert_Sans } from 'next/font/google'
-const albertsans = Albert_Sans({
-  weight: ['300', '400', '500', '600', '700'],
-  subsets: ["latin"],
-  display: 'swap'
-});
+import { Albert_Sans } from "next/font/google";
+import { Web3Provider } from "@/providers/Web3Provider";
+import CustomApolloProvider from "@/providers/ApolloProvider";
+import { Toaster } from "sonner";
 
+const albertsans = Albert_Sans({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -21,10 +24,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${albertsans.className} antialiased`}
-      >
-        {children}
+      <body className={`${albertsans.className} antialiased`}>
+        <CustomApolloProvider>
+          <Web3Provider>
+            {children}
+            <Toaster />
+          </Web3Provider>
+        </CustomApolloProvider>
       </body>
     </html>
   );
