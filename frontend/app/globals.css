@@ -5,29 +5,29 @@
 
 /* Define font faces */
 @font-face {
-  font-family: 'Clash Grotesk';
-  src: url('/fonts/ClashGrotesk/ClashGrotesk-Medium.woff2') format('woff2'),
-    url('/fonts/ClashGrotesk/ClashGrotesk-Medium.woff') format('woff');
+  font-family: "Clash Grotesk";
+  src: url("/fonts/ClashGrotesk/ClashGrotesk-Medium.woff2") format("woff2"),
+    url("/fonts/ClashGrotesk/ClashGrotesk-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Clash Grotesk';
-  src: url('/fonts/ClashGrotesk/ClashGrotesk-Bold.woff2') format('woff2'),
-    url('/fonts/ClashGrotesk/ClashGrotesk-Bold.woff') format('woff');
+  font-family: "Clash Grotesk";
+  src: url("/fonts/ClashGrotesk/ClashGrotesk-Bold.woff2") format("woff2"),
+    url("/fonts/ClashGrotesk/ClashGrotesk-Bold.woff") format("woff");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 .font-clash {
-  font-family: 'Clash Grotesk';
+  font-family: "Clash Grotesk";
 }
 
 @theme inline {
-  --shadow-2xl:3px 3px 0px rgba(0, 0, 0, 1); 
+  --shadow-2xl: 3px 3px 0px rgba(0, 0, 0, 1);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -143,11 +143,48 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.connect-wallet-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+/* Fix for ConnectKit button text visibility */
+[data-rk] button {
+  color: white !important;
+}
+
+/* Ensure connected wallet text is visible */
+[data-rk] button div {
+  color: white !important;
+}
+
+/* Make sure the wallet address is visible when connected */
+[data-rk] button span {
+  color: white !important;
 }
 
 .bg-primary {
-  background-color: #28D358;
+  background-color: #28d358;
 }
 .bg-secondary {
   background-color: #28d35829;
@@ -160,12 +197,14 @@
   animation: floatAndRotate2 5s ease-in infinite;
 }
 @media (max-width: 640px) {
-  .coin-floating, .coin-floating-2 {
+  .coin-floating,
+  .coin-floating-2 {
     width: 150px; /* Reduce size to 50% on mobile */
   }
 }
 @keyframes floatAndRotate {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
   50% {
@@ -173,7 +212,8 @@
   }
 }
 @keyframes floatAndRotate2 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(100deg);
   }
   50% {
@@ -181,5 +221,14 @@
   }
 }
 
-
 /* Add transition effect for the underline */
+
+/* For WebKit browsers (Chrome, Safari) */
+* {
+  overflow: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
+}
