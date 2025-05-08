@@ -25,6 +25,16 @@ async function getFollowerStats(handle) {
   return result;
 }
 
+async function getHandleOwner(handle) {  
+  const { value: account } = await fetchAccount(client, {
+    username: {
+      localName: handle,
+    }
+  });
+  return account.address;
+} 
+
 module.exports = {
-  getFollowerStats
+  getFollowerStats,
+  getHandleOwner
 }; 
