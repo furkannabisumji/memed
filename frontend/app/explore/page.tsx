@@ -40,7 +40,7 @@ export default function ExplorePage() {
     return () => {
       window.removeEventListener("resize", updateUnderlinePosition)
     }
-  }, [])
+  }, [updateUnderlinePosition])
 
   // Update underline position when active tab changes
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function ExplorePage() {
                   <TabsTrigger
                     key={tab}
                     value={tab}
-                    className="px-6 py-3 data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                    className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
                     ref={(el) => {
                       tabRefs.current[tab] = el
                       // Update underline position when tabs are rendered

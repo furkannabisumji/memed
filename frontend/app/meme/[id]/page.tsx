@@ -1,17 +1,57 @@
+'use client'
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import MemeCard from "@/components/meme/MemeCard"
 import { Badge } from "@/components/ui/badge"
 import { Edit, Share, UserPlus } from "lucide-react"
 import Header from "@/components/shared/Header"
 import Footer from "@/components/shared/Footer"
 import { Card, CardContent } from "@/components/ui/card"
+import { useEffect, useRef, useState } from "react"
 
-export default function ProfilePage({ params }: { params: { username: string } }) {
 
+
+
+export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState("all")
+  const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
+  const tabsListRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
+    all: null,
+    tokens: null,
+    creators: null,
+  })
+
+  // Function to update the underline position based on the active tab
+  const updateUnderlinePosition = () => {
+    const activeTabElement = tabRefs.current[activeTab]
+    const tabsListElement = tabsListRef.current
+
+    if (activeTabElement && tabsListElement) {
+      const tabRect = activeTabElement.getBoundingClientRect()
+      const listRect = tabsListElement.getBoundingClientRect()
+
+      setUnderlineStyle({
+        left: tabRect.left - listRect.left,
+        width: tabRect.width,
+      })
+    }
+  }
+
+  // Update underline position on window resize
+  useEffect(() => {
+    window.addEventListener("resize", updateUnderlinePosition)
+    return () => {
+      window.removeEventListener("resize", updateUnderlinePosition)
+    }
+  }, [])
+
+  // Update underline position when active tab changes
+  useEffect(() => {
+    updateUnderlinePosition()
+  }, [activeTab])
   const profile = {
-    username: params.username,
+    username: "MemeMaster",
     displayName: "Meme Master",
     bio: "Creating the dankest memes in the metaverse. Collector and creator of rare meme tokens.",
     followers: 1234,
@@ -20,7 +60,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
     bannerImage: "/placeholder.svg?height=400&width=1200",
     isVerified: true,
     isFollowing: false,
-    isOwner: params.username === "mememaster",
+    isOwner: false,
     createdMemes: allMemes.slice(0, 4),
     collectedMemes: allMemes.slice(4, 8),
     tokensMinted: 12,
@@ -113,53 +153,86 @@ export default function ProfilePage({ params }: { params: { username: string } }
               </div>
             </div>
 
-            <Tabs defaultValue="created" className="mt-8">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="created">Details</TabsTrigger>
-                <TabsTrigger value="collected">Supporters</TabsTrigger>
-              </TabsList>
-              <TabsContent value="created" className="mt-6">
+            <Tabs defaultValue="all" className="mb-8 mt-10" onValueChange={setActiveTab} value={activeTab}>
+              <div className="relative" ref={tabsListRef}>
+                <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
+                  {["Details", "Supporters"].map((tab) => (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                      ref={(el) => {
+                        tabRefs.current[tab] = el
+                        // Update underline position when tabs are rendered
+                        if (el && tab === activeTab) {
+                          setTimeout(updateUnderlinePosition, 0)
+                        }
+                      }}
+                    >
+                      {tab === "Details"
+                        ? "Details"
+                        : tab === "Supporters"
+                          ? "Supporters" : ""
+                      }
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {/* Sliding underline */}
+                <div
+                  className="absolute bottom-0 h-0.5 bg-black transition-all duration-300 ease-in-out"
+                  style={{
+                    left: underlineStyle.left,
+                    width: underlineStyle.width,
+                  }}
+                />
+              </div>
+              <TabsContent value="Details" className="mt-8">
                 <div className="grid grid-cols-1">
-                  <Card className="border-1 shadow-none">
-                    <CardContent className="p-6">
-                      <div className="grid gap-4">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Token Symbol:</span>
-                          <span className="">$DOGE</span>
+                  <div className="grid grid-cols-1">
+                    <Card className="border-1 shadow-none">
+                      <CardContent className="p-6">
+                        <div className="grid gap-4">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Token Symbol:</span>
+                            <span className="">$DOGE</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Current Price:</span>
+                            <span className="">0.01 ETH</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Total Supply:</span>
+                            <span className="">
+                              1,000,000
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Holders:</span>
+                            <span className="">1290</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Current Price:</span>
-                          <span className="">0.01 ETH</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Total Supply:</span>
-                          <span className="">
-                            1,000,000
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Holders:</span>
-                          <span className="">1290</span>
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4 mt-6">
-                        <Button className="bg-primary hover:shadow-2xl">
-                          Buy Token
-                        </Button>
-                        <Button variant="outline" className="hover:shadow-2xl">
-                          View Chart
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                          <Button className="bg-primary hover:shadow-2xl">
+                            Buy Token
+                          </Button>
+                          <Button variant="outline" className="hover:shadow-2xl">
+                            View Chart
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </TabsContent>
-              <TabsContent value="collected" className="mt-6">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+              <TabsContent value="Supporters" className="mt-8">
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
 
                 </div>
               </TabsContent>
+
+
 
             </Tabs>
           </div>
