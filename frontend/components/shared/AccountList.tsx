@@ -21,8 +21,10 @@ import { toast } from "sonner";
 
 export function AccountsList({
   accountsAvailable,
+  onAccountSelected,
 }: {
   accountsAvailable: AccountsAvailableResponse;
+  onAccountSelected?: (account: any) => void;
 }) {
   const { data: walletClient } = useWalletClient();
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
@@ -124,12 +126,17 @@ export function AccountsList({
       const accountToStore = filteredAccounts.items.find(
         (item) => item.account.address === address
       )?.account;
-      
+
       setSelectedAccount(accountToStore);
-      
+
       toast.success("You are now using a different Lens profile", {
         description: "Profile switched successfully",
       });
+
+      // Call the onAccountSelected callback if provided
+      if (onAccountSelected) {
+        onAccountSelected(accountToStore);
+      }
     } catch (error) {
       console.error("Error switching profile:", error);
       // Dismiss any active toasts
@@ -174,18 +181,23 @@ export function AccountsList({
             ) : (
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                 <span className="text-sm font-bold">
-                  {selectedAccount.username?.localName?.[0]?.toUpperCase() || "?"}
+                  {selectedAccount.username?.localName?.[0]?.toUpperCase() ||
+                    "?"}
                 </span>
               </div>
             )}
             <div>
-              <p className="font-medium">{selectedAccount.username?.localName || "Unknown"}</p>
-              <p className="text-xs text-gray-500 truncate">{selectedAccount.address}</p>
+              <p className="font-medium">
+                {selectedAccount.username?.localName || "Unknown"}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {selectedAccount.address}
+              </p>
             </div>
           </div>
         </div>
       )}
-      
+
       <div className="mb-2">
         <p className="text-sm text-gray-500 mb-2">
           Click on a profile to switch to it
@@ -283,7 +295,7 @@ export function AccountsList({
                       </CardContent>
                     </Card>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="z-[110]">
                     <p>
                       Click to switch to{" "}
                       {item.account.username?.localName || "this profile"}
