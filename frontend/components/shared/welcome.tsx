@@ -110,8 +110,12 @@ export function Welcome() {
 
   // Username validation rules for Lens Protocol
   const validateUsername = (username: string) => {
+    console.log(`Validating username: '${username}'`);
+    console.log(`Length: ${username.length} characters`);
+
     // Check length (5-31 characters)
     if (username.length < 5 || username.length > 31) {
+      console.log("Validation failed: Length requirement not met");
       return {
         valid: false,
         reason: "Username must be between 5 and 31 characters",
@@ -119,7 +123,12 @@ export function Welcome() {
     }
 
     // Check for valid characters (alphanumeric and underscores only)
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    const validCharsRegex = /^[a-zA-Z0-9_]+$/;
+    const hasValidChars = validCharsRegex.test(username);
+    console.log(
+      `Valid characters check: ${hasValidChars ? "Passed" : "Failed"}`
+    );
+    if (!hasValidChars) {
       return {
         valid: false,
         reason: "Username can only contain letters, numbers, and underscores",
@@ -127,27 +136,23 @@ export function Welcome() {
     }
 
     // Check if it starts with a letter or number (not underscore)
-    if (!/^[a-zA-Z0-9]/.test(username)) {
+    const validStartRegex = /^[a-zA-Z0-9]/;
+    const hasValidStart = validStartRegex.test(username);
+    console.log(
+      `Valid start character check: ${hasValidStart ? "Passed" : "Failed"}`
+    );
+    if (!hasValidStart) {
       return {
         valid: false,
         reason: "Username must start with a letter or number",
       };
     }
 
+    console.log("All validation checks passed!");
     return { valid: true };
   };
 
   const handleChallengeMutation = async () => {
-    if (!address || !image || !localName) {
-      toast.error(
-        "Please connect your wallet, upload an image, and choose a username",
-        {
-          description: "Missing information",
-        }
-      );
-      return;
-    }
-
     // Validate username before proceeding
     const validation = validateUsername(localName);
     if (!validation.valid) {
@@ -157,8 +162,8 @@ export function Welcome() {
       return;
     }
 
-    if (!walletClient) {
-      console.error("Wallet client not available");
+    if (!isConnected || !address || !walletClient) {
+      toast.error("Please connect your wallet first");
       return;
     }
 
@@ -209,20 +214,22 @@ export function Welcome() {
       // Step 4: Create metadata for the profile and upload to IPFS
       // Use a simple metadata format that matches Lens Protocol requirements
       const profileMetadata = {
-        name: localName,
-        bio: `${localName}'s profile`,
-        picture: image
-          ? `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${image}`
-          : null,
-        // Include basic attributes without any custom fields
-        attributes: [
-          {
-            key: "created_by",
-            value: "memed_app",
-            type: "string",
-          },
-        ],
-        // Remove version field as it's not supported by the API
+        $schema: "https://json-schemas.lens.dev/account/1.0.0.json",
+        lens: {
+          name: localName,
+          bio: `${localName}'s profile`,
+          picture: image
+            ? `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${image}`
+            : null,
+          // Include basic attributes without any custom fields
+          attributes: [
+            {
+              key: "created_by",
+              value: "memed_app",
+              type: "String", // Capitalized type as per documentation
+            },
+          ],
+        },
       };
 
       // Upload the metadata to IPFS using lighthouse
@@ -251,11 +258,11 @@ export function Welcome() {
           const metadataJson = await metadataResponse.json();
           console.log("Metadata verified:", metadataJson);
           // Log each field to help with debugging
-          console.log("Name:", metadataJson.name);
-          console.log("Bio:", metadataJson.bio);
-          console.log("Picture:", metadataJson.picture);
-          console.log("Attributes:", metadataJson.attributes);
-          console.log("Version:", metadataJson.version);
+          console.log("Schema:", metadataJson.$schema);
+          console.log("Name:", metadataJson.lens?.name);
+          console.log("Bio:", metadataJson.lens?.bio);
+          console.log("Picture:", metadataJson.lens?.picture);
+          console.log("Attributes:", metadataJson.lens?.attributes);
         }
       } catch (error) {
         console.error("Error verifying metadata:", error);
@@ -324,6 +331,14 @@ export function Welcome() {
           createAccountResult.reason || "Unknown validation error";
         console.error("Username validation failed:", errorReason);
 
+        // Log any unsatisfied rules if available
+        if (createAccountResult.unsatisfiedRules) {
+          console.error(
+            "Unsatisfied rules:",
+            JSON.stringify(createAccountResult.unsatisfiedRules)
+          );
+        }
+
         // Parse the error message to provide more specific feedback
         let userFriendlyMessage = errorReason;
 
@@ -367,8 +382,83 @@ export function Welcome() {
         return;
       }
 
-      const txHash = createAccountResult?.txHash;
-      if (!txHash) {
+      // Check for UsernameTaken error type
+      if (createAccountResult?.__typename === "UsernameTaken") {
+        console.error(
+          "Username is already taken",
+          JSON.stringify(result?.data, null, 2)
+        );
+
+        toast.dismiss(creatingToast);
+        // Force a new toast with a unique ID to ensure it shows
+        const errorToastId = `error-${Date.now()}`;
+        toast.error(
+          "This username is already taken. Please try a different one.",
+          {
+            id: errorToastId,
+            description: "Username unavailable",
+            duration: 5000,
+          }
+        );
+
+        setIsGenerating(false);
+        return;
+      }
+
+      // Check if we have a CreateAccountResponse with hash
+      if (createAccountResult?.__typename === "CreateAccountResponse") {
+        const hash = createAccountResult.hash;
+        if (hash) {
+          // Set the txHash for tracking
+          setTxHash(hash);
+
+          // Clear input fields after successful account creation
+          setLocalName("");
+          setImage(null);
+
+          toast.dismiss(creatingToast);
+          // Force a new toast with a unique ID to ensure it shows
+          const toastId = `success-${Date.now()}`;
+          toast.success(
+            "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
+            {
+              id: toastId,
+              description: "Profile created successfully!",
+              duration: 5000,
+            }
+          );
+
+          // Start auto-refreshing accounts to check for the new account
+          startAutoRefresh();
+          setIsGenerating(false);
+          return;
+        } else {
+          console.error(
+            "Account creation failed - No hash returned",
+            JSON.stringify(result?.data, null, 2)
+          );
+
+          // Provide more specific error message based on the response
+          let errorMessage = "Please try again with a different username.";
+
+          // Check if there's any error information in the response
+          if (
+            createAccountResult &&
+            Object.keys(createAccountResult).length > 0
+          ) {
+            errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
+          }
+
+          toast.dismiss(creatingToast);
+          toast.error(errorMessage, {
+            description: "Account creation failed",
+            duration: 5000,
+          });
+
+          setIsGenerating(false);
+          return;
+        }
+      } else {
         console.error(
           "Account creation failed - No hash returned",
           JSON.stringify(result?.data, null, 2)
@@ -395,32 +485,33 @@ export function Welcome() {
         return;
       }
 
-      // Clear input fields after successful account creation
-      setLocalName("");
-      setImage(null);
-
-      toast.dismiss(creatingToast);
-      toast.success(
-        "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
-        {
-          description: "Profile created successfully!",
-        }
+      // If we get here, we didn't get a valid hash
+      console.error(
+        "Account creation failed - No valid hash returned",
+        JSON.stringify(result?.data, null, 2)
       );
 
-      // Refresh accounts data to show the new account
-      await refetchAccts();
+      // Provide more specific error message based on the response
+      let errorMessage = "Please try again with a different username.";
 
-      // Start auto-refreshing to check for metadata indexing
-      startAutoRefresh();
+      // Check if there's any error information in the response
+      if (createAccountResult && Object.keys(createAccountResult).length > 0) {
+        errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
+      }
 
-      // Reset the generating state
+      toast.dismiss(creatingToast);
+      toast.error(errorMessage, {
+        description: "Account creation failed",
+        duration: 5000,
+      });
+
       setIsGenerating(false);
-    } catch (err) {
-      console.error("Error during mutation flow:", err);
+    } catch (error: any) {
+      console.error("Error during mutation flow:", error);
       // Dismiss any loading toasts that might be active
       toast.dismiss();
       toast.error(
-        err instanceof Error ? err.message : "An unexpected error occurred",
+        error instanceof Error ? error.message : "An unexpected error occurred",
         {
           description: "Error creating profile",
         }
@@ -610,6 +701,12 @@ export function Welcome() {
     }
   }, [accountData, txStatusData, stopPolling, address]);
 
+  useEffect(() => {
+    toast.success("Profile metadata has been indexed!", {
+      description: "Your profile picture and details are now visible",
+    });
+  }, []);
+
   if (!isConnected && !isConnecting) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center relative">
@@ -750,7 +847,9 @@ export function Welcome() {
               <div className="h-12 flex items-center w-full mb-2">
                 <Input
                   value={localName}
-                  onChange={(e) => setLocalName(e.target.value)}
+                  onChange={(e) =>
+                    setLocalName(e.target.value.toLocaleLowerCase())
+                  }
                   disabled={isGenerating}
                   placeholder="Choose username"
                   className="bg-background h-full w-full outline-none"
@@ -766,7 +865,7 @@ export function Welcome() {
             </div>
 
             {/* Existing Accounts Section */}
-            <div className="border border-gray-200 min-h-[300px] rounded-lg p-4">
+            <div className="border border-gray-200 min-h-[200px] rounded-lg p-4">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-semibold">Your Profiles</h2>
                 <Button
