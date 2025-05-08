@@ -22,13 +22,13 @@ export function AccountButton({ className }: AccountButtonProps) {
   const { isConnected, address } = useAccount();
   const { disconnect } = useDisconnect();
   const { data: balanceData } = useBalance({ address });
-  
+
   // Client-side only states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   // Set mounted state after hydration
   useEffect(() => {
     setIsMounted(true);
@@ -111,14 +111,18 @@ export function AccountButton({ className }: AccountButtonProps) {
 
   // Go to welcome page to create account
   const goToWelcomePage = () => {
-    router.push("/");
+    router.push("/welcome");
   };
 
   // Don't render anything complex during server-side rendering
   if (!isMounted) {
-    return <div className={`h-10 w-32 bg-primary rounded-md ${className || ""}`}></div>;
+    return (
+      <div
+        className={`h-10 w-32 bg-primary rounded-md ${className || ""}`}
+      ></div>
+    );
   }
-  
+
   if (!isConnected) {
     return <ConnectKitButton />;
   }
@@ -130,7 +134,7 @@ export function AccountButton({ className }: AccountButtonProps) {
         ref={buttonRef}
         onClick={hasAccounts ? toggleModal : goToWelcomePage}
         type="button"
-        className={`account-button flex items-center gap-2 bg-primary text-white px-3 py-2 rounded-md hover:bg-primary/90 transition-colors ${
+        className={`account-button cursor-pointer flex items-center gap-2 bg-primary text-white px-3 py-2 rounded-md hover:bg-primary/90 transition-colors ${
           className || ""
         }`}
       >

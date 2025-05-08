@@ -16,7 +16,7 @@ export const getUsers = async (address: string) => {
 
   const account = result.value;
 
-  console.log(account);
+  // console.log(account);
 };
 
 export const signMessageWith = (walletClient: any, message: string) => {
