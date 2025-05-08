@@ -90,7 +90,7 @@ export default function LaunchPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 mb-8 text-white bg-primary rounded-full">
                 <Sparkles className="w-10 h-10" />
               </div>
-              <h1 className="mb-6 text-5xl font-black text-black">Meme Token Created!</h1>
+              <h1 className="mb-6 text-5xl font-black text-black">Meme Created!</h1>
               <p className="mb-8 text-xl text-gray-600">
                 Your meme has been successfully tokenized and is now live on the blockchain.
               </p>

@@ -78,12 +78,12 @@ export default function TokenSettingForm({ handlePrevStep, handleMint, isMinting
                     {isMinting ? (
                         <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Minting...
+                            Launching...
                         </>
                     ) : (
                         <>
                             <Rocket className="w-4 h-4" />
-                            Mint Token
+                            Launch
                         </>
                     )}
                 </Button>
