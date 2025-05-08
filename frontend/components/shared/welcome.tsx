@@ -394,7 +394,7 @@ export function Welcome() {
         setIsGenerating(false);
         return;
       }
-      
+
       // Clear input fields after successful account creation
       setLocalName("");
       setImage(null);
@@ -739,13 +739,13 @@ export function Welcome() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
+    <div className="flex flex-col items-center justify-center h-screen px-3">
       {isConnected ? (
         <>
           <ImageUploader image={image} setImage={setImage} />
           <div className="w-full max-w-sm flex flex-col gap-4 py-5">
             {/* Create Profile Section */}
-            <div className="border border-gray-200 rounded-lg p-4 mb-2">
+            <div className="border border-gray-200 min-h-[200px] rounded-lg p-4 mb-2">
               <h2 className="text-lg font-semibold mb-3">Create New Profile</h2>
               <div className="h-12 flex items-center w-full mb-2">
                 <Input
@@ -764,9 +764,9 @@ export function Welcome() {
                 {isGenerating ? "Generating..." : "Get a profile"}
               </Button>
             </div>
-            
+
             {/* Existing Accounts Section */}
-            <div className="border border-gray-200 rounded-lg p-4">
+            <div className="border border-gray-200 min-h-[300px] rounded-lg p-4">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-semibold">Your Profiles</h2>
                 <Button
@@ -789,7 +789,8 @@ export function Welcome() {
                 />
               ) : (
                 <div className="text-center py-4 text-gray-500">
-                  No profiles found. Create one above or connect a different wallet.
+                  No profiles found. Create one above or connect a different
+                  wallet.
                 </div>
               )}
             </div>
@@ -799,16 +800,30 @@ export function Welcome() {
       ) : (
         <div className="text-center py-8 border border-gray-200 rounded-lg p-6 mb-4 w-full max-w-sm">
           <div className="text-amber-600 mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
           <h3 className="text-lg font-medium mb-2">Wallet Not Connected</h3>
-          <p className="text-gray-600 mb-4">Please connect your wallet to create or manage Lens profiles.</p>
-          <ConnectButton />
+          <p className="text-gray-600 mb-4">
+            Please connect your wallet to create or manage Lens profiles.
+          </p>
+          <div className="flex justify-center">
+            <ConnectButton />
+          </div>
         </div>
       )}
-
     </div>
   );
 }
