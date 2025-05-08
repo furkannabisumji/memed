@@ -15,6 +15,7 @@
     "@lens-protocol/client": "^0.0.0-canary-20250430134539",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "ethers": "^6.14.0",
     "express": "^4.18.2",
     "morgan": "^1.10.0"
   },

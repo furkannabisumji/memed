@@ -1,0 +1,35 @@
+[
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_lensUsername",
+          "type": "string"
+        },
+        {
+          "internalType": "string", 
+          "name": "_name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_ticker",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_description",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_image",
+          "type": "string"
+        }
+      ],
+      "name": "createMeme",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]
