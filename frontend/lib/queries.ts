@@ -43,10 +43,13 @@ export const CREATE_ACCOUNT_MUTATION = gql`
       ... on CreateAccountResponse {
         hash
       }
-      ... on TransactionWillFail {
+      ... on UsernameTaken {
         reason
       }
       ... on NamespaceOperationValidationFailed {
+        reason
+      }
+      ... on TransactionWillFail {
         reason
       }
     }
