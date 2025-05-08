@@ -12,7 +12,9 @@ export default function Header() {
             {/* Desktop Nav */}
             <div className='md:flex justify-end my-2 px-2 relative hidden'>
                 <nav className='cursor-pointer mx-auto flex justify-center items-center bg-[#DCDCDC] p-1 rounded-md'>
-                    <div className="logo p-2 bg-[#28D358] text-white font-bold rounded-md">MF</div>
+                    <Link href={'/'}>
+                        <div className="logo p-2 bg-[#28D358] text-white font-bold rounded-md">MF</div>
+                    </Link>
                     <Link href={'/explore'}>
                         <Button variant={'ghost'}>Explore</Button>
                     </Link>
@@ -35,7 +37,9 @@ export default function Header() {
             {/* Mobile Nav */}
             <div className='md:hidden justify-between my-2 px-2 relative flex'>
                 <nav className='cursor-pointer  flex justify-center items-center bg-[#DCDCDC] p-1 rounded-md'>
-                    <div className="logo p-2 bg-[#28D358] text-white font-bold rounded-md">MF</div>
+                    <Link href={'/'}>
+                        <div className="logo p-2 bg-[#28D358] text-white font-bold rounded-md">MF</div>
+                    </Link>
                 </nav>
                 <div className="cta-button flex items-center gap-1 h-full ">
                     <Button className='hover:shadow-2xl h-full md:px-8 min-w-[80px] border border-black font-bold' variant={'outline'}>Register</Button>
