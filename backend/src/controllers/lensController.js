@@ -57,6 +57,8 @@ const mintMemeCoins = async (req, res, next) => {
     const { name, ticker, description, image, message, signature, timestamp } = req.body;
     const { handle } = req.params;
 
+    // const account = await lensService.getHandleOwner(handle);
+
     // 1. Check timestamp is recent (e.g., within 5 minutes)
     const now = Date.now();
     const FIVE_MINUTES = 5 * 60 * 1000;

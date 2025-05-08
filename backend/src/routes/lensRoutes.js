@@ -8,7 +8,7 @@ router.get('/followers/:handle', lensController.getFollowerStats);
 
 router.get('/getMintableCheck/:handle', lensController.getMintableCheck);
 
-router.get('/mintMemeCoins/:handle', lensController.mintMemeCoins);
+router.post('/mintMemeCoins/:handle', lensController.mintMemeCoins);
 
 
 
