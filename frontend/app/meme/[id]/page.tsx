@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from "react"
 
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState("Details")
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
   const tabsListRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -163,10 +163,6 @@ export default function ProfilePage() {
                       className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
                       ref={(el) => {
                         tabRefs.current[tab] = el
-                        // Update underline position when tabs are rendered
-                        if (el && tab === activeTab) {
-                          setTimeout(updateUnderlinePosition, 0)
-                        }
                       }}
                     >
                       {tab === "Details"
