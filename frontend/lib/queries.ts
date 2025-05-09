@@ -56,6 +56,20 @@ export const CREATE_ACCOUNT_MUTATION = gql`
   }
 `;
 
+export const SET_ACCOUNT_METADATA_MUTATION = gql`
+  mutation SetAccountMetadata($request: SetAccountMetadataRequest!) {
+    setAccountMetadata(request: $request) {
+      __typename
+      ... on SetAccountMetadataResponse {
+        hash
+      }
+      ... on TransactionWillFail {
+        reason
+      }
+    }
+  }
+`;
+
 export const TRANSACTION_STATUS_QUERY = gql`
   query TransactionStatus($txHash: String!) {
     transactionStatus(request: { txHash: $txHash }) {

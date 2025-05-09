@@ -26,6 +26,9 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Toast Test Component */}
+      {/* <ToastTest /> */}
+
       {/* Footer */}
       <Footer />
     </>

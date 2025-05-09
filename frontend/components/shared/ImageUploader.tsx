@@ -3,22 +3,33 @@ import { FiUploadCloud } from "react-icons/fi";
 import { FaUser } from "react-icons/fa";
 import lighthouse from "@lighthouse-web3/sdk";
 import Image from "next/image";
-import { toast } from "sonner";
+import { useCustomToast } from "../ui/custom-toast";
 
 interface ImageUploaderProps {
   image: string | null;
-  setImage: React.Dispatch<React.SetStateAction<string | null>>;
+  setImage: (image: string | null) => void;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
   const [loading, setLoading] = useState(false);
+  const toast = useCustomToast();
   const [dragActive, setDragActive] = useState(false);
 
   const uploadToLighthouse = async (file: File) => {
+    // Reset any previous state
     setLoading(true);
+    
+    // Dismiss any existing toasts first
+    toast.dismissAll();
+    
+    // Create a unique ID for this upload toast
+    const uploadingToastId = `uploading-image-${Date.now()}`;
+    
     // Show loading toast
-    const uploadingToast = toast.loading("Uploading your image...", {
-      description: "Please wait while we upload your profile image"
+    toast.loading("Uploading your image...", {
+      id: uploadingToastId,
+      description: "Please wait while we upload your profile image",
+      duration: 0 // Don't auto-dismiss
     });
     
     try {
@@ -31,17 +42,19 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
       setImage(uploadedImageUrl);
       
       // Dismiss loading toast and show success
-      toast.dismiss(uploadingToast);
+      toast.dismiss(uploadingToastId);
       toast.success("Your profile image has been uploaded successfully", {
-        description: "Image uploaded"
+        description: "Image uploaded",
+        duration: 3000
       });
     } catch (error) {
       console.error("Error uploading file:", error);
       
       // Dismiss loading toast and show error
-      toast.dismiss(uploadingToast);
+      toast.dismiss(uploadingToastId);
       toast.error("There was a problem uploading your image", {
-        description: "Upload failed"
+        description: "Upload failed",
+        duration: 3000
       });
     } finally {
       setLoading(false);
@@ -51,6 +64,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       await uploadToLighthouse(e.target.files[0]);
+      // Reset the file input value so it can be reused
+      e.target.value = "";
     }
   };
   
@@ -81,6 +96,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
         return;
       }
       await uploadToLighthouse(file);
+      
+      // Reset the file input to ensure it can be reused
+      const fileInput = document.getElementById("imageUploadInput") as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = "";
+      }
     }
   }, [toast]);
 
