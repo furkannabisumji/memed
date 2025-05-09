@@ -9,13 +9,15 @@ import { LensProvider } from "@lens-protocol/react";
 import { client } from "@/lib/client";
 
 // Explicitly use the WalletConnect Project ID from environment variables
-const walletConnectProjectId = "38edea875a5dc618dae9ca1850e00858";
+const walletConnectProjectId = process.env
+  .NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as string;
 
 const config = createConfig(
   getDefaultConfig({
-    chains: [chains.testnet],
+    chains: [chains.testnet, chains.mainnet],
     transports: {
       [chains.testnet.id]: http(chains.testnet.rpcUrls.default.http[0]!),
+      [chains.mainnet.id]: http(chains.mainnet.rpcUrls.default.http[0]!),
     },
     walletConnectProjectId, // Use the explicit value
     appName: "Memed.fun",
@@ -66,14 +68,6 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
             hideBalance: false,
             hideTooltips: false,
             walletConnectCTA: "both",
-            // Add these options to fix the "Family integrated modal is not visible" error
-            // overlayBlur expects a number (in px), not a boolean
-            overlayBlur: 0,
-            disableSiweRedirect: true,
-            embedGoogleFonts: true,
-            bufferPolyfill: true,
-            // Increase timeouts to give the modal more time to appear
-            initialChainId: chains.testnet.id
           }}
         >
           <LensProvider client={client}>{children}</LensProvider>
