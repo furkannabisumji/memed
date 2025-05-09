@@ -1,22 +1,19 @@
 "use client";
 import { useAccount, useWalletClient } from "wagmi";
 import { useConnectKitSign } from "@/hooks/useConnectKitSign";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { DisconnectWalletButton } from "./DisconnectWalletButton";
+import { useState, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { AccountsList } from "./AccountList";
-import { useCustomToast } from "@/components/ui/custom-toast";
-import ImageUploader from "./ImageUploader";
-import {
-  getAvailableAccounts,
-  createNewAccount,
-  switchToAccount,
-  getAccountByAddress,
-  createProfileMetadata,
-  uploadToIPFS,
-} from "@/lib/lens";
 import { ConnectKitButton } from "connectkit";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useCustomToast } from "@/components/ui/custom-toast";
+import { getAvailableAccounts, createNewAccount, switchToAccount, getAccountByAddress, createProfileMetadata, uploadToIPFS } from "@/lib/lens";
+import { Loader2 } from "lucide-react";
+import { DisconnectWalletButton } from "./DisconnectWalletButton";
+import ImageUploader from "./ImageUploader";
+import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
 
 export function Welcome() {
   // Add client-side only rendering to prevent hydration errors
@@ -31,13 +28,13 @@ export function Welcome() {
   const [txHash, setTxHash] = useState<string>("");
   const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
   const [loadingAvailableAcc, setLoadingAvailableAcc] = useState(false);
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
 
   // Use useEffect to set isClient to true after component mounts
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Separate effect for cleanup to avoid dependency issues
   useEffect(() => {
     // This effect doesn't need to do anything on mount
     // Only provide a cleanup function for unmount
@@ -49,29 +46,55 @@ export function Welcome() {
     };
   }, []);
 
+  // Use a ref to store the previous accounts to prevent unnecessary re-renders
+  const previousAccountsRef = useRef<any>(null);
+
   // Function to fetch available accounts
   const fetchAccounts = useCallback(async () => {
     if (!address) return;
 
-    setLoadingAvailableAcc(true);
+    // Only show loading state on initial fetch or during auto-refresh
+    if (!accountsAvailable) {
+      setLoadingAvailableAcc(true);
+    }
+
     try {
       const accounts = await getAvailableAccounts(address);
 
       if (accounts && accounts.items) {
-        setAccountsAvailable({ accountsAvailable: accounts });
-      } else {
-        // Set to empty array to avoid UI jerking
+        // Store current accounts in ref to compare
+        const currentItems = accountsAvailable?.accountsAvailable?.items || [];
+        const newItems = accounts.items || [];
+
+        // Only update if there's a meaningful change (different length or different first account)
+        const isDifferent =
+          currentItems.length !== newItems.length ||
+          (newItems.length > 0 && currentItems.length > 0 && newItems[0].account?.id !== currentItems[0].account?.id);
+
+        if (isDifferent || !accountsAvailable) {
+          // Update the ref first
+          previousAccountsRef.current = accountsAvailable;
+
+          // Then update the state
+          setAccountsAvailable({ accountsAvailable: accounts });
+        }
+      } else if (!accountsAvailable) {
+        // Only set empty array if we don't have any accounts yet
         setAccountsAvailable({ accountsAvailable: { items: [] } });
       }
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      toast.error("Failed to fetch your profiles");
-      // Set to empty array on error to avoid UI jerking
-      setAccountsAvailable({ accountsAvailable: { items: [] } });
+      if (!accountsAvailable) {
+        toast.error("Failed to fetch your profiles");
+        setAccountsAvailable({ accountsAvailable: { items: [] } });
+      }
     } finally {
-      setLoadingAvailableAcc(false);
+      // Only change loading state if we're not in auto-refresh mode
+      if (!autoRefreshing) {
+        setLoadingAvailableAcc(false);
+      }
     }
-  }, [address, toast]);
+  }, [address, toast, accountsAvailable, autoRefreshing]);
 
   // Fetch accounts on initial load and when address changes
   // Using a ref to prevent infinite loops
@@ -92,15 +115,12 @@ export function Welcome() {
       setTxHash("");
       setIsGenerating(false);
     }
-  }, [address, isConnected]);
+  }, [address, isConnected, fetchAccounts]);
 
   // Function to refresh accounts
   const refetchAccts = async () => {
     await fetchAccounts();
   };
-
-  // Auto-refresh accounts after creation to check for new account
-  const [autoRefreshing, setAutoRefreshing] = useState(false);
 
   // Function to periodically refresh accounts data
   const startAutoRefresh = useCallback(() => {
@@ -109,9 +129,14 @@ export function Welcome() {
     // Dismiss any existing toasts first
     toast.dismissAll();
 
+    // Set loading state immediately to show loading indicator
+    setLoadingAvailableAcc(true);
     setAutoRefreshing(true);
+    
     let refreshCount = 0;
-    const maxRefreshes = 12; // Increased maximum number of refreshes (2 minutes total)
+    const maxRefreshes = 6; // Increased to 6 refreshes (60 seconds total)
+    let foundNewAccount = false;
+    let previousAccountCount = accountsAvailable?.accountsAvailable?.items?.length || 0;
 
     // Use a unique ID for this toast
     const refreshStartId = `auto-refresh-start-${Date.now()}`;
@@ -122,32 +147,51 @@ export function Welcome() {
     });
 
     const refreshInterval = setInterval(async () => {
+      // Store the previous count before refreshing
+      previousAccountCount = accountsAvailable?.accountsAvailable?.items?.length || 0;
+      
+      // Fetch new accounts
       await refetchAccts();
       refreshCount++;
-
-      if (refreshCount >= maxRefreshes) {
+      
+      // Check if we have a new account by comparing counts
+      const currentAccountCount = accountsAvailable?.accountsAvailable?.items?.length || 0;
+      
+      if (currentAccountCount > previousAccountCount) {
+        // New account found! Stop refreshing and show success
+        foundNewAccount = true;
         clearInterval(refreshInterval);
         setAutoRefreshing(false);
-
-        // Dismiss any lingering toasts
+        setLoadingAvailableAcc(false); // Stop loading state
         toast.dismissAll();
+        toast.success("Your new profile has been created!", {
+          id: `profile-created-${Date.now()}`,
+          description: "You can now use your new Lens account",
+          duration: 5000,
+        });
+        return;
+      }
 
-        // Show a message about the delay if we've reached max refreshes
-        // Use a unique ID for this toast
-        const refreshCompleteId = `auto-refresh-complete-${Date.now()}`;
+      if (refreshCount >= maxRefreshes && !foundNewAccount) {
+        // Max attempts reached without finding new account
+        clearInterval(refreshInterval);
+        setAutoRefreshing(false);
+        setLoadingAvailableAcc(false); // Stop loading state
+        toast.dismissAll();
         toast.info("Your profile may take longer to appear", {
-          id: refreshCompleteId,
+          id: `refresh-complete-${Date.now()}`,
           description: "Check back in a few minutes if you don't see it yet",
           duration: 5000,
         });
       }
-    }, 10000); // Refresh every 10 seconds (2 minutes total with 12 refreshes)
+    }, 10000); // Refresh every 10 seconds
 
     return () => {
       clearInterval(refreshInterval);
       setAutoRefreshing(false);
+      setLoadingAvailableAcc(false); // Ensure loading state is cleared on cleanup
     };
-  }, [refetchAccts, autoRefreshing, isClient, toast]);
+  }, [toast, refetchAccts, accountsAvailable]);
 
   // Username validation rules for Lens Protocol
   const validateUsername = (username: string) => {
@@ -284,6 +328,9 @@ export function Welcome() {
           fileInput.value = "";
         }
 
+        // Set loading state immediately to prevent flickering
+        setLoadingAvailableAcc(true);
+
         toast.dismiss(creatingToastId);
         // Force a new toast with a unique ID to ensure it shows
         const toastId = `success-${Date.now()}`;
@@ -308,6 +355,9 @@ export function Welcome() {
 
         // Start auto-refreshing accounts to check for the new account
         startAutoRefresh();
+        
+        // Emit an event to notify other components about the new account
+        accountEvents.emit(ACCOUNT_CREATED);
       } catch (error: any) {
         console.error("Error creating account:", error);
         toast.dismiss(creatingToastId);

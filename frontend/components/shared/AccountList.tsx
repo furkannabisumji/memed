@@ -29,12 +29,16 @@ export function AccountsList({
 }): React.ReactElement {
   // Make sure we have valid data before proceeding
   if (!accountsAvailable || !accountsAvailable.items) {
-    return <div className="text-center py-4 text-gray-500">No account data available</div>;
+    return (
+      <div className="text-center py-4 text-gray-500">
+        No account data available
+      </div>
+    );
   }
-  
+
   // Process accounts data early to avoid reference errors
   const filteredAccounts = removeDuplicatesByAddress(accountsAvailable);
-  
+
   if (filteredAccounts.items.length === 0) {
     return (
       <div className="text-center py-4 text-gray-500">
@@ -45,18 +49,22 @@ export function AccountsList({
   const { data: walletClient } = useWalletClient();
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const toast = useCustomToast();
-  
+
   // Add client-side only rendering to prevent hydration errors
   const [isClient, setIsClient] = useState(false);
-  
+
   // Use useEffect to set isClient to true after component mounts
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
+
   // Early return if not client-side yet to prevent hydration errors
   if (!isClient) {
-    return <div className="min-h-[200px] flex items-center justify-center">Loading accounts...</div>;
+    return (
+      <div className="min-h-[200px] flex items-center justify-center">
+        Loading accounts...
+      </div>
+    );
   }
 
   function removeDuplicatesByAddress(
@@ -81,14 +89,11 @@ export function AccountsList({
   const auth = async (address: string, owner: string) => {
     // Show initial toast
     const signingToastId = "signing-toast-" + Date.now();
-    toast.info(
-      "Please sign the message to switch to this profile",
-      {
-        id: signingToastId,
-        description: "Switching profile...",
-        duration: 3000, // Shorter duration
-      }
-    );
+    toast.info("Please sign the message to switch to this profile", {
+      id: signingToastId,
+      description: "Switching profile...",
+      duration: 3000, // Shorter duration
+    });
 
     try {
       const authenticated = await client.login({
@@ -122,7 +127,7 @@ export function AccountsList({
       const sessionClient = authenticated.value;
       // We're skipping signless setup to avoid toast issues
       console.log("Authentication successful, skipping signless setup");
-      
+
       // Store the selected account for display
       const accountToStore = filteredAccounts.items.find(
         (item: any) => item.account.address === address
@@ -163,7 +168,7 @@ export function AccountsList({
               <div className="w-10 h-10 rounded-full overflow-hidden">
                 <Image
                   src={
-                    typeof selectedAccount.metadata.picture === 'string'
+                    typeof selectedAccount.metadata.picture === "string"
                       ? selectedAccount.metadata.picture
                       : selectedAccount.metadata.picture?.original?.url ||
                         selectedAccount.metadata.picture?.optimized?.url ||
@@ -251,66 +256,74 @@ export function AccountsList({
           className="overflow-x-auto flex snap-x snap-mandatory scrollbar-hide"
           data-carousel
         >
-          {filteredAccounts.items && filteredAccounts.items.map((item: any, index: number) => (
-            <div
-              key={index}
-              onClick={() => auth(item.account.address, item.account.owner)}
-              className="flex-none w-1/2 md:w-1/2 lg:w-1/3 p-2 cursor-pointer snap-start"
-            >
-              <div className="p-1 transition-all duration-200 hover:scale-105">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Card className="p-0 border-2 hover:border-primary hover:shadow-md transition-all duration-200">
-                      <CardContent className="flex flex-col items-center justify-center p-2">
-                        <div className="aspect-square w-full overflow-hidden rounded-md mb-2">
-                          {item.account.metadata?.picture ? (
-                            <Image
-                              src={typeof item.account.metadata.picture === 'string' ? 
-                                item.account.metadata.picture : 
-                                item.account.metadata.picture?.original?.url ||
-                                item.account.metadata.picture?.optimized?.url ||
-                                item.account.metadata.picture?.uri || "/placeholder-avatar.png"}
-                              alt={
-                                item.account.username?.localName ||
-                                "Profile picture"
-                              }
-                              width={0}
-                              height={0}
-                              sizes="100vw"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                console.error('Image failed to load');
-                                (e.target as HTMLImageElement).src = "/placeholder-avatar.png";
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 flex flex-col items-center justify-center">
-                              <span className="text-2xl font-bold text-gray-400">
-                                {item.account.username?.localName?.[0]?.toUpperCase() ||
-                                  "?"}
-                              </span>
-                              <span className="text-xs text-gray-500 mt-1">
-                                Pending metadata
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs font-medium truncate w-full text-center">
-                          {item.account.username?.localName || "Unknown User"}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </TooltipTrigger>
-                  <TooltipContent className="z-[110]">
-                    <p>
-                      Click to switch to{" "}
-                      {item.account.username?.localName || "this profile"}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+          {filteredAccounts.items &&
+            filteredAccounts.items.map((item: any, index: number) => (
+              <div
+                key={index}
+                onClick={() => auth(item.account.address, item.account.owner)}
+                className="flex-none w-1/2 md:w-1/2 lg:w-1/3 p-2 cursor-pointer snap-start"
+              >
+                <div className="p-1 transition-all duration-200 hover:scale-105">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card className="p-0 border-2 hover:border-primary hover:shadow-md transition-all duration-200">
+                        <CardContent className="flex flex-col items-center justify-center p-2">
+                          <div className="aspect-square w-full overflow-hidden rounded-md mb-2">
+                            {item.account.metadata?.picture ? (
+                              <Image
+                                src={
+                                  typeof item.account.metadata.picture ===
+                                  "string"
+                                    ? item.account.metadata.picture
+                                    : item.account.metadata.picture?.original
+                                        ?.url ||
+                                      item.account.metadata.picture?.optimized
+                                        ?.url ||
+                                      item.account.metadata.picture?.uri ||
+                                      item.account.metadata.picture?.uri ||
+                                      "/fallback.png"
+                                }
+                                alt={
+                                  item.account.username?.localName ||
+                                  "Profile picture"
+                                }
+                                width={0}
+                                height={0}
+                                sizes="100vw"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "/fallback.png";
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 flex flex-col items-center justify-center">
+                                <span className="text-2xl font-bold text-gray-400">
+                                  {item.account.username?.localName?.[0]?.toUpperCase() ||
+                                    "?"}
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">
+                                  Pending metadata
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium truncate w-full text-center">
+                            {item.account.username?.localName || "Unknown User"}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-[110]">
+                      <p>
+                        Click to switch to{" "}
+                        {item.account.username?.localName || "this profile"}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </TooltipProvider>
