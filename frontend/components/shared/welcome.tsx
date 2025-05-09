@@ -81,9 +81,16 @@ export function Welcome() {
     if (address && isConnected && !hasFetchedRef.current) {
       fetchAccounts();
       hasFetchedRef.current = true;
-    } else if (!address) {
-      // Reset the ref when address changes to null
+    } else if (!address || !isConnected) {
+      // Reset the ref when address changes to null or user disconnects
       hasFetchedRef.current = false;
+      // Reset all state when wallet is disconnected
+      setAccountsAvailable(null);
+      setLoadingAvailableAcc(false);
+      setImage("");
+      setLocalName("");
+      setTxHash("");
+      setIsGenerating(false);
     }
   }, [address, isConnected]);
 

@@ -44,6 +44,7 @@ export function AccountButton({ className }: AccountButtonProps) {
     setLoadingAvailableAcc(true);
     try {
       const accounts = await getAvailableAccounts(address);
+      console.log("Fetched accounts:", accounts);
       setAccountsAvailable({ accountsAvailable: accounts });
     } catch (error) {
       console.error("Error fetching accounts:", error);
@@ -61,6 +62,8 @@ export function AccountButton({ className }: AccountButtonProps) {
   const accountItems = accountsAvailable?.accountsAvailable?.items || [];
   const firstAccount = accountItems[0]?.account;
   const hasAccounts = accountItems.length > 0;
+
+  // console.log(hasAccounts);
 
   // Fetch accounts on mount and when address changes
   useEffect(() => {
@@ -103,6 +106,13 @@ export function AccountButton({ className }: AccountButtonProps) {
   const handleDisconnect = () => {
     disconnect();
     setIsModalOpen(false);
+    // Reset the selected account and other state
+    setSelectedAccount(null);
+
+    // Force a refresh of the page to ensure all components update correctly
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   // Close modal when clicking outside
@@ -110,6 +120,7 @@ export function AccountButton({ className }: AccountButtonProps) {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
       if (
+        isModalOpen &&
         !target.closest(".account-modal") &&
         !target.closest(".account-button")
       ) {
@@ -121,11 +132,12 @@ export function AccountButton({ className }: AccountButtonProps) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [isModalOpen]);
 
   // Toggle modal on button click
-  const toggleModal = () => {
-    console.log("Toggle modal", !isModalOpen); // Debug log
+  const toggleModal = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsModalOpen(!isModalOpen);
   };
 
@@ -152,7 +164,13 @@ export function AccountButton({ className }: AccountButtonProps) {
       {/* Account Button */}
       <button
         ref={buttonRef}
-        onClick={hasAccounts ? toggleModal : goToWelcomePage}
+        onClick={(e) => {
+          if (hasAccounts) {
+            toggleModal(e);
+          } else {
+            goToWelcomePage();
+          }
+        }}
         type="button"
         className={`account-button cursor-pointer flex items-center gap-2 bg-primary text-white px-3 py-2 rounded-md hover:bg-primary/90 transition-colors ${
           className || ""
@@ -162,9 +180,13 @@ export function AccountButton({ className }: AccountButtonProps) {
         {(selectedAccount || firstAccount)?.metadata?.picture ? (
           <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
             <Image
-              src={typeof (selectedAccount || firstAccount).metadata.picture === 'string' ? 
-                (selectedAccount || firstAccount).metadata.picture : 
-                (selectedAccount || firstAccount).metadata.picture?.uri || "/placeholder-avatar.png"}
+              src={
+                typeof (selectedAccount || firstAccount).metadata.picture ===
+                "string"
+                  ? (selectedAccount || firstAccount).metadata.picture
+                  : (selectedAccount || firstAccount).metadata.picture?.uri ||
+                    "/placeholder-avatar.png"
+              }
               alt="Profile"
               width={24}
               height={24}
@@ -214,7 +236,7 @@ export function AccountButton({ className }: AccountButtonProps) {
               <h3 className="text-lg font-medium">Account</h3>
               <button
                 onClick={handleDisconnect}
-                className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm"
+                className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm cursor-pointer"
               >
                 <LogOut size={14} />
                 Disconnect
@@ -271,9 +293,12 @@ export function AccountButton({ className }: AccountButtonProps) {
                   {selectedAccount.metadata?.picture ? (
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
                       <Image
-                        src={typeof selectedAccount.metadata.picture === 'string' ? 
-                          selectedAccount.metadata.picture : 
-                          selectedAccount.metadata.picture?.uri || "/placeholder-avatar.png"}
+                        src={
+                          typeof selectedAccount.metadata.picture === "string"
+                            ? selectedAccount.metadata.picture
+                            : selectedAccount.metadata.picture?.uri ||
+                              "/placeholder-avatar.png"
+                        }
                         alt="Profile"
                         width={40}
                         height={40}
@@ -332,7 +357,7 @@ export function AccountButton({ className }: AccountButtonProps) {
             <div className="flex justify-between">
               <button
                 onClick={handleDisconnect}
-                className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm"
+                className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm cursor-pointer"
               >
                 <LogOut size={14} />
                 Disconnect Wallet
@@ -340,7 +365,7 @@ export function AccountButton({ className }: AccountButtonProps) {
 
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="text-gray-500 hover:text-gray-700 text-sm cursor-pointer"
               >
                 Close
               </button>

@@ -1,9 +1,9 @@
 import { evmAddress, URI } from "@lens-protocol/client";
-import { 
-  fetchAccount, 
+import {
+  fetchAccount,
   fetchAccounts,
   fetchAccountsAvailable,
-  createAccountWithUsername
+  createAccountWithUsername,
 } from "@lens-protocol/client/actions";
 import { handleOperationWith } from "@lens-protocol/client/viem";
 import { client } from "./client";
@@ -53,25 +53,37 @@ export const getAvailableAccounts = async (address: string) => {
       managedBy: evmAddress(address),
       includeOwned: true,
     });
-    
+
     if (result.isErr()) {
       console.error("Error fetching accounts:", result.error);
       return { items: [] };
     }
-    
-    // Format the response to match the expected structure for the AccountsList component
-    // The AccountsList expects { items: [{ account: {...} }, ...] }
-    return {
-      items: Array.isArray(result.value) 
-        ? result.value.map((account: any) => ({
-            account: account
-          }))
-        : result.value && typeof result.value === 'object' && 'items' in result.value
-          ? result.value.items.map((item: any) => ({
-              account: item.account || item
-            }))
-          : []
-    };
+
+    // console.log("Lens SDK accounts result:", result);
+
+    // Ensure we return a consistent format regardless of the API response structure
+    type AccountItem = { account: any };
+    let accountItems: AccountItem[] = [];
+
+    if (Array.isArray(result.value)) {
+      // Handle array response
+      accountItems = result.value.map((account: any) => ({
+        account: account,
+      }));
+    } else if (result.value && typeof result.value === "object") {
+      if ("items" in result.value && Array.isArray(result.value.items)) {
+        // Handle paginated response
+        accountItems = result.value.items.map((item: any) => ({
+          account: item.account || item,
+        }));
+      } else {
+        // Handle single object response
+        accountItems = [{ account: result.value }];
+      }
+    }
+
+    // console.log("Formatted account items:", accountItems);
+    return { items: accountItems };
   } catch (error) {
     console.error("Exception fetching accounts:", error);
     return { items: [] };
@@ -83,20 +95,28 @@ export const uploadToIPFS = async (data: any) => {
   try {
     // Convert the data to a Blob and then to a File
     const jsonString = JSON.stringify(data);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const file = new File([blob], 'metadata.json', { type: 'application/json' });
-    
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const file = new File([blob], "metadata.json", {
+      type: "application/json",
+    });
+
     // Upload to Lighthouse
     const { data: uploadResponse } = await lighthouse.upload(
       [file],
       process.env.NEXT_PUBLIC_LIGHTHOUSE_KEY as string
     );
-    
-    console.log('Successfully uploaded metadata to IPFS via Lighthouse:', uploadResponse);
+
+    console.log(
+      "Successfully uploaded metadata to IPFS via Lighthouse:",
+      uploadResponse
+    );
     return { Hash: uploadResponse.Hash };
   } catch (error) {
-    console.error('Error uploading to IPFS:', error);
-    throw new Error('Failed to upload to IPFS: ' + (error instanceof Error ? error.message : String(error)));
+    console.error("Error uploading to IPFS:", error);
+    throw new Error(
+      "Failed to upload to IPFS: " +
+        (error instanceof Error ? error.message : String(error))
+    );
   }
 };
 
@@ -105,7 +125,7 @@ export const createProfileMetadata = ({
   localName,
   image,
   bio,
-  appId = "lens_memed"
+  appId = "lens_memed",
 }: {
   localName: string;
   image?: string | null;
@@ -116,7 +136,9 @@ export const createProfileMetadata = ({
     name: localName,
     bio: bio || `${localName}'s profile`,
     picture: image
-      ? `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY || 'https://ipfs.io/ipfs/'}${image}`
+      ? `${
+          process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY || "https://ipfs.io/ipfs/"
+        }${image}`
       : undefined,
     attributes: [
       {
@@ -149,7 +171,7 @@ export const createNewAccount = async ({
   metadataUri,
   address,
   walletClient,
-  signFn
+  signFn,
 }: {
   localName: string;
   metadataUri: string;
@@ -160,10 +182,10 @@ export const createNewAccount = async ({
   // First login to get an authenticated client
   const authenticated = await client.login({
     onboardingUser: {
-      app: process.env.NEXT_PUBLIC_APP_ADDRESS || '',
+      app: process.env.NEXT_PUBLIC_APP_ADDRESS || "",
       wallet: address,
     },
-    signMessage: signFn
+    signMessage: signFn,
   });
 
   if (authenticated.isErr()) {
@@ -177,10 +199,10 @@ export const createNewAccount = async ({
   const createResult = await createAccountWithUsername(sessionClient, {
     username: { localName },
     metadataUri: metadataUri,
-    enableSignless: true
+    enableSignless: true,
   })
-  .andThen(handleOperationWith(walletClient))
-  .andThen(sessionClient.waitForTransaction);
+    .andThen(handleOperationWith(walletClient))
+    .andThen(sessionClient.waitForTransaction);
 
   // Check if account creation was successful
   if (createResult.isErr()) {
@@ -194,7 +216,7 @@ export const createNewAccount = async ({
 
   // Try to fetch the newly created account
   const accountResult = await fetchAccount(sessionClient, { txHash });
-  
+
   if (accountResult.isErr()) {
     console.error("Error fetching newly created account:", accountResult.error);
     // Return the transaction hash since the account was created but we couldn't fetch it
@@ -211,7 +233,7 @@ export const createNewAccount = async ({
   // Try to automatically switch to the newly created account
   try {
     const switchResult = await sessionClient.switchAccount({
-      account: account.address
+      account: account.address,
     });
 
     if (switchResult.isErr()) {
@@ -233,7 +255,7 @@ export const createNewAccount = async ({
 export const switchToAccount = async ({
   profileId,
   address,
-  signFn
+  signFn,
 }: {
   profileId: string;
   address: string;
@@ -243,10 +265,10 @@ export const switchToAccount = async ({
   const authenticated = await client.login({
     accountOwner: {
       account: evmAddress(address),
-      app: process.env.NEXT_PUBLIC_APP_ADDRESS || '',
-      owner: address
+      app: process.env.NEXT_PUBLIC_APP_ADDRESS || "",
+      owner: address,
     },
-    signMessage: signFn
+    signMessage: signFn,
   });
 
   if (authenticated.isErr()) {
@@ -258,7 +280,7 @@ export const switchToAccount = async ({
 
   // Switch to the selected account
   const result = await sessionClient.switchAccount({
-    account: profileId
+    account: profileId,
   });
 
   if (result.isErr()) {
@@ -276,10 +298,13 @@ export async function signMessageWith(message: string, address: string) {
     if (wagmiConfig && wagmiConfig.signMessage) {
       try {
         // Add a small delay to ensure any ConnectKit modals are fully rendered
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         return await wagmiConfig.signMessage({ message, account: address });
       } catch (wagmiError) {
-        console.warn("Failed to sign with Wagmi config, falling back to ethereum provider:", wagmiError);
+        console.warn(
+          "Failed to sign with Wagmi config, falling back to ethereum provider:",
+          wagmiError
+        );
         // Fall through to the ethereum provider method
       }
     }
@@ -297,7 +322,7 @@ export async function signMessageWith(message: string, address: string) {
     });
 
     // Add a small delay to ensure any wallet UI is fully rendered
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const signature = await ethereum.request({
       method: "personal_sign",
@@ -309,4 +334,4 @@ export async function signMessageWith(message: string, address: string) {
     console.error("Error signing message with lens:", error);
     throw error;
   }
-};
+}
