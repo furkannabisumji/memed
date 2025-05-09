@@ -4,15 +4,30 @@ import React from "react";
 import { Button } from "../ui/button";
 import { Albert_Sans } from "next/font/google";
 import { useAccount } from "wagmi";
-import { getUsers } from "@/lib/lens";
+import { getAvailableAccounts } from "@/lib/lens";
 import { AccountButton } from "./AccountButton";
 const albertsans = Albert_Sans({
   weight: ["300", "400", "500", "700"],
   subsets: ["latin"],
 });
 export default function Header() {
-  const { address } = useAccount();
-  console.log(getUsers(address!));
+  const { address, isConnected } = useAccount();
+  
+  // Only fetch accounts if address is available
+  React.useEffect(() => {
+    const fetchAccounts = async () => {
+      if (address && isConnected) {
+        try {
+          const accounts = await getAvailableAccounts(address);
+          console.log('Available accounts:', accounts);
+        } catch (error) {
+          console.error('Error fetching accounts:', error);
+        }
+      }
+    };
+    
+    fetchAccounts();
+  }, [address, isConnected]);
   return (
     <header className={`${albertsans.className} `}>
       {/* Desktop Nav */}

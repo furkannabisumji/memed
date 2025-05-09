@@ -1,38 +1,36 @@
 "use client";
 import { useAccount, useWalletClient } from "wagmi";
-import { useState, useEffect, useCallback } from "react";
-import { useMutation, useQuery } from "@apollo/client";
-import {
-  CHALLENGE_MUTATION,
-  CREATE_ACCOUNT_MUTATION,
-  AUTHENTICATE_MUTATION,
-  ACCOUNT_QUERY,
-  SWITCH_ACCOUNT_MUTATION,
-  ACCOUNTS_AVAILABLE_QUERY,
-  SET_ACCOUNT_METADATA_MUTATION,
-  TRANSACTION_STATUS_QUERY,
-} from "@/lib/queries";
-import { uploadAsJson } from "@/lib/storage-client";
-import ImageUploader from "./ImageUploader";
-
-import { useTransactionStatusQuery } from "@/hooks/useTransactionStatusQuery"; // Import the hook
-
-import { ConnectButton } from "./ConnectButton";
-import { Button } from "../ui/button";
+import { useConnectKitSign } from "@/hooks/useConnectKitSign";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DisconnectWalletButton } from "./DisconnectWalletButton";
 import { AccountsList } from "./AccountList";
-import { Input } from "../ui/input";
-// Import the Apollo client for GraphQL operations
-import { useApolloClient } from "@apollo/client";
-import { signMessageWith } from "@/lib/lens";
-
-import { useCustomToast } from "../ui/custom-toast";
+import { useCustomToast } from "@/components/ui/custom-toast";
+import ImageUploader from "./ImageUploader";
+import {
+  getAvailableAccounts,
+  createNewAccount,
+  switchToAccount,
+  getAccountByAddress,
+  createProfileMetadata,
+  uploadToIPFS,
+} from "@/lib/lens";
+import { ConnectKitButton } from "connectkit";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function Welcome() {
   // Add client-side only rendering to prevent hydration errors
   const [isClient, setIsClient] = useState(false);
   const toast = useCustomToast();
   const { isConnected, address, isConnecting } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const { signWithConnectKit } = useConnectKitSign();
+  const [image, setImage] = useState<string | null>("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [localName, setLocalName] = useState<string>("");
+  const [txHash, setTxHash] = useState<string>("");
+  const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
+  const [loadingAvailableAcc, setLoadingAvailableAcc] = useState(false);
 
   // Use useEffect to set isClient to true after component mounts
   useEffect(() => {
@@ -50,46 +48,49 @@ export function Welcome() {
       }
     };
   }, []);
-  const [image, setImage] = useState<string | null>("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [localName, setLocalName] = useState<string>("");
-  const [challenge] = useMutation(CHALLENGE_MUTATION);
-  const [createAccountWithUsername] = useMutation(CREATE_ACCOUNT_MUTATION);
-  const [authenticate] = useMutation(AUTHENTICATE_MUTATION);
-  const [switchAccount] = useMutation(SWITCH_ACCOUNT_MUTATION);
-  const [setAccountMetadata] = useMutation(SET_ACCOUNT_METADATA_MUTATION);
-  const [txHash, setTxHash] = useState<string>("");
-  const [accessToken, setAccessToken] = useState<string>("");
-  const apolloClient = useApolloClient();
-  const { data: walletClient } = useWalletClient();
 
-  // Query transaction status using the txHash
-  const { data: txStatusData } = useTransactionStatusQuery(txHash);
+  // Function to fetch available accounts
+  const fetchAccounts = useCallback(async () => {
+    if (!address) return;
 
-  // Query account info using txHash (new query)
-  const {
-    data: accountData,
-    stopPolling, // Allows stopping polling when condition is met
-  } = useQuery(ACCOUNT_QUERY, {
-    skip: !txHash, // Only run the query when txHash is available
-    variables: {
-      request: {
-        txHash: txHash,
-      },
-    },
-    pollInterval: 5000, // Poll every 5 seconds
-    notifyOnNetworkStatusChange: true, // Notify when polling
-  });
+    setLoadingAvailableAcc(true);
+    try {
+      const accounts = await getAvailableAccounts(address);
 
-  //query available accounts
-  const {
-    data: accountsAvailable,
-    loading: loadingAvailableAcc,
-    refetch: refetchAccts,
-  } = useQuery(ACCOUNTS_AVAILABLE_QUERY, {
-    variables: { managedBy: address, includeOwned: true },
-    skip: !address,
-  });
+      if (accounts && accounts.items) {
+        setAccountsAvailable({ accountsAvailable: accounts });
+      } else {
+        // Set to empty array to avoid UI jerking
+        setAccountsAvailable({ accountsAvailable: { items: [] } });
+      }
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+      toast.error("Failed to fetch your profiles");
+      // Set to empty array on error to avoid UI jerking
+      setAccountsAvailable({ accountsAvailable: { items: [] } });
+    } finally {
+      setLoadingAvailableAcc(false);
+    }
+  }, [address, toast]);
+
+  // Fetch accounts on initial load and when address changes
+  // Using a ref to prevent infinite loops
+  const hasFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (address && isConnected && !hasFetchedRef.current) {
+      fetchAccounts();
+      hasFetchedRef.current = true;
+    } else if (!address) {
+      // Reset the ref when address changes to null
+      hasFetchedRef.current = false;
+    }
+  }, [address, isConnected]);
+
+  // Function to refresh accounts
+  const refetchAccts = async () => {
+    await fetchAccounts();
+  };
 
   // Auto-refresh accounts after creation to check for new account
   const [autoRefreshing, setAutoRefreshing] = useState(false);
@@ -191,7 +192,7 @@ export function Welcome() {
     [toast]
   );
 
-  const handleChallengeMutation = async () => {
+  const createAccount = async () => {
     // Dismiss any existing toasts before starting a new operation
     toast.dismissAll();
 
@@ -210,117 +211,37 @@ export function Welcome() {
     }
 
     setIsGenerating(true);
+
+    // Define toast IDs outside the try block so they can be accessed in catch/finally
+    const uploadingToastId = `uploading-metadata-${Date.now()}`;
+    const creatingToastId = `creating-profile-${Date.now()}`;
+
     try {
-      // Step 1: Get a challenge from the Lens API
-      const { data: challengeData } = await challenge({
-        variables: {
-          request: {
-            onboardingUser: {
-              wallet: address,
-              app: process.env.NEXT_PUBLIC_APP_ADDRESS,
-            },
-          },
-        },
+      // Step 1: Create metadata for the profile using the function from lens.ts
+      const profileMetadata = createProfileMetadata({
+        localName,
+        image,
+        bio: `${localName}'s profile`,
       });
 
-      if (!challengeData?.challenge?.text) {
-        toast.error("Challenge data is missing");
-        throw new Error("Challenge data is missing");
-      }
-
-      // Step 2: Sign the challenge with the wallet
-      const signature = await walletClient.signMessage({
-        account: address as `0x${string}`,
-        message: challengeData.challenge.text,
-      });
-
-      // Step 3: Authenticate with the signature
-      const { data: authData } = await authenticate({
-        variables: {
-          request: {
-            id: challengeData.challenge.id,
-            signature: signature,
-          },
-        },
-      });
-
-      // Store the access token for later use
-      if (authData?.authenticate?.accessToken) {
-        setAccessToken(authData.authenticate.accessToken);
-      }
-
-      // We've already stored the token in state above, but we'll use it locally as well
-      const accessTokenValue = authData?.authenticate?.accessToken;
-
-      if (!accessTokenValue) {
-        toast.error("No access token received", {
-          description: "Authentication failed",
-        });
-        setIsGenerating(false);
-        return;
-      }
-
-      toast.success("Successfully authenticated with Lens Protocol", {
-        description: "Authentication successful",
-      });
-
-      // Step 4: Create metadata for the profile and upload to IPFS
-      // Use a simple metadata format that matches Lens Protocol requirements
-      const profileMetadata = {
-        $schema: "https://json-schemas.lens.dev/account/1.0.0.json",
-        lens: {
-          name: localName,
-          bio: `${localName}'s profile`,
-          picture: image
-            ? `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${image}`
-            : null,
-          // Include basic attributes without any custom fields
-          attributes: [
-            {
-              key: "created_by",
-              value: "memed_app",
-              type: "String", // Capitalized type as per documentation
-            },
-          ],
-        },
-      };
-
-      // Upload the metadata to IPFS using lighthouse
-      // Use a unique ID for this toast that won't conflict with others
-      const uploadingToastId = `uploading-metadata-${Date.now()}`;
+      // Upload the metadata to IPFS
       toast.loading("Uploading your profile metadata to IPFS...", {
         id: uploadingToastId,
         description: "This may take a moment",
       });
 
-      const { Hash } = await uploadAsJson(profileMetadata);
-      // Make sure the URI is correctly formatted with https://
-      const metadataUri = `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${Hash}`;
-
-      // Verify the metadata is accessible by fetching it
-      try {
-        const metadataResponse = await fetch(metadataUri);
-        if (!metadataResponse.ok) {
-          console.error(
-            "Metadata verification failed",
-            await metadataResponse.text()
-          );
-          toast.error("Failed to verify metadata accessibility");
-        } else {
-          const metadataJson = await metadataResponse.json();
-        }
-      } catch (error) {
-        console.error("Error verifying metadata:", error);
-      }
+      const { Hash } = await uploadToIPFS(profileMetadata);
+      // Make sure the URI is correctly formatted
+      const metadataUri = `${
+        process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY || "https://ipfs.io/ipfs/"
+      }${Hash}`;
 
       toast.dismiss(uploadingToastId);
       toast.success("Your profile metadata has been uploaded to IPFS", {
         description: "Profile data uploaded",
       });
 
-      // Step 5: Create account with username using the metadataUri
-      // Use a unique ID for this toast that won't conflict with others
-      const creatingToastId = `creating-profile-${Date.now()}`;
+      // Step 2: Create account with username using the metadataUri
       toast.loading(
         "This may take a minute. Please wait and sign any requested transactions.",
         {
@@ -329,202 +250,101 @@ export function Welcome() {
         }
       );
 
-      const result = await createAccountWithUsername({
-        variables: {
-          request: {
-            username: { localName }, // Username should be an object with localName property
-            metadataUri: metadataUri,
-            accountManager: address, // Set the current address as the account manager
-            enableSignless: true, // Enable signless transactions
-            owner: address, // Set the current address as the owner
-          },
-        },
-        context: {
-          headers: {
-            Authorization: `Bearer ${accessTokenValue}`,
-          },
-        },
-      }).catch((error) => {
-        console.error("Detailed create account error:", error);
-        throw error; // Re-throw to be caught by the outer catch block
-      });
+      try {
+        // Use the SDK function to create a new account
+        const result = await createNewAccount({
+          localName,
+          metadataUri,
+          address,
+          walletClient,
+          signFn: async (message) => await signWithConnectKit(message),
+        });
 
-      const createAccountResult = result?.data?.createAccountWithUsername;
-
-      if (
-        createAccountResult?.__typename === "NamespaceOperationValidationFailed"
-      ) {
-        // Handle the specific validation error
-        const errorReason =
-          createAccountResult.reason || "Unknown validation error";
-        console.error("Username validation failed:", errorReason);
-
-        // Log any unsatisfied rules if available
-        if (createAccountResult.unsatisfiedRules) {
-          console.error(
-            "Unsatisfied rules:",
-            JSON.stringify(createAccountResult.unsatisfiedRules)
-          );
+        // Set the transaction hash for tracking
+        if (result && typeof result === "string") {
+          setTxHash(result);
+          console.log("Account creation transaction hash:", result);
         }
 
-        // Parse the error message to provide more specific feedback
-        let userFriendlyMessage = errorReason;
+        // Reset form state completely
+        resetForm();
 
-        // Check for common error patterns
+        // Reset the file input element directly
+        const fileInput = document.getElementById(
+          "imageUploadInput"
+        ) as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = "";
+        }
+
+        toast.dismiss(creatingToastId);
+        // Force a new toast with a unique ID to ensure it shows
+        const toastId = `success-${Date.now()}`;
+        toast.success(
+          "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
+          {
+            id: toastId,
+            description: "Transaction submitted successfully",
+            duration: 5000,
+          }
+        );
+
+        // Add a more detailed explanation toast
+        setTimeout(() => {
+          toast.info("Account creation process", {
+            id: `process-info-${Date.now()}`,
+            description:
+              "Your profile and metadata are being processed on the blockchain. This typically takes 1-2 minutes, but can sometimes take longer.",
+            duration: 8000,
+          });
+        }, 1000);
+
+        // Start auto-refreshing accounts to check for the new account
+        startAutoRefresh();
+      } catch (error: any) {
+        console.error("Error creating account:", error);
+        toast.dismiss(creatingToastId);
+
+        // Handle specific error cases
         if (
-          errorReason.includes("already taken") ||
-          errorReason.includes("already exists")
+          error.message?.includes("already taken") ||
+          error.message?.includes("already exists")
         ) {
-          userFriendlyMessage =
-            "This username is already taken. Please try a different one.";
-        } else if (errorReason.includes("Not all rules satisfied")) {
-          userFriendlyMessage = `Your username doesn't meet all Lens Protocol requirements. Try a different username that:
+          toast.error(
+            "This username is already taken. Please try a different one.",
+            {
+              description: "Username unavailable",
+              duration: 5000,
+            }
+          );
+        } else if (
+          error.message?.includes("rules") ||
+          error.message?.includes("validation")
+        ) {
+          toast.error(
+            `Your username doesn't meet all Lens Protocol requirements. Try a different username that:
             - Is between 5-31 characters
             - Contains only letters, numbers, and underscores
             - Starts and ends with a letter or number
             - Has no consecutive underscores
-            - Doesn't contain reserved words like 'lens', 'admin', etc.`;
-        }
-
-        toast.dismiss(creatingToastId);
-        toast.error(userFriendlyMessage, {
-          description: "Username validation failed",
-          duration: 10000, // Show for longer so user can read the guidelines
-        });
-
-        setIsGenerating(false);
-        return;
-      } else if (createAccountResult?.__typename === "TransactionWillFail") {
-        // Handle transaction will fail error
-        const errorReason =
-          createAccountResult.reason || "Unknown transaction error";
-        console.error("Transaction will fail:", errorReason);
-
-        toast.dismiss(creatingToastId);
-        toast.error(`Transaction would fail: ${errorReason}`, {
-          description: "Account creation failed",
-          duration: 5000,
-        });
-
-        setIsGenerating(false);
-        return;
-      }
-
-      // Check for UsernameTaken error type
-      if (createAccountResult?.__typename === "UsernameTaken") {
-        console.error(
-          "Username is already taken",
-          JSON.stringify(result?.data, null, 2)
-        );
-
-        toast.dismiss(creatingToastId);
-        // Force a new toast with a unique ID to ensure it shows
-        const errorToastId = `error-${Date.now()}`;
-        toast.error(
-          "This username is already taken. Please try a different one.",
-          {
-            id: errorToastId,
-            description: "Username unavailable",
-            duration: 5000,
-          }
-        );
-
-        setIsGenerating(false);
-        return;
-      }
-
-      // Check if we have a CreateAccountResponse with hash
-      if (createAccountResult?.__typename === "CreateAccountResponse") {
-        const hash = createAccountResult.hash;
-        if (hash) {
-          // Set the txHash for tracking
-          setTxHash(hash);
-
-          // Reset form state completely
-          resetForm();
-
-          // Reset the file input element directly
-          const fileInput = document.getElementById(
-            "imageUploadInput"
-          ) as HTMLInputElement;
-          if (fileInput) {
-            fileInput.value = "";
-          }
-
-          toast.dismiss(creatingToastId);
-          // Force a new toast with a unique ID to ensure it shows
-          const toastId = `success-${Date.now()}`;
-          toast.success(
-            "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
+            - Doesn't contain reserved words like 'lens', 'admin', etc.`,
             {
-              id: toastId,
-              description: "Transaction submitted successfully",
-              duration: 5000,
+              description: "Username validation failed",
+              duration: 10000,
             }
           );
-
-          // Add a more detailed explanation toast
-          setTimeout(() => {
-            toast.info("Account creation process", {
-              id: `process-info-${Date.now()}`,
-              description:
-                "Your profile and metadata are being processed on the blockchain. This typically takes 1-2 minutes, but can sometimes take longer.",
-              duration: 8000,
-            });
-          }, 1000);
-
-          // Start auto-refreshing accounts to check for the new account
-          startAutoRefresh();
-
-          setIsGenerating(false);
-          return;
         } else {
-          // Provide more specific error message based on the response
-          let errorMessage = "Please try again with a different username.";
-
-          // Check if there's any error information in the response
-          if (
-            createAccountResult &&
-            Object.keys(createAccountResult).length > 0
-          ) {
-            errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
-          }
-
-          toast.dismiss(creatingToastId);
-          toast.error(errorMessage, {
-            description: "Account creation failed",
+          toast.error("Failed to create account", {
+            description: error.message || "An unexpected error occurred",
             duration: 5000,
           });
-
-          setIsGenerating(false);
-          return;
         }
-      } else {
-        // Provide more specific error message based on the response
-        let errorMessage = "Please try again with a different username.";
-
-        // Check if there's any error information in the response
-        if (
-          createAccountResult &&
-          Object.keys(createAccountResult).length > 0
-        ) {
-          errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
-        }
-
-        toast.dismiss(creatingToastId);
-        toast.error(errorMessage, {
-          description: "Account creation failed",
-          duration: 5000,
-        });
-
-        setIsGenerating(false);
-        return;
       }
     } catch (error: any) {
       console.error("Error in account creation:", error);
       // Make sure to dismiss any loading toasts
-      toast.dismiss("uploading-metadata-toast");
-      toast.dismiss("creating-profile-toast");
+      toast.dismiss(uploadingToastId);
+      toast.dismiss(creatingToastId);
       toast.error(
         "An unexpected error occurred during account creation. Please try again.",
         {
@@ -532,298 +352,65 @@ export function Welcome() {
           duration: 5000,
         }
       );
+    } finally {
       setIsGenerating(false);
     }
   };
 
   const handleSwitchAccount = async (account: string) => {
-    if (!account) {
-      console.error("Account address is required to switch.");
+    if (!address || !isConnected) {
+      toast.error("Please connect your wallet first");
       return;
     }
 
-    //authenticate as accountOwner
-    const { data: challengeData } = await challenge({
-      variables: {
-        request: {
-          accountOwner: {
-            app: process.env.NEXT_PUBLIC_APP_ADDRESS,
-            account,
-            owner: address,
-          },
-        },
-      },
-    });
-
-    if (!challengeData?.challenge?.text) {
-      throw new Error("Challenge data is missing");
-    }
-
-    const signature = await walletClient?.signMessage({
-      account: address as `0x${string}`,
-      message: challengeData.challenge.text,
-    });
-
-    // Authenticate and get access token
-    const authResponse = await authenticate({
-      variables: { request: { id: challengeData.challenge.id, signature } },
-    });
-    console.log(authResponse);
-    const { accessToken, refereshToken, idToken } =
-      authResponse?.data?.authenticate || {};
-
     try {
-      const response = await switchAccount({
-        variables: {
-          request: {
-            account: account, // Use the destructured address here
-          },
-        },
-        context: {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "X-Refresh-Token": refereshToken,
-            "X-ID-Token": idToken,
-          },
-        },
+      // Show loading toast
+      const switchingToastId = `switching-account-${Date.now()}`;
+      toast.loading("Switching to selected profile...", {
+        id: switchingToastId,
       });
 
-      if (response.data.switchAccount.__typename === "AuthenticationTokens") {
-        console.log("Tokens received:", response.data.switchAccount);
-      } else if (response.data.switchAccount.__typename === "ForbiddenError") {
-        console.error(
-          "Switch account failed:",
-          response.data.switchAccount.reason
-        );
-      }
-    } catch (err) {
-      console.error("Error switching account:", err);
-    } finally {
-      refetchAccts();
-      setIsGenerating(false);
-    }
-  };
-
-  // Function to check and verify metadata indexing
-  const checkMetadataIndexing = async (
-    accountAddress: string
-  ): Promise<boolean> => {
-    if (!accountAddress) return false;
-
-    try {
-      // Use Apollo client to query the account
-      const { data } = await apolloClient.query({
-        query: ACCOUNT_QUERY,
-        variables: {
-          request: {
-            address: accountAddress,
-          },
-        },
-        fetchPolicy: "network-only", // Bypass cache to get fresh data
+      // Call the SDK function to switch accounts
+      const result = await switchToAccount({
+        profileId: account,
+        address,
+        signFn: async (message) => await signWithConnectKit(message),
       });
 
-      console.log("Metadata indexing check:", data?.account?.metadata);
-
-      // If metadata exists and has a picture or attributes, it's likely indexed
-      if (
-        data?.account?.metadata &&
-        (data.account.metadata.picture ||
-          (data.account.metadata.attributes &&
-            data.account.metadata.attributes.length > 0))
-      ) {
-        return true;
+      // Check if the switch was successful
+      if (result) {
+        // Dismiss the loading toast and show success
+        toast.dismiss(switchingToastId);
+        toast.success("Successfully switched to selected profile", {
+          description: "Profile switched",
+          duration: 3000,
+        });
+      } else {
+        // Handle the case where the switch failed but didn't throw an error
+        toast.dismiss(switchingToastId);
+        toast.error("Failed to switch profile", {
+          description: "Please try again",
+          duration: 3000,
+        });
       }
-
-      return false;
-    } catch (error) {
-      console.error("Error checking metadata indexing:", error);
-      return false;
+    } catch (error: any) {
+      console.error("Error switching account:", error);
+      toast.dismiss(`switching-account-${Date.now()}`);
+      toast.error("Error switching profile", {
+        description: error?.message || "Please try again",
+        duration: 3000,
+      });
     }
   };
 
-  useEffect(() => {
-    if (
-      accountData &&
-      accountData.account &&
-      txStatusData &&
-      txStatusData.transactionStatus.__typename === "FinishedTransactionStatus"
-    ) {
-      const { address, createdAt, metadata, owner, username } =
-        accountData.account;
-
-      // Check if username exists and destructure safely
-      const { localName } = username || {}; // Fallback to an empty object if username is null or undefined
-
-      console.log("Account Address:", address);
-      console.log("Created At:", createdAt);
-      console.log("Metadata:", metadata);
-      console.log("Owner Address:", owner);
-      console.log("Username:", localName);
-
-      // Even if metadata is null, we should switch to the account
-      // The metadata might be indexed later
-      handleSwitchAccount(address);
-
-      // Start checking for metadata indexing
-      let indexingChecks = 0;
-      const maxChecks = 10; // Increase the number of checks
-      const indexingInterval = setInterval(async () => {
-        indexingChecks++;
-        console.log(
-          `Checking metadata indexing (${indexingChecks}/${maxChecks})...`
-        );
-
-        // Force refetch accounts to check for updated metadata
-        await refetchAccts();
-
-        const isIndexed = await checkMetadataIndexing(address);
-        if (isIndexed) {
-          console.log("Metadata is now indexed!");
-          clearInterval(indexingInterval);
-          refetchAccts(); // Refresh the accounts list to show updated metadata
-          toast.success("Profile metadata has been indexed!", {
-            description: "Your profile picture and details are now visible",
-          });
-        } else if (indexingChecks >= maxChecks) {
-          console.log("Metadata indexing checks completed without success");
-          clearInterval(indexingInterval);
-          toast.error("Metadata indexing is taking longer than expected", {
-            description:
-              "Your profile may take some time to display correctly. Try refreshing the page in a few minutes.",
-          });
-          // Try one final refresh
-          refetchAccts();
-        }
-      }, 10000); // Check more frequently (every 10 seconds)
-
-      stopPolling(); // Stop polling for transaction status
-
-      return () => {
-        clearInterval(indexingInterval);
-      };
-    }
-  }, [accountData, txStatusData, stopPolling, address]);
-
-  // Function to test toast notifications
-  const testToast = () => {
-    // Dismiss any existing toasts first
-    toast.dismissAll();
-    toast.success("Test Toast", {
-      description: "This is a test toast notification",
-      duration: 3000,
-    });
-  };
-
-  if (!isConnected && !isConnecting) {
+  // If we're not on the client yet, show a loading state
+  if (!isClient) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center relative">
-        <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl mb-8 border border-gray-100">
-          <div className="p-8">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-primary"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <h2 className="text-2xl font-bold text-center mb-2">
-              Welcome to Lens Memed
-            </h2>
-            <p className="text-gray-600 mb-6 text-center">
-              Connect your wallet to create or manage your Lens Protocol
-              profiles.
-            </p>
-
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 text-primary mr-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <p className="text-sm text-gray-600 text-left">
-                  Create a new Lens profile with a custom username
-                </p>
-              </div>
-
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 text-primary mr-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <p className="text-sm text-gray-600 text-left">
-                  Manage your existing Lens profiles
-                </p>
-              </div>
-
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 text-primary mr-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <p className="text-sm text-gray-600 text-left">
-                  Switch between profiles with a single click
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-center ">
-              <ConnectButton />
-            </div>
-          </div>
-        </div>
-
-        <div className="text-sm text-gray-500 max-w-md">
-          <p>
-            Make sure you have a compatible wallet installed like MetaMask or
-            Coinbase Wallet.
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-gray-500">
+            Please wait while we initialize the application.
           </p>
           <p className="mt-2">
             Need help?{" "}
@@ -863,7 +450,7 @@ export function Welcome() {
                 />
               </div>
               <Button
-                onClick={handleChallengeMutation}
+                onClick={createAccount}
                 disabled={isGenerating}
                 className="w-full h-12 font-semibold cursor-pointer"
               >
@@ -889,22 +476,26 @@ export function Welcome() {
                 <div className="text-center py-4 text-gray-500">
                   Loading your profiles...
                 </div>
-              ) : accountsAvailable?.accountsAvailable?.items?.length > 0 ? (
-                <AccountsList
-                  accountsAvailable={accountsAvailable.accountsAvailable}
-                />
+              ) : accountsAvailable?.accountsAvailable?.items ? (
+                accountsAvailable.accountsAvailable.items.length > 0 ? (
+                  <AccountsList
+                    accountsAvailable={accountsAvailable.accountsAvailable}
+                    onAccountSelected={handleSwitchAccount}
+                  />
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    No profiles found. Create one above or connect a different
+                    wallet.
+                  </div>
+                )
               ) : (
                 <div className="text-center py-4 text-gray-500">
-                  No profiles found. Create one above or connect a different
-                  wallet.
+                  Could not load profiles. Please try refreshing.
                 </div>
               )}
             </div>
             <div className="flex flex-col gap-2">
               <DisconnectWalletButton className="mt-4" />
-              <Button onClick={testToast} variant="outline" className="mt-2">
-                Test Toast Notification
-              </Button>
             </div>
           </div>
         </>
@@ -931,7 +522,7 @@ export function Welcome() {
             Please connect your wallet to create or manage Lens profiles.
           </p>
           <div className="flex justify-center">
-            <ConnectButton />
+            <ConnectKitButton />
           </div>
         </div>
       )}
