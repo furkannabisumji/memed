@@ -27,6 +27,33 @@ export function AccountsList({
   accountsAvailable: AccountsAvailableResponse;
   onAccountSelected?: (account: any) => void;
 }): React.ReactElement {
+  // Initialize all hooks at the top of the component
+  const { data: walletClient } = useWalletClient();
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const toast = useCustomToast();
+  
+  // Add client-side only rendering to prevent hydration errors
+  const [isClient, setIsClient] = useState(false);
+
+  // Use useEffect to set isClient to true after component mounts
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Process accounts data early to avoid reference errors
+  const filteredAccounts = accountsAvailable ? 
+    removeDuplicatesByAddress(accountsAvailable) : 
+    { items: [] };
+  
+  // Early return if not client-side yet to prevent hydration errors
+  if (!isClient) {
+    return (
+      <div className="min-h-[200px] flex items-center justify-center">
+        Loading accounts...
+      </div>
+    );
+  }
+  
   // Make sure we have valid data before proceeding
   if (!accountsAvailable || !accountsAvailable.items) {
     return (
@@ -36,33 +63,10 @@ export function AccountsList({
     );
   }
 
-  // Process accounts data early to avoid reference errors
-  const filteredAccounts = removeDuplicatesByAddress(accountsAvailable);
-
   if (filteredAccounts.items.length === 0) {
     return (
       <div className="text-center py-4 text-gray-500">
         No profiles found. Create one or connect a different wallet.
-      </div>
-    );
-  }
-  const { data: walletClient } = useWalletClient();
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
-  const toast = useCustomToast();
-
-  // Add client-side only rendering to prevent hydration errors
-  const [isClient, setIsClient] = useState(false);
-
-  // Use useEffect to set isClient to true after component mounts
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Early return if not client-side yet to prevent hydration errors
-  if (!isClient) {
-    return (
-      <div className="min-h-[200px] flex items-center justify-center">
-        Loading accounts...
       </div>
     );
   }
