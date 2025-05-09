@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { useWalletClient } from "wagmi";
-import { toast } from "sonner";
+import { useCustomToast } from "@/components/ui/custom-toast";
 
 export function AccountsList({
   accountsAvailable,
@@ -25,9 +25,18 @@ export function AccountsList({
 }: {
   accountsAvailable: AccountsAvailableResponse;
   onAccountSelected?: (account: any) => void;
-}) {
+}): React.ReactElement {
   const { data: walletClient } = useWalletClient();
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const toast = useCustomToast();
+  
+  // Add client-side only rendering to prevent hydration errors
+  const [isClient, setIsClient] = useState(false);
+  
+  // Use useEffect to set isClient to true after component mounts
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   function removeDuplicatesByAddress(
     accounts: AccountsAvailableResponse
@@ -50,10 +59,13 @@ export function AccountsList({
 
   const auth = async (address: string, owner: string) => {
     // Show initial toast
-    const signingToast = toast.info(
+    const signingToastId = "signing-toast-" + Date.now();
+    toast.info(
       "Please sign the message to switch to this profile",
       {
+        id: signingToastId,
         description: "Switching profile...",
+        duration: 3000, // Shorter duration
       }
     );
 
@@ -77,86 +89,63 @@ export function AccountsList({
       });
 
       // Dismiss the signing toast once authentication is complete
-      toast.dismiss(signingToast);
+      toast.dismiss(signingToastId);
 
       if (authenticated.isErr()) {
         toast.error("Failed to authenticate with Lens Protocol", {
           description: authenticated.error.message,
+          duration: 3000, // Shorter duration
         });
         return console.error(authenticated.error);
       }
 
       const sessionClient = authenticated.value;
-      // Try to enable signless, but handle the case where it's already enabled
-      try {
-        // Show loading toast for signless setup
-        const signlessToast = toast.loading(
-          "Setting up your account for signless transactions...",
-          {
-            description: "Enabling signless experience",
-          }
-        );
-
-        const result = await enableSignless(sessionClient);
-
-        // Dismiss the signless toast
-        toast.dismiss(signlessToast);
-
-        if (result.isErr()) {
-          // Check if the error is because signless is already enabled
-          if (result.error.message.includes("signless enabled already")) {
-            console.log("Signless is already enabled for this account");
-            // This is actually not an error, so we can continue
-          } else {
-            toast.error("Failed to enable signless transactions", {
-              description: result.error.message,
-            });
-            return console.error(result.error);
-          }
-        } else {
-          const session = result.value;
-          console.log("Signless enabled:", session);
-        }
-      } catch (error) {
-        console.log("Error enabling signless, but continuing:", error);
-        // Continue anyway since this is not a critical error
-      }
-
+      // We're skipping signless setup to avoid toast issues
+      console.log("Authentication successful, skipping signless setup");
+      
       // Store the selected account for display
       const accountToStore = filteredAccounts.items.find(
-        (item) => item.account.address === address
+        (item: any) => item.account.address === address
       )?.account;
 
       setSelectedAccount(accountToStore);
 
-      toast.success("You are now using a different Lens profile", {
-        description: "Profile switched successfully",
+      toast.success("Profile switched successfully", {
+        description: "You are now using a different Lens profile",
+        duration: 3000,
       });
 
       // Call the onAccountSelected callback if provided
       if (onAccountSelected) {
         onAccountSelected(accountToStore);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error switching profile:", error);
       // Dismiss any active toasts
-      toast.dismiss();
+      toast.dismiss(signingToastId);
       toast.error("Error switching profile", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
+        description: error?.message || "An unexpected error occurred",
+        duration: 3000,
       });
     }
   };
 
-  console.log(removeDuplicatesByAddress(accountsAvailable));
-  const filteredAccounts = removeDuplicatesByAddress(accountsAvailable);
+  const filteredAccounts = accountsAvailable ? removeDuplicatesByAddress(accountsAvailable) : { items: [] };
 
+  // Only render the full component on the client side to prevent hydration errors
+  if (!isClient) {
+    // Return a simple loading state or placeholder when rendering on the server
+    return (
+      <div className="min-h-[200px] flex items-center justify-center">
+        <p className="text-gray-500">Loading profiles...</p>
+      </div>
+    );
+  }
+  
   if (filteredAccounts.items.length === 0) {
     return (
       <div className="text-center py-4 text-gray-500">
-        No profiles found. Create a new profile to get started.
+        No profiles found. Create one or connect a different wallet.
       </div>
     );
   }
@@ -208,7 +197,7 @@ export function AccountsList({
       <div className="relative w-full max-w-sm">
         {/* Custom navigation buttons positioned outside the carousel */}
         {filteredAccounts.items.length > 3 && (
-          <div className="flex justify-between w-full absolute top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between px-1 z-10 pointer-events-none">
             <Button
               variant="outline"
               size="icon"
@@ -253,7 +242,7 @@ export function AccountsList({
           className="overflow-x-auto flex snap-x snap-mandatory scrollbar-hide"
           data-carousel
         >
-          {filteredAccounts.items.map((item, index) => (
+          {filteredAccounts.items.map((item: any, index: number) => (
             <div
               key={index}
               onClick={() => auth(item.account.address, item.account.owner)}
