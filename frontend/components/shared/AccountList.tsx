@@ -162,7 +162,14 @@ export function AccountsList({
             {selectedAccount.metadata?.picture ? (
               <div className="w-10 h-10 rounded-full overflow-hidden">
                 <Image
-                  src={selectedAccount.metadata.picture}
+                  src={
+                    typeof selectedAccount.metadata.picture === 'string'
+                      ? selectedAccount.metadata.picture
+                      : selectedAccount.metadata.picture?.original?.url ||
+                        selectedAccount.metadata.picture?.optimized?.url ||
+                        selectedAccount.metadata.picture?.uri ||
+                        "/placeholder-avatar.png"
+                  }
                   alt={selectedAccount.username?.localName || "Profile"}
                   width={40}
                   height={40}
@@ -260,6 +267,8 @@ export function AccountsList({
                             <Image
                               src={typeof item.account.metadata.picture === 'string' ? 
                                 item.account.metadata.picture : 
+                                item.account.metadata.picture?.original?.url ||
+                                item.account.metadata.picture?.optimized?.url ||
                                 item.account.metadata.picture?.uri || "/placeholder-avatar.png"}
                               alt={
                                 item.account.username?.localName ||
@@ -269,6 +278,10 @@ export function AccountsList({
                               height={0}
                               sizes="100vw"
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error('Image failed to load');
+                                (e.target as HTMLImageElement).src = "/placeholder-avatar.png";
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full bg-gray-200 flex flex-col items-center justify-center">

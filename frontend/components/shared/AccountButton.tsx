@@ -79,6 +79,15 @@ export function AccountButton({ className }: AccountButtonProps) {
     }
   }, [hasAccounts, firstAccount, selectedAccount]);
 
+  // Debug selected account metadata
+  useEffect(() => {
+    if (selectedAccount?.metadata) {
+      console.log("Selected Account Metadata:", selectedAccount.metadata);
+      console.log("Picture type:", typeof selectedAccount.metadata.picture);
+      console.log("Picture value:", selectedAccount.metadata.picture);
+    }
+  }, [selectedAccount]);
+
   // Handle account selection
   const handleAccountSelected = (account: any) => {
     setSelectedAccount(account);
@@ -290,25 +299,31 @@ export function AccountButton({ className }: AccountButtonProps) {
                 <h4 className="text-md font-medium mb-2">Selected Account</h4>
                 {/* Log metadata for debugging */}
                 <div className="bg-primary/10 rounded-md p-3 flex items-center gap-3">
-                  {selectedAccount.metadata?.picture ? (
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
+                  {(selectedAccount || firstAccount)?.metadata?.picture ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
                       <Image
                         src={
-                          typeof selectedAccount.metadata.picture === "string"
-                            ? selectedAccount.metadata.picture
-                            : selectedAccount.metadata.picture?.uri ||
+                          typeof (selectedAccount || firstAccount).metadata.picture === "string"
+                            ? (selectedAccount || firstAccount).metadata.picture
+                            : (selectedAccount || firstAccount).metadata.picture?.original?.url ||
+                              (selectedAccount || firstAccount).metadata.picture?.optimized?.url ||
+                              (selectedAccount || firstAccount).metadata.picture?.uri ||
                               "/placeholder-avatar.png"
                         }
                         alt="Profile"
-                        width={40}
-                        height={40}
+                        width={30}
+                        height={30}
                         className="object-cover"
+                        onError={(e) => {
+                          console.error('Image failed to load');
+                          (e.target as HTMLImageElement).src = "/placeholder-avatar.png";
+                        }}
                       />
                     </div>
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                       <span className="text-lg font-bold text-gray-500">
-                        {selectedAccount.username?.localName?.[0]?.toUpperCase() ||
+                        {selectedAccount?.username?.localName?.[0]?.toUpperCase() ||
                           "?"}
                       </span>
                     </div>
