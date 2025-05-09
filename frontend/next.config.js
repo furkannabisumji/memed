@@ -15,6 +15,8 @@ const nextConfig = {
       'lens-dev-storage.s3.us-west-2.amazonaws.com',
       'lens-production-storage.s3.us-west-2.amazonaws.com',
       'lens-production-storage.s3.amazonaws.com',
+      // Lighthouse IPFS gateway
+      'gateway.lighthouse.storage',
       // Add any other domains you might need for images
     ],
   },
