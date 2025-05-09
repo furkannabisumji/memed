@@ -1,9 +1,6 @@
 "use client";
 import { useAccount, useWalletClient } from "wagmi";
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
-
-import { v4 as uuidv4 } from "uuid";
 import { useMutation, useQuery } from "@apollo/client";
 import {
   CHALLENGE_MUTATION,
@@ -12,6 +9,8 @@ import {
   ACCOUNT_QUERY,
   SWITCH_ACCOUNT_MUTATION,
   ACCOUNTS_AVAILABLE_QUERY,
+  SET_ACCOUNT_METADATA_MUTATION,
+  TRANSACTION_STATUS_QUERY,
 } from "@/lib/queries";
 import { uploadAsJson } from "@/lib/storage-client";
 import ImageUploader from "./ImageUploader";
@@ -27,10 +26,30 @@ import { Input } from "../ui/input";
 import { useApolloClient } from "@apollo/client";
 import { signMessageWith } from "@/lib/lens";
 
-import { toast } from "sonner";
+import { useCustomToast } from "../ui/custom-toast";
 
 export function Welcome() {
+  // Add client-side only rendering to prevent hydration errors
+  const [isClient, setIsClient] = useState(false);
+  const toast = useCustomToast();
   const { isConnected, address, isConnecting } = useAccount();
+
+  // Use useEffect to set isClient to true after component mounts
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Separate effect for cleanup to avoid dependency issues
+  useEffect(() => {
+    // This effect doesn't need to do anything on mount
+    // Only provide a cleanup function for unmount
+    return () => {
+      // Dismiss all toasts when component unmounts
+      if (toast && toast.dismissAll) {
+        toast.dismissAll();
+      }
+    };
+  }, []);
   const [image, setImage] = useState<string | null>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [localName, setLocalName] = useState<string>("");
@@ -38,24 +57,18 @@ export function Welcome() {
   const [createAccountWithUsername] = useMutation(CREATE_ACCOUNT_MUTATION);
   const [authenticate] = useMutation(AUTHENTICATE_MUTATION);
   const [switchAccount] = useMutation(SWITCH_ACCOUNT_MUTATION);
+  const [setAccountMetadata] = useMutation(SET_ACCOUNT_METADATA_MUTATION);
   const [txHash, setTxHash] = useState<string>("");
-
-  // Get the wallet client (this is similar to a signer)
+  const [accessToken, setAccessToken] = useState<string>("");
+  const apolloClient = useApolloClient();
   const { data: walletClient } = useWalletClient();
 
   // Query transaction status using the txHash
-  const {
-    data: txStatusData,
-    loading: txStatusLoading,
-    error: txStatusError,
-  } = useTransactionStatusQuery(txHash);
+  const { data: txStatusData } = useTransactionStatusQuery(txHash);
 
   // Query account info using txHash (new query)
   const {
     data: accountData,
-    loading: accountLoading,
-    error: accountError,
-    refetch, // Expose refetch for manual querying
     stopPolling, // Allows stopping polling when condition is met
   } = useQuery(ACCOUNT_QUERY, {
     skip: !txHash, // Only run the query when txHash is available
@@ -78,44 +91,60 @@ export function Welcome() {
     skip: !address,
   });
 
-  // Auto-refresh accounts after creation to check for metadata indexing
+  // Auto-refresh accounts after creation to check for new account
   const [autoRefreshing, setAutoRefreshing] = useState(false);
 
   // Function to periodically refresh accounts data
   const startAutoRefresh = useCallback(() => {
-    if (autoRefreshing) return;
+    if (autoRefreshing || !isClient) return;
+
+    // Dismiss any existing toasts first
+    toast.dismissAll();
 
     setAutoRefreshing(true);
     let refreshCount = 0;
-    const maxRefreshes = 5; // Maximum number of refreshes
+    const maxRefreshes = 12; // Increased maximum number of refreshes (2 minutes total)
+
+    // Use a unique ID for this toast
+    const refreshStartId = `auto-refresh-start-${Date.now()}`;
+    toast.info("Waiting for your new profile to appear...", {
+      id: refreshStartId,
+      description: "This may take a minute or two",
+      duration: 3000,
+    });
 
     const refreshInterval = setInterval(async () => {
-      console.log(
-        `Auto-refreshing accounts data (${refreshCount + 1}/${maxRefreshes})`
-      );
       await refetchAccts();
       refreshCount++;
 
       if (refreshCount >= maxRefreshes) {
         clearInterval(refreshInterval);
         setAutoRefreshing(false);
+
+        // Dismiss any lingering toasts
+        toast.dismissAll();
+
+        // Show a message about the delay if we've reached max refreshes
+        // Use a unique ID for this toast
+        const refreshCompleteId = `auto-refresh-complete-${Date.now()}`;
+        toast.info("Your profile may take longer to appear", {
+          id: refreshCompleteId,
+          description: "Check back in a few minutes if you don't see it yet",
+          duration: 5000,
+        });
       }
-    }, 10000); // Refresh every 10 seconds
+    }, 10000); // Refresh every 10 seconds (2 minutes total with 12 refreshes)
 
     return () => {
       clearInterval(refreshInterval);
       setAutoRefreshing(false);
     };
-  }, [refetchAccts, autoRefreshing]);
+  }, [refetchAccts, autoRefreshing, isClient, toast]);
 
   // Username validation rules for Lens Protocol
   const validateUsername = (username: string) => {
-    console.log(`Validating username: '${username}'`);
-    console.log(`Length: ${username.length} characters`);
-
     // Check length (5-31 characters)
     if (username.length < 5 || username.length > 31) {
-      console.log("Validation failed: Length requirement not met");
       return {
         valid: false,
         reason: "Username must be between 5 and 31 characters",
@@ -125,9 +154,6 @@ export function Welcome() {
     // Check for valid characters (alphanumeric and underscores only)
     const validCharsRegex = /^[a-zA-Z0-9_]+$/;
     const hasValidChars = validCharsRegex.test(username);
-    console.log(
-      `Valid characters check: ${hasValidChars ? "Passed" : "Failed"}`
-    );
     if (!hasValidChars) {
       return {
         valid: false,
@@ -138,9 +164,6 @@ export function Welcome() {
     // Check if it starts with a letter or number (not underscore)
     const validStartRegex = /^[a-zA-Z0-9]/;
     const hasValidStart = validStartRegex.test(username);
-    console.log(
-      `Valid start character check: ${hasValidStart ? "Passed" : "Failed"}`
-    );
     if (!hasValidStart) {
       return {
         valid: false,
@@ -148,15 +171,34 @@ export function Welcome() {
       };
     }
 
-    console.log("All validation checks passed!");
     return { valid: true };
   };
 
+  // Reset form state and dismiss any lingering toasts
+  const resetForm = () => {
+    setLocalName("");
+    setImage(null);
+    toast.dismissAll(); // Ensure all toasts are dismissed when resetting
+  };
+
+  // Handle image changes with proper toast dismissal
+  const handleImageChange = useCallback(
+    (newImage: string | null) => {
+      // Dismiss any existing image upload toasts first
+      toast.dismissAll();
+      setImage(newImage);
+    },
+    [toast]
+  );
+
   const handleChallengeMutation = async () => {
+    // Dismiss any existing toasts before starting a new operation
+    toast.dismissAll();
+
     // Validate username before proceeding
     const validation = validateUsername(localName);
     if (!validation.valid) {
-      toast.error(validation.reason, {
+      toast.error(validation?.reason || "Invalid username", {
         description: "Invalid username",
       });
       return;
@@ -192,21 +234,32 @@ export function Welcome() {
         message: challengeData.challenge.text,
       });
 
-      // Step 3: Authenticate with the signed challenge
-      const authResponse = await authenticate({
-        variables: { request: { id: challengeData.challenge.id, signature } },
+      // Step 3: Authenticate with the signature
+      const { data: authData } = await authenticate({
+        variables: {
+          request: {
+            id: challengeData.challenge.id,
+            signature: signature,
+          },
+        },
       });
 
-      const { accessToken } = authResponse?.data?.authenticate || {};
+      // Store the access token for later use
+      if (authData?.authenticate?.accessToken) {
+        setAccessToken(authData.authenticate.accessToken);
+      }
 
-      if (!accessToken) {
+      // We've already stored the token in state above, but we'll use it locally as well
+      const accessTokenValue = authData?.authenticate?.accessToken;
+
+      if (!accessTokenValue) {
         toast.error("No access token received", {
           description: "Authentication failed",
         });
-        throw new Error("Authentication failed: no access token received");
+        setIsGenerating(false);
+        return;
       }
 
-      console.log("Successfully authenticated with Lens");
       toast.success("Successfully authenticated with Lens Protocol", {
         description: "Authentication successful",
       });
@@ -233,17 +286,16 @@ export function Welcome() {
       };
 
       // Upload the metadata to IPFS using lighthouse
-      const uploadingToast = toast.loading(
-        "Uploading your profile metadata to IPFS...",
-        {
-          description: "Uploading profile data",
-        }
-      );
+      // Use a unique ID for this toast that won't conflict with others
+      const uploadingToastId = `uploading-metadata-${Date.now()}`;
+      toast.loading("Uploading your profile metadata to IPFS...", {
+        id: uploadingToastId,
+        description: "This may take a moment",
+      });
 
       const { Hash } = await uploadAsJson(profileMetadata);
       // Make sure the URI is correctly formatted with https://
       const metadataUri = `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${Hash}`;
-      console.log("Metadata URI:", metadataUri);
 
       // Verify the metadata is accessible by fetching it
       try {
@@ -256,36 +308,23 @@ export function Welcome() {
           toast.error("Failed to verify metadata accessibility");
         } else {
           const metadataJson = await metadataResponse.json();
-          console.log("Metadata verified:", metadataJson);
-          // Log each field to help with debugging
-          console.log("Schema:", metadataJson.$schema);
-          console.log("Name:", metadataJson.lens?.name);
-          console.log("Bio:", metadataJson.lens?.bio);
-          console.log("Picture:", metadataJson.lens?.picture);
-          console.log("Attributes:", metadataJson.lens?.attributes);
         }
       } catch (error) {
         console.error("Error verifying metadata:", error);
       }
 
-      toast.dismiss(uploadingToast);
+      toast.dismiss(uploadingToastId);
       toast.success("Your profile metadata has been uploaded to IPFS", {
         description: "Profile data uploaded",
       });
 
-      // Log the request for debugging
-      console.log("Creating account with request:", {
-        username: { localName },
-        metadataUri: metadataUri,
-        accountManager: address,
-        enableSignless: true,
-        owner: address,
-      });
-
       // Step 5: Create account with username using the metadataUri
-      const creatingToast = toast.loading(
+      // Use a unique ID for this toast that won't conflict with others
+      const creatingToastId = `creating-profile-${Date.now()}`;
+      toast.loading(
         "This may take a minute. Please wait and sign any requested transactions.",
         {
+          id: creatingToastId,
           description: "Creating your profile",
         }
       );
@@ -302,7 +341,7 @@ export function Welcome() {
         },
         context: {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${accessTokenValue}`,
           },
         },
       }).catch((error) => {
@@ -310,18 +349,7 @@ export function Welcome() {
         throw error; // Re-throw to be caught by the outer catch block
       });
 
-      // Log the full response
-      console.log("Create account response:", result);
-      console.log(
-        "Create account result data:",
-        JSON.stringify(result?.data, null, 2)
-      );
-
       const createAccountResult = result?.data?.createAccountWithUsername;
-      console.log(
-        "Create account result type:",
-        createAccountResult?.__typename
-      );
 
       if (
         createAccountResult?.__typename === "NamespaceOperationValidationFailed"
@@ -358,7 +386,7 @@ export function Welcome() {
             - Doesn't contain reserved words like 'lens', 'admin', etc.`;
         }
 
-        toast.dismiss(creatingToast);
+        toast.dismiss(creatingToastId);
         toast.error(userFriendlyMessage, {
           description: "Username validation failed",
           duration: 10000, // Show for longer so user can read the guidelines
@@ -372,7 +400,7 @@ export function Welcome() {
           createAccountResult.reason || "Unknown transaction error";
         console.error("Transaction will fail:", errorReason);
 
-        toast.dismiss(creatingToast);
+        toast.dismiss(creatingToastId);
         toast.error(`Transaction would fail: ${errorReason}`, {
           description: "Account creation failed",
           duration: 5000,
@@ -389,7 +417,7 @@ export function Welcome() {
           JSON.stringify(result?.data, null, 2)
         );
 
-        toast.dismiss(creatingToast);
+        toast.dismiss(creatingToastId);
         // Force a new toast with a unique ID to ensure it shows
         const errorToastId = `error-${Date.now()}`;
         toast.error(
@@ -412,32 +440,45 @@ export function Welcome() {
           // Set the txHash for tracking
           setTxHash(hash);
 
-          // Clear input fields after successful account creation
-          setLocalName("");
-          setImage(null);
+          // Reset form state completely
+          resetForm();
 
-          toast.dismiss(creatingToast);
+          // Reset the file input element directly
+          const fileInput = document.getElementById(
+            "imageUploadInput"
+          ) as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = "";
+          }
+
+          toast.dismiss(creatingToastId);
           // Force a new toast with a unique ID to ensure it shows
           const toastId = `success-${Date.now()}`;
           toast.success(
             "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
             {
               id: toastId,
-              description: "Profile created successfully!",
+              description: "Transaction submitted successfully",
               duration: 5000,
             }
           );
 
+          // Add a more detailed explanation toast
+          setTimeout(() => {
+            toast.info("Account creation process", {
+              id: `process-info-${Date.now()}`,
+              description:
+                "Your profile and metadata are being processed on the blockchain. This typically takes 1-2 minutes, but can sometimes take longer.",
+              duration: 8000,
+            });
+          }, 1000);
+
           // Start auto-refreshing accounts to check for the new account
           startAutoRefresh();
+
           setIsGenerating(false);
           return;
         } else {
-          console.error(
-            "Account creation failed - No hash returned",
-            JSON.stringify(result?.data, null, 2)
-          );
-
           // Provide more specific error message based on the response
           let errorMessage = "Please try again with a different username.";
 
@@ -449,7 +490,7 @@ export function Welcome() {
             errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
           }
 
-          toast.dismiss(creatingToast);
+          toast.dismiss(creatingToastId);
           toast.error(errorMessage, {
             description: "Account creation failed",
             duration: 5000,
@@ -459,11 +500,6 @@ export function Welcome() {
           return;
         }
       } else {
-        console.error(
-          "Account creation failed - No hash returned",
-          JSON.stringify(result?.data, null, 2)
-        );
-
         // Provide more specific error message based on the response
         let errorMessage = "Please try again with a different username.";
 
@@ -475,7 +511,7 @@ export function Welcome() {
           errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
         }
 
-        toast.dismiss(creatingToast);
+        toast.dismiss(creatingToastId);
         toast.error(errorMessage, {
           description: "Account creation failed",
           duration: 5000,
@@ -484,36 +520,16 @@ export function Welcome() {
         setIsGenerating(false);
         return;
       }
-
-      // If we get here, we didn't get a valid hash
-      console.error(
-        "Account creation failed - No valid hash returned",
-        JSON.stringify(result?.data, null, 2)
-      );
-
-      // Provide more specific error message based on the response
-      let errorMessage = "Please try again with a different username.";
-
-      // Check if there's any error information in the response
-      if (createAccountResult && Object.keys(createAccountResult).length > 0) {
-        errorMessage = `Error: ${JSON.stringify(createAccountResult)}`;
-      }
-
-      toast.dismiss(creatingToast);
-      toast.error(errorMessage, {
-        description: "Account creation failed",
-        duration: 5000,
-      });
-
-      setIsGenerating(false);
     } catch (error: any) {
-      console.error("Error during mutation flow:", error);
-      // Dismiss any loading toasts that might be active
-      toast.dismiss();
+      console.error("Error in account creation:", error);
+      // Make sure to dismiss any loading toasts
+      toast.dismiss("uploading-metadata-toast");
+      toast.dismiss("creating-profile-toast");
       toast.error(
-        error instanceof Error ? error.message : "An unexpected error occurred",
+        "An unexpected error occurred during account creation. Please try again.",
         {
-          description: "Error creating profile",
+          description: error?.message || "Unknown error",
+          duration: 5000,
         }
       );
       setIsGenerating(false);
@@ -587,19 +603,6 @@ export function Welcome() {
       setIsGenerating(false);
     }
   };
-
-  const handleAction = async () => {
-    if (walletClient && isConnected) {
-      // Use the wallet client to sign a transaction or message
-      const signature = await walletClient.signMessage({
-        message: "Hello World",
-      });
-      console.log("Signature:", signature);
-    }
-  };
-
-  // Get the Apollo client instance from the context
-  const apolloClient = useApolloClient();
 
   // Function to check and verify metadata indexing
   const checkMetadataIndexing = async (
@@ -701,11 +704,15 @@ export function Welcome() {
     }
   }, [accountData, txStatusData, stopPolling, address]);
 
-  useEffect(() => {
-    toast.success("Profile metadata has been indexed!", {
-      description: "Your profile picture and details are now visible",
+  // Function to test toast notifications
+  const testToast = () => {
+    // Dismiss any existing toasts first
+    toast.dismissAll();
+    toast.success("Test Toast", {
+      description: "This is a test toast notification",
+      duration: 3000,
     });
-  }, []);
+  };
 
   if (!isConnected && !isConnecting) {
     return (
@@ -839,7 +846,7 @@ export function Welcome() {
     <div className="flex flex-col items-center justify-center h-screen px-3">
       {isConnected ? (
         <>
-          <ImageUploader image={image} setImage={setImage} />
+          <ImageUploader image={image} setImage={handleImageChange} />
           <div className="w-full max-w-sm flex flex-col gap-4 py-5">
             {/* Create Profile Section */}
             <div className="border border-gray-200 min-h-[200px] rounded-lg p-4 mb-2">
@@ -893,7 +900,12 @@ export function Welcome() {
                 </div>
               )}
             </div>
-            <DisconnectWalletButton className="mt-4" />
+            <div className="flex flex-col gap-2">
+              <DisconnectWalletButton className="mt-4" />
+              <Button onClick={testToast} variant="outline" className="mt-2">
+                Test Toast Notification
+              </Button>
+            </div>
           </div>
         </>
       ) : (

@@ -4,7 +4,7 @@ import "./globals.css";
 import { Albert_Sans } from "next/font/google";
 import { Web3Provider } from "@/providers/Web3Provider";
 import CustomApolloProvider from "@/providers/ApolloProvider";
-import { Toaster } from "sonner";
+import { ToastProvider } from "@/components/ui/custom-toast";
 
 const albertsans = Albert_Sans({
   weight: ["300", "400", "500", "600", "700"],
@@ -27,8 +27,9 @@ export default function RootLayout({
       <body className={`${albertsans.className} antialiased`}>
         <CustomApolloProvider>
           <Web3Provider>
-            {children}
-            <Toaster />
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </Web3Provider>
         </CustomApolloProvider>
       </body>
