@@ -18,20 +18,20 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
   const uploadToLighthouse = async (file: File) => {
     // Reset any previous state
     setLoading(true);
-    
+
     // Dismiss any existing toasts first
     toast.dismissAll();
-    
+
     // Create a unique ID for this upload toast
     const uploadingToastId = `uploading-image-${Date.now()}`;
-    
+
     // Show loading toast
     toast.loading("Uploading your image...", {
       id: uploadingToastId,
       description: "Please wait while we upload your profile image",
-      duration: 0 // Don't auto-dismiss
+      duration: 0, // Don't auto-dismiss
     });
-    
+
     try {
       const filesArray = [file];
       const { data } = await lighthouse.upload(
@@ -40,21 +40,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
       );
       const uploadedImageUrl = `${data.Hash}`;
       setImage(uploadedImageUrl);
-      
+
       // Dismiss loading toast and show success
       toast.dismiss(uploadingToastId);
       toast.success("Your profile image has been uploaded successfully", {
         description: "Image uploaded",
-        duration: 3000
+        duration: 3000,
       });
     } catch (error) {
       console.error("Error uploading file:", error);
-      
+
       // Dismiss loading toast and show error
       toast.dismiss(uploadingToastId);
       toast.error("There was a problem uploading your image", {
         description: "Upload failed",
-        duration: 3000
+        duration: 3000,
       });
     } finally {
       setLoading(false);
@@ -68,42 +68,50 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
       e.target.value = "";
     }
   };
-  
+
   // Handle drag events
-  const handleDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  }, []);
-  
+  const handleDrag = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.type === "dragenter" || e.type === "dragover") {
+        setDragActive(true);
+      } else if (e.type === "dragleave") {
+        setDragActive(false);
+      }
+    },
+    [] // No dependencies needed as this function only uses setState
+  );
+
   // Handle drop event
-  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      // Check if file is an image
-      if (!file.type.match('image.*')) {
-        toast.error("Please upload an image file (jpg, png, webp)", {
-          description: "Invalid file type"
-        });
-        return;
+  const handleDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const file = e.dataTransfer.files[0];
+        // Check if file is an image
+        if (!file.type.match("image.*")) {
+          toast.error("Please upload an image file (jpg, png, webp)", {
+            description: "Invalid file type",
+          });
+          return;
+        }
+        await uploadToLighthouse(file);
+
+        // Reset the file input to ensure it can be reused
+        const fileInput = document.getElementById(
+          "imageUploadInput"
+        ) as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = "";
+        }
       }
-      await uploadToLighthouse(file);
-      
-      // Reset the file input to ensure it can be reused
-      const fileInput = document.getElementById("imageUploadInput") as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = "";
-      }
-    }
-  }, [toast]);
+    },
+    [toast, uploadToLighthouse] // Include uploadToLighthouse as it's used in the callback
+  );
 
   return (
     <div className="flex flex-col items-center h-72 w-full max-w-sm relative">
@@ -119,8 +127,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
             image
               ? "border-transparent"
               : dragActive
-                ? "border-primary bg-primary/5"
-                : "border-gray-400 hover:border-gray-500"
+              ? "border-primary bg-primary/5"
+              : "border-gray-400 hover:border-gray-500"
           }`}
       >
         {loading ? (
@@ -153,9 +161,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
               <div className="text-gray-600 flex flex-col items-center gap-2 absolute">
                 <FiUploadCloud size={24} />
                 <p className="text-center">
-                  <span className="font-medium">Click to upload</span> or drag and drop
+                  <span className="font-medium">Click to upload</span> or drag
+                  and drop
                   <br />
-                  <span className="text-xs text-gray-500">JPG, PNG, or WebP</span>
+                  <span className="text-xs text-gray-500">
+                    JPG, PNG, or WebP
+                  </span>
                 </p>
               </div>
               <FaUser size={200} className="text-green-500" />

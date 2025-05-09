@@ -9,7 +9,14 @@ import { Label } from "../ui/label";
 import { AccountsList } from "./AccountList";
 import { ConnectKitButton } from "connectkit";
 import { useCustomToast } from "@/components/ui/custom-toast";
-import { getAvailableAccounts, createNewAccount, switchToAccount, getAccountByAddress, createProfileMetadata, uploadToIPFS } from "@/lib/lens";
+import {
+  getAvailableAccounts,
+  createNewAccount,
+  switchToAccount,
+  getAccountByAddress,
+  createProfileMetadata,
+  uploadToIPFS,
+} from "@/lib/lens";
 import { Loader2 } from "lucide-react";
 import { DisconnectWalletButton } from "./DisconnectWalletButton";
 import ImageUploader from "./ImageUploader";
@@ -44,7 +51,7 @@ export function Welcome() {
         toast.dismissAll();
       }
     };
-  }, []);
+  }, []); // Add empty dependency array to prevent infinite loops
 
   // Use a ref to store the previous accounts to prevent unnecessary re-renders
   const previousAccountsRef = useRef<any>(null);
@@ -69,7 +76,9 @@ export function Welcome() {
         // Only update if there's a meaningful change (different length or different first account)
         const isDifferent =
           currentItems.length !== newItems.length ||
-          (newItems.length > 0 && currentItems.length > 0 && newItems[0].account?.id !== currentItems[0].account?.id);
+          (newItems.length > 0 &&
+            currentItems.length > 0 &&
+            newItems[0].account?.id !== currentItems[0].account?.id);
 
         if (isDifferent || !accountsAvailable) {
           // Update the ref first
@@ -132,11 +141,12 @@ export function Welcome() {
     // Set loading state immediately to show loading indicator
     setLoadingAvailableAcc(true);
     setAutoRefreshing(true);
-    
+
     let refreshCount = 0;
     const maxRefreshes = 6; // Increased to 6 refreshes (60 seconds total)
     let foundNewAccount = false;
-    let previousAccountCount = accountsAvailable?.accountsAvailable?.items?.length || 0;
+    let previousAccountCount =
+      accountsAvailable?.accountsAvailable?.items?.length || 0;
 
     // Use a unique ID for this toast
     const refreshStartId = `auto-refresh-start-${Date.now()}`;
@@ -148,15 +158,17 @@ export function Welcome() {
 
     const refreshInterval = setInterval(async () => {
       // Store the previous count before refreshing
-      previousAccountCount = accountsAvailable?.accountsAvailable?.items?.length || 0;
-      
+      previousAccountCount =
+        accountsAvailable?.accountsAvailable?.items?.length || 0;
+
       // Fetch new accounts
       await refetchAccts();
       refreshCount++;
-      
+
       // Check if we have a new account by comparing counts
-      const currentAccountCount = accountsAvailable?.accountsAvailable?.items?.length || 0;
-      
+      const currentAccountCount =
+        accountsAvailable?.accountsAvailable?.items?.length || 0;
+
       if (currentAccountCount > previousAccountCount) {
         // New account found! Stop refreshing and show success
         foundNewAccount = true;
@@ -191,7 +203,7 @@ export function Welcome() {
       setAutoRefreshing(false);
       setLoadingAvailableAcc(false); // Ensure loading state is cleared on cleanup
     };
-  }, [toast, refetchAccts, accountsAvailable]);
+  }, [toast, refetchAccts, accountsAvailable, autoRefreshing, isClient]);
 
   // Username validation rules for Lens Protocol
   const validateUsername = (username: string) => {
@@ -355,7 +367,7 @@ export function Welcome() {
 
         // Start auto-refreshing accounts to check for the new account
         startAutoRefresh();
-        
+
         // Emit an event to notify other components about the new account
         accountEvents.emit(ACCOUNT_CREATED);
       } catch (error: any) {
