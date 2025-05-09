@@ -66,6 +66,14 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
             hideBalance: false,
             hideTooltips: false,
             walletConnectCTA: "both",
+            // Add these options to fix the "Family integrated modal is not visible" error
+            // overlayBlur expects a number (in px), not a boolean
+            overlayBlur: 0,
+            disableSiweRedirect: true,
+            embedGoogleFonts: true,
+            bufferPolyfill: true,
+            // Increase timeouts to give the modal more time to appear
+            initialChainId: chains.testnet.id
           }}
         >
           <LensProvider client={client}>{children}</LensProvider>
