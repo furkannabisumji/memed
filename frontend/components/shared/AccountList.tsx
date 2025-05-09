@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { useWalletClient } from "wagmi";
+import { signMessageWith } from "@/lib/lens";
 import { useCustomToast } from "@/components/ui/custom-toast";
 
 export function AccountsList({
@@ -26,6 +27,21 @@ export function AccountsList({
   accountsAvailable: AccountsAvailableResponse;
   onAccountSelected?: (account: any) => void;
 }): React.ReactElement {
+  // Make sure we have valid data before proceeding
+  if (!accountsAvailable || !accountsAvailable.items) {
+    return <div className="text-center py-4 text-gray-500">No account data available</div>;
+  }
+  
+  // Process accounts data early to avoid reference errors
+  const filteredAccounts = removeDuplicatesByAddress(accountsAvailable);
+  
+  if (filteredAccounts.items.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        No profiles found. Create one or connect a different wallet.
+      </div>
+    );
+  }
   const { data: walletClient } = useWalletClient();
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const toast = useCustomToast();
@@ -37,6 +53,11 @@ export function AccountsList({
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  // Early return if not client-side yet to prevent hydration errors
+  if (!isClient) {
+    return <div className="min-h-[200px] flex items-center justify-center">Loading accounts...</div>;
+  }
 
   function removeDuplicatesByAddress(
     accounts: AccountsAvailableResponse
@@ -76,15 +97,14 @@ export function AccountsList({
           app: process.env.NEXT_PUBLIC_APP_ADDRESS,
           owner,
         },
-        signMessage: (message) => {
-          if (!walletClient) {
-            throw new Error("Wallet client is not initialized");
+        signMessage: async (message) => {
+          try {
+            // Using the improved signMessageWith function which has multiple fallbacks
+            return await signMessageWith(message, owner);
+          } catch (error) {
+            console.error("Error signing message:", error);
+            throw error;
           }
-
-          return walletClient.signMessage({
-            account: owner as `0x${string}`,
-            message,
-          });
         },
       });
 
@@ -130,25 +150,7 @@ export function AccountsList({
     }
   };
 
-  const filteredAccounts = accountsAvailable ? removeDuplicatesByAddress(accountsAvailable) : { items: [] };
-
-  // Only render the full component on the client side to prevent hydration errors
-  if (!isClient) {
-    // Return a simple loading state or placeholder when rendering on the server
-    return (
-      <div className="min-h-[200px] flex items-center justify-center">
-        <p className="text-gray-500">Loading profiles...</p>
-      </div>
-    );
-  }
-  
-  if (filteredAccounts.items.length === 0) {
-    return (
-      <div className="text-center py-4 text-gray-500">
-        No profiles found. Create one or connect a different wallet.
-      </div>
-    );
-  }
+  // Client-side rendering check already done above
 
   return (
     <TooltipProvider>
@@ -242,7 +244,7 @@ export function AccountsList({
           className="overflow-x-auto flex snap-x snap-mandatory scrollbar-hide"
           data-carousel
         >
-          {filteredAccounts.items.map((item: any, index: number) => (
+          {filteredAccounts.items && filteredAccounts.items.map((item: any, index: number) => (
             <div
               key={index}
               onClick={() => auth(item.account.address, item.account.owner)}
@@ -256,7 +258,9 @@ export function AccountsList({
                         <div className="aspect-square w-full overflow-hidden rounded-md mb-2">
                           {item.account.metadata?.picture ? (
                             <Image
-                              src={`${item.account.metadata.picture}`}
+                              src={typeof item.account.metadata.picture === 'string' ? 
+                                item.account.metadata.picture : 
+                                item.account.metadata.picture?.uri || "/placeholder-avatar.png"}
                               alt={
                                 item.account.username?.localName ||
                                 "Profile picture"

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount, useDisconnect, useBalance } from "wagmi";
-import { useQuery } from "@apollo/client";
-import { ACCOUNTS_AVAILABLE_QUERY } from "@/lib/queries";
+import { getAvailableAccounts } from "@/lib/lens";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { AccountsList } from "./AccountList";
@@ -34,20 +33,41 @@ export function AccountButton({ className }: AccountButtonProps) {
     setIsMounted(true);
   }, []);
 
-  // Query available accounts
-  const {
-    data: accountsAvailable,
-    loading: loadingAvailableAcc,
-    refetch: refetchAccts,
-  } = useQuery(ACCOUNTS_AVAILABLE_QUERY, {
-    variables: { managedBy: address, includeOwned: true },
-    skip: !address,
-  });
+  // State for accounts data
+  const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
+  const [loadingAvailableAcc, setLoadingAvailableAcc] = useState(false);
+
+  // Function to fetch accounts using SDK
+  const fetchAccounts = useCallback(async () => {
+    if (!address) return;
+
+    setLoadingAvailableAcc(true);
+    try {
+      const accounts = await getAvailableAccounts(address);
+      setAccountsAvailable({ accountsAvailable: accounts });
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+    } finally {
+      setLoadingAvailableAcc(false);
+    }
+  }, [address]);
+
+  // Function to refresh accounts
+  const refetchAccts = useCallback(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   // Get the first account for display in the button
   const accountItems = accountsAvailable?.accountsAvailable?.items || [];
   const firstAccount = accountItems[0]?.account;
   const hasAccounts = accountItems.length > 0;
+
+  // Fetch accounts on mount and when address changes
+  useEffect(() => {
+    if (address && isMounted) {
+      fetchAccounts();
+    }
+  }, [address, isMounted, fetchAccounts]);
 
   // Set the first account as selected by default if no account is selected
   useEffect(() => {
@@ -142,12 +162,9 @@ export function AccountButton({ className }: AccountButtonProps) {
         {(selectedAccount || firstAccount)?.metadata?.picture ? (
           <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
             <Image
-              src={
-                (selectedAccount || firstAccount).metadata.picture?.optimized
-                  ?.uri ||
-                (selectedAccount || firstAccount).metadata.picture?.uri ||
-                "/placeholder-avatar.png"
-              }
+              src={typeof (selectedAccount || firstAccount).metadata.picture === 'string' ? 
+                (selectedAccount || firstAccount).metadata.picture : 
+                (selectedAccount || firstAccount).metadata.picture?.uri || "/placeholder-avatar.png"}
               alt="Profile"
               width={24}
               height={24}
@@ -249,15 +266,14 @@ export function AccountButton({ className }: AccountButtonProps) {
             {selectedAccount && (
               <div className="mb-3">
                 <h4 className="text-md font-medium mb-2">Selected Account</h4>
+                {/* Log metadata for debugging */}
                 <div className="bg-primary/10 rounded-md p-3 flex items-center gap-3">
                   {selectedAccount.metadata?.picture ? (
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
                       <Image
-                        src={
-                          selectedAccount.metadata.picture?.optimized?.uri ||
-                          selectedAccount.metadata.picture?.uri ||
-                          "/placeholder-avatar.png"
-                        }
+                        src={typeof selectedAccount.metadata.picture === 'string' ? 
+                          selectedAccount.metadata.picture : 
+                          selectedAccount.metadata.picture?.uri || "/placeholder-avatar.png"}
                         alt="Profile"
                         width={40}
                         height={40}
