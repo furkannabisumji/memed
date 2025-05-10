@@ -7,7 +7,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { AccountsList } from "./AccountList";
-import { ConnectKitButton } from "connectkit";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import {
   getAvailableAccounts,
@@ -21,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import { DisconnectWalletButton } from "./DisconnectWalletButton";
 import ImageUploader from "./ImageUploader";
 import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
+import { AccountButton } from "./AccountButton";
 
 export function Welcome() {
   // Add client-side only rendering to prevent hydration errors
@@ -536,6 +536,7 @@ export function Welcome() {
                   size="sm"
                   onClick={() => refetchAccts()}
                   disabled={loadingAvailableAcc}
+                  className="cursor-pointer"
                 >
                   {loadingAvailableAcc ? "Loading..." : "Refresh"}
                 </Button>
@@ -591,7 +592,7 @@ export function Welcome() {
             Please connect your wallet to create or manage Lens profiles.
           </p>
           <div className="flex justify-center">
-            <ConnectKitButton />
+            <AccountButton />
           </div>
         </div>
       )}

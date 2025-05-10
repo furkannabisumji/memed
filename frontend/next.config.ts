@@ -12,6 +12,55 @@ const nextConfig: NextConfig = {
         protocol: "https", // Assuming the image URL uses HTTPS
         hostname: "gateway.lighthouse.storage",
       },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "ik.imagekit.io",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "lens.infura-ipfs.io",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "ipfs.infura.io",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "ipfs.io",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "arweave.net",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "gateway.ipfscdn.io",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "gateway.pinata.cloud",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "lens-dev-storage.s3.amazonaws.com",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "lens-dev-storage.s3.us-west-2.amazonaws.com",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "lens-production-storage.s3.us-west-2.amazonaws.com",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "lens-production-storage.s3.amazonaws.com",
+      },
+      // Lighthouse IPFS gateway
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "gateway.lighthouse.storage",
+      },
     ],
   },
   eslint: {
