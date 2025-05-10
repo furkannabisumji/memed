@@ -8,6 +8,7 @@ contract MemedFactory is Ownable {
     MemedToken public memedToken;
     struct TokenData {
         address token;
+        address creator;
         string name;
         string ticker;
         string description;
@@ -44,6 +45,7 @@ contract MemedFactory is Ownable {
     );
 
     function createMeme(
+        address _creator,
         string calldata _lensUsername,
         string calldata _name,
         string calldata _ticker,
@@ -51,9 +53,10 @@ contract MemedFactory is Ownable {
         string calldata _image
     ) external onlyOwner {
         require(tokenData[_lensUsername].token == address(0), "already minted");
-        memedToken = new MemedToken(_name, _ticker, address(this));
+        memedToken = new MemedToken(_name, _ticker, address(this), _creator);
         tokenData[_lensUsername] = TokenData({
             token: address(memedToken),
+            creator: _creator,
             name: _name,
             ticker: _ticker,
             description: _description,
@@ -65,7 +68,7 @@ contract MemedFactory is Ownable {
         tokens.push(_lensUsername);
         emit TokenCreated(
             address(memedToken),
-            msg.sender,
+            _creator,
             _name,
             _ticker,
             _description,
