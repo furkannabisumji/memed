@@ -1,55 +1,52 @@
-'use client'
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Edit, Share, UserPlus } from "lucide-react"
-import Header from "@/components/shared/Header"
-import Footer from "@/components/shared/Footer"
-import { Card, CardContent } from "@/components/ui/card"
-import { useEffect, useRef, useState } from "react"
-
-
-
+"use client";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Share, UserPlus } from "lucide-react";
+import Header from "@/components/shared/Header";
+import Footer from "@/components/shared/Footer";
+import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("Details")
-  const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
-  const tabsListRef = useRef<HTMLDivElement>(null)
+  const [activeTab, setActiveTab] = useState("Details");
+  const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
+  const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
     all: null,
     tokens: null,
     creators: null,
-  })
+  });
 
   // Function to update the underline position based on the active tab
-  const updateUnderlinePosition = () => {
-    const activeTabElement = tabRefs.current[activeTab]
-    const tabsListElement = tabsListRef.current
+  const updateUnderlinePosition = useCallback(() => {
+    const activeTabElement = tabRefs.current[activeTab];
+    const tabsListElement = tabsListRef.current;
 
     if (activeTabElement && tabsListElement) {
-      const tabRect = activeTabElement.getBoundingClientRect()
-      const listRect = tabsListElement.getBoundingClientRect()
+      const tabRect = activeTabElement.getBoundingClientRect();
+      const listRect = tabsListElement.getBoundingClientRect();
 
       setUnderlineStyle({
         left: tabRect.left - listRect.left,
         width: tabRect.width,
-      })
+      });
     }
-  }
+  }, [activeTab]);
 
   // Update underline position on window resize
   useEffect(() => {
-    window.addEventListener("resize", updateUnderlinePosition)
+    window.addEventListener("resize", updateUnderlinePosition);
     return () => {
-      window.removeEventListener("resize", updateUnderlinePosition)
-    }
-  }, [])
+      window.removeEventListener("resize", updateUnderlinePosition);
+    };
+  }, [updateUnderlinePosition]);
 
   // Update underline position when active tab changes
   useEffect(() => {
-    updateUnderlinePosition()
-  }, [activeTab])
+    updateUnderlinePosition();
+  }, [activeTab, updateUnderlinePosition]);
   const profile = {
     username: "MemeMaster",
     displayName: "Meme Master",
@@ -64,7 +61,7 @@ export default function ProfilePage() {
     createdMemes: allMemes.slice(0, 4),
     collectedMemes: allMemes.slice(4, 8),
     tokensMinted: 12,
-  }
+  };
 
   return (
     <>
@@ -115,28 +112,44 @@ export default function ProfilePage() {
               <div className="flex-1 text-center md:text-left">
                 <div className="flex flex-col items-center gap-2 md:flex-row">
                   <h1 className="text-3xl font-bold">{profile.displayName}</h1>
-                  <Badge variant="outline" className="border-[#28D358] text-[#28D358]">
+                  <Badge
+                    variant="outline"
+                    className="border-[#28D358] text-[#28D358]"
+                  >
                     @{profile.username}
                   </Badge>
                 </div>
 
-                <p className="mt-2 text-gray-600 dark:text-gray-300">{profile.bio}</p>
+                <p className="mt-2 text-gray-600 dark:text-gray-300">
+                  {profile.bio}
+                </p>
 
                 <div className="flex flex-wrap justify-center gap-4 mt-4 md:justify-start">
                   <div className="text-center">
-                    <div className="text-xl font-bold ">{profile.followers}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Followers</div>
+                    <div className="text-xl font-bold ">
+                      {profile.followers}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Followers
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl font-bold ">{profile.tokensMinted}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Tokens Minted</div>
+                    <div className="text-xl font-bold ">
+                      {profile.tokensMinted}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Tokens Minted
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 {profile.isOwner ? (
-                  <Button variant="outline" className="gap-2 border-purple-300 dark:border-purple-700">
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-purple-300 dark:border-purple-700"
+                  >
                     <Edit size={16} />
                     <span>Edit Profile</span>
                   </Button>
@@ -153,7 +166,12 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <Tabs defaultValue="all" className="mb-8 mt-10" onValueChange={setActiveTab} value={activeTab}>
+            <Tabs
+              defaultValue="all"
+              className="mb-8 mt-10"
+              onValueChange={setActiveTab}
+              value={activeTab}
+            >
               <div className="relative" ref={tabsListRef}>
                 <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
                   {["Details", "Supporters"].map((tab) => (
@@ -162,14 +180,14 @@ export default function ProfilePage() {
                       value={tab}
                       className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
                       ref={(el) => {
-                        tabRefs.current[tab] = el
+                        tabRefs.current[tab] = el;
                       }}
                     >
                       {tab === "Details"
                         ? "Details"
                         : tab === "Supporters"
-                          ? "Supporters" : ""
-                      }
+                        ? "Supporters"
+                        : ""}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -189,21 +207,27 @@ export default function ProfilePage() {
                       <CardContent className="p-6">
                         <div className="grid gap-4">
                           <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Token Symbol:</span>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              Token Symbol:
+                            </span>
                             <span className="">$DOGE</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Current Price:</span>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              Current Price:
+                            </span>
                             <span className="">0.01 ETH</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Total Supply:</span>
-                            <span className="">
-                              1,000,000
+                            <span className="text-gray-500 dark:text-gray-400">
+                              Total Supply:
                             </span>
+                            <span className="">1,000,000</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Holders:</span>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              Holders:
+                            </span>
                             <span className="">1290</span>
                           </div>
                         </div>
@@ -212,7 +236,10 @@ export default function ProfilePage() {
                           <Button className="bg-primary hover:shadow-2xl">
                             Buy Token
                           </Button>
-                          <Button variant="outline" className="hover:shadow-2xl">
+                          <Button
+                            variant="outline"
+                            className="hover:shadow-2xl"
+                          >
                             View Chart
                           </Button>
                         </div>
@@ -223,20 +250,15 @@ export default function ProfilePage() {
               </TabsContent>
 
               <TabsContent value="Supporters" className="mt-8">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-
-                </div>
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3"></div>
               </TabsContent>
-
-
-
             </Tabs>
           </div>
         </div>
       </main>
       <Footer />
     </>
-  )
+  );
 }
 
 const allMemes = [
@@ -312,4 +334,4 @@ const allMemes = [
     price: 0.07,
     tokenSymbol: "PIKA",
   },
-]
+];

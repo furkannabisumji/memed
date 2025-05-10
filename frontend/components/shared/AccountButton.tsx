@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount, useDisconnect, useBalance } from "wagmi";
 import { getAvailableAccounts } from "@/lib/lens";
@@ -9,6 +9,7 @@ import { Button } from "../ui/button";
 import { AccountsList } from "./AccountList";
 import { ConnectKitButton } from "connectkit";
 import { Copy, LogOut, ExternalLink } from "lucide-react";
+import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
 
 interface AccountButtonProps {
   className?: string;
@@ -37,38 +38,100 @@ export function AccountButton({ className }: AccountButtonProps) {
   const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
   const [loadingAvailableAcc, setLoadingAvailableAcc] = useState(false);
 
-  // Function to fetch accounts using SDK
+  // Use a ref to store previous accounts data to prevent unnecessary re-renders
+  const previousAccountsRef = useRef<any>(null);
+
+  // Function to fetch accounts using SDK with optimized rendering
   const fetchAccounts = useCallback(async () => {
     if (!address) return;
 
-    setLoadingAvailableAcc(true);
+    // Only show loading on first fetch
+    if (!accountsAvailable) {
+      setLoadingAvailableAcc(true);
+    }
+
     try {
       const accounts = await getAvailableAccounts(address);
-      console.log("Fetched accounts:", accounts);
-      setAccountsAvailable({ accountsAvailable: accounts });
+      // console.log("Fetched accounts:", accounts);
+
+      // Only update state if the accounts have actually changed
+      // This prevents unnecessary re-renders
+      const currentItems = accountsAvailable?.accountsAvailable?.items || [];
+      const newItems = accounts.items || [];
+
+      // Check if the account lists are different by comparing lengths and first account
+      const isDifferent =
+        currentItems.length !== newItems.length ||
+        (newItems.length > 0 &&
+          currentItems.length > 0 &&
+          newItems[0].account?.id !== currentItems[0].account?.id);
+
+      if (isDifferent || !accountsAvailable) {
+        // Store current accounts in ref before updating
+        previousAccountsRef.current = accountsAvailable;
+
+        // Update with new accounts
+        setAccountsAvailable({ accountsAvailable: accounts });
+        
+        // If we have a new account (more accounts than before), select the first one
+        if (newItems.length > currentItems.length && newItems.length > 0) {
+          // A new account was likely created, select it automatically
+          setSelectedAccount(newItems[0].account);
+        } else if (!selectedAccount && newItems.length > 0) {
+          // If no account is selected yet but we have accounts, select the first one
+          setSelectedAccount(newItems[0].account);
+        }
+      }
     } catch (error) {
       console.error("Error fetching accounts:", error);
+      // Only set empty state if we don't have any accounts yet
+      if (!accountsAvailable) {
+        setAccountsAvailable({ accountsAvailable: { items: [] } });
+      }
     } finally {
       setLoadingAvailableAcc(false);
     }
-  }, [address]);
+  }, [address, accountsAvailable, selectedAccount]);
 
   // Function to refresh accounts
   const refetchAccts = useCallback(() => {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  // Get the first account for display in the button
-  const accountItems = accountsAvailable?.accountsAvailable?.items || [];
-  const firstAccount = accountItems[0]?.account;
-  const hasAccounts = accountItems.length > 0;
+  // Memoize account items to prevent unnecessary re-renders
+  const accountItems = useMemo(() => {
+    return accountsAvailable?.accountsAvailable?.items || [];
+  }, [accountsAvailable]);
+
+  // Memoize first account and hasAccounts
+  const firstAccount = useMemo(() => accountItems[0]?.account, [accountItems]);
+  const hasAccounts = useMemo(() => accountItems.length > 0, [accountItems]);
 
   // console.log(hasAccounts);
 
   // Fetch accounts on mount and when address changes
   useEffect(() => {
     if (address && isMounted) {
+      // Initial fetch
       fetchAccounts();
+
+      // Set up a refresh interval to check for new accounts
+      // This is especially important after account creation
+      const refreshInterval = setInterval(() => {
+        fetchAccounts();
+      }, 5000); // Check every 5 seconds
+
+      // Set up event listener for account creation
+      const unsubscribe = accountEvents.on(ACCOUNT_CREATED, () => {
+        console.log('Account creation event received in AccountButton');
+        // Force an immediate refresh when a new account is created
+        fetchAccounts();
+      });
+
+      return () => {
+        clearInterval(refreshInterval);
+        unsubscribe(); // Clean up event listener
+      };
     }
   }, [address, isMounted, fetchAccounts]);
 
@@ -147,6 +210,13 @@ export function AccountButton({ className }: AccountButtonProps) {
   const toggleModal = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // If we're opening the modal, force a refresh of accounts
+    if (!isModalOpen) {
+      // Force a fresh fetch of accounts when opening the modal
+      fetchAccounts();
+    }
+
     setIsModalOpen(!isModalOpen);
   };
 
@@ -193,13 +263,18 @@ export function AccountButton({ className }: AccountButtonProps) {
                 typeof (selectedAccount || firstAccount).metadata.picture ===
                 "string"
                   ? (selectedAccount || firstAccount).metadata.picture
-                  : (selectedAccount || firstAccount).metadata.picture?.uri ||
-                    "/placeholder-avatar.png"
+                  : (selectedAccount || firstAccount).metadata.picture?.original?.url ||
+                    (selectedAccount || firstAccount).metadata.picture?.optimized?.url ||
+                    (selectedAccount || firstAccount).metadata.picture?.uri ||
+                    "/fallback.png"
               }
               alt="Profile"
               width={24}
               height={24}
               className="object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/fallback.png";
+              }}
             />
           </div>
         ) : (
@@ -303,11 +378,15 @@ export function AccountButton({ className }: AccountButtonProps) {
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
                       <Image
                         src={
-                          typeof (selectedAccount || firstAccount).metadata.picture === "string"
+                          typeof (selectedAccount || firstAccount).metadata
+                            .picture === "string"
                             ? (selectedAccount || firstAccount).metadata.picture
-                            : (selectedAccount || firstAccount).metadata.picture?.original?.url ||
-                              (selectedAccount || firstAccount).metadata.picture?.optimized?.url ||
-                              (selectedAccount || firstAccount).metadata.picture?.uri ||
+                            : (selectedAccount || firstAccount).metadata.picture
+                                ?.original?.url ||
+                              (selectedAccount || firstAccount).metadata.picture
+                                ?.optimized?.url ||
+                              (selectedAccount || firstAccount).metadata.picture
+                                ?.uri ||
                               "/placeholder-avatar.png"
                         }
                         alt="Profile"
@@ -315,8 +394,7 @@ export function AccountButton({ className }: AccountButtonProps) {
                         height={30}
                         className="object-cover"
                         onError={(e) => {
-                          console.error('Image failed to load');
-                          (e.target as HTMLImageElement).src = "/placeholder-avatar.png";
+                          (e.target as HTMLImageElement).src = "/fallback.png";
                         }}
                       />
                     </div>

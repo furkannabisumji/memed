@@ -3,15 +3,18 @@ import LandingHero from "@/components/LandingHero";
 import Footer from "@/components/shared/Footer";
 import Header from "@/components/shared/Header";
 import LeaderboardTable from "@/components/shared/LeaderboardTable";
+import Image from "next/image";
 
 export default function Home() {
   return (
     <>
       <div className="main flex flex-col min-h-screen w-full">
         <div className="relative h-screen">
-          <img
+          <Image
             src={"/Perspective Grid.svg"}
             alt="curve"
+            width={1900}
+            height={1080}
             className="w-full h-screen absolute -z-40"
           />
           <Header />
