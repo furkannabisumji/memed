@@ -6,7 +6,7 @@ import { Filter, Search, TrendingUp } from "lucide-react"
 import Header from "@/components/shared/Header"
 import Footer from "@/components/shared/Footer"
 import MemeCard from "@/components/meme/MemeCard"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState("all")
@@ -19,7 +19,7 @@ export default function ExplorePage() {
   })
 
   // Function to update the underline position based on the active tab
-  const updateUnderlinePosition = () => {
+  const updateUnderlinePosition = useCallback(() => {
     const activeTabElement = tabRefs.current[activeTab]
     const tabsListElement = tabsListRef.current
 
@@ -32,7 +32,7 @@ export default function ExplorePage() {
         width: tabRect.width,
       })
     }
-  }
+  }, [activeTab])
 
   // Update underline position on window resize
   useEffect(() => {
