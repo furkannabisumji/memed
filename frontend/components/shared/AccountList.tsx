@@ -31,7 +31,7 @@ export function AccountsList({
   const { data: walletClient } = useWalletClient();
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const toast = useCustomToast();
-  
+
   // Add client-side only rendering to prevent hydration errors
   const [isClient, setIsClient] = useState(false);
 
@@ -39,12 +39,12 @@ export function AccountsList({
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
+
   // Process accounts data early to avoid reference errors
-  const filteredAccounts = accountsAvailable ? 
-    removeDuplicatesByAddress(accountsAvailable) : 
-    { items: [] };
-  
+  const filteredAccounts = accountsAvailable
+    ? removeDuplicatesByAddress(accountsAvailable)
+    : { items: [] };
+
   // Early return if not client-side yet to prevent hydration errors
   if (!isClient) {
     return (
@@ -53,7 +53,7 @@ export function AccountsList({
       </div>
     );
   }
-  
+
   // Make sure we have valid data before proceeding
   if (!accountsAvailable || !accountsAvailable.items) {
     return (
@@ -305,9 +305,6 @@ export function AccountsList({
                                 <span className="text-2xl font-bold text-gray-400">
                                   {item.account.username?.localName?.[0]?.toUpperCase() ||
                                     "?"}
-                                </span>
-                                <span className="text-xs text-gray-500 mt-1">
-                                  Pending metadata
                                 </span>
                               </div>
                             )}
