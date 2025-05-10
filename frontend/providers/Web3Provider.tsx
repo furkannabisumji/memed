@@ -52,9 +52,6 @@ const customRetroTheme = {
   // Preserving retro borders but with your colors
   "--ck-body-border": "1px solid #4CAF50",
   "--ck-body-border-radius": "6px",
-
-  // Highlight and focus colors
-  "--ck-focus-color": "#4CAF50",
 };
 
 export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
