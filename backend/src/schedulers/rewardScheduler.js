@@ -5,7 +5,7 @@ const { distributeEngagementRewards } = require('../controllers/lensController')
 const dailyJob = cron.schedule('0 0 * * *', async () => {
   console.log('Running engagement rewards distribution...');
   try {
-    await distributeEngagementRewards();
+    // await distributeEngagementRewards();
     console.log('Engagement rewards distribution completed successfully');
   } catch (error) {
     console.error('Error in engagement rewards distribution:', error);
@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === 'development') {
   devJob = cron.schedule('0 * * * *', async () => {
     console.log('Running development engagement rewards check...');
     try {
-      await distributeEngagementRewards();
+      // await distributeEngagementRewards();
       console.log('Development engagement rewards check completed');
     } catch (error) {
       console.error('Error in development engagement rewards check:', error);

@@ -2,40 +2,41 @@ const { MerkleTree } = require('merkletreejs');
 const keccak256 = require('keccak256');
 const ethers = require('ethers');
 const Reward = require('../models/Reward');
-const MerkleRoot = require('../models/MerkleRoot');
+const Airdrop = require('../models/Airdrop');
 
 /**
- * Generate a Merkle tree from all pending rewards
+ * Generate a Merkle tree from all pending rewards for a specific token and airdrop round
  */
-async function generateMerkleTree() {
-  // Get all unclaimed rewards
-  const rewards = await Reward.find({ claimed: false });
+async function generateMerkleTree(tokenAddress, index) {
+  // Get all unclaimed rewards for this token
+  const rewards = await Reward.find({ 
+    tokenAddress,
+    claimed: false,
+    airdropIndex: index
+  });
   
-  // Group rewards by token and user address
-  const rewardsByTokenAndUser = {};
+  // Group rewards by user address
+  const rewardsByUser = {};
   
   for (const reward of rewards) {
-    const key = `${reward.tokenAddress}-${reward.userAddress}`;
-    
-    if (!rewardsByTokenAndUser[key]) {
-      rewardsByTokenAndUser[key] = {
-        token: reward.tokenAddress,
+    if (!rewardsByUser[reward.userAddress]) {
+      rewardsByUser[reward.userAddress] = {
         user: reward.userAddress,
         amount: ethers.getBigInt(0)
       };
     }
     
-    rewardsByTokenAndUser[key].amount = rewardsByTokenAndUser[key].amount + 
+    rewardsByUser[reward.userAddress].amount = rewardsByUser[reward.userAddress].amount + 
       ethers.getBigInt(reward.amount);
   }
   
   // Create leaves for the Merkle tree
-  const leaves = Object.values(rewardsByTokenAndUser).map(entry => {
-    // Format: keccak256(abi.encodePacked(token, user, amount))
+  const leaves = Object.values(rewardsByUser).map(entry => {
+    // Format: keccak256(abi.encodePacked(token, user, amount, index))
     return ethers.keccak256(
       ethers.solidityPacked(
-        ['address', 'address', 'uint256'],
-        [entry.token, entry.user, entry.amount.toString()]
+        ['address', 'address', 'uint256', 'uint256'],
+        [tokenAddress, entry.user, entry.amount.toString(), index]
       )
     );
   });
@@ -47,11 +48,16 @@ async function generateMerkleTree() {
   const root = tree.getHexRoot();
   
   // Save the root to database
-  await MerkleRoot.create({
-    root,
-    updatedAt: Date.now(),
-    deployed: false
-  });
+  await Airdrop.findOneAndUpdate(
+    { tokenAddress, index },
+    {
+      tokenAddress,
+      index,
+      merkleRoot: root,
+      timestamp: Date.now()
+    },
+    { upsert: true }
+  );
   
   return { tree, root };
 }
@@ -59,41 +65,56 @@ async function generateMerkleTree() {
 /**
  * Generate a proof for a specific user claim
  */
-async function generateProof(tokenAddress, userAddress, amount) {
-  const { tree } = await generateMerkleTree();
+async function generateProof(tokenAddress, userAddress, amount, index) {
+  // Get the existing tree from the database instead of regenerating it
+  const airdrop = await Airdrop.findOne({ tokenAddress, index });
+  if (!airdrop) {
+    throw new Error(`No airdrop found for token ${tokenAddress} with index ${index}`);
+  }
   
+  // Regenerate the tree to get the same structure
+  const { tree } = await generateMerkleTree(tokenAddress, index);
+  console.log({tree});
+  console.log({tokenAddress, userAddress, amount, index});
+  
+  // Ensure amount is properly formatted as a string
+  const formattedAmount = ethers.getBigInt(amount).toString();
+  
+  // Create the leaf in the exact same way as in the tree generation
   const leaf = ethers.keccak256(
     ethers.solidityPacked(
-      ['address', 'address', 'uint256'],
-      [tokenAddress, userAddress, amount]
+      ['address', 'address', 'uint256', 'uint256'],
+      [tokenAddress, userAddress, formattedAmount, index]
     )
   );
+  console.log({leaf});
+  
+  // Check if the leaf exists in the tree before getting proof
+  const leafIndex = tree.getLeafIndex(leaf);
+  if (leafIndex === -1) {
+    console.error('Leaf not found in the tree. User may not be eligible for this airdrop.');
+    return { proof: [], leaf };
+  }
   
   const proof = tree.getHexProof(leaf);
+  console.log({proof});
   
   return { proof, leaf };
 }
 
 /**
- * Get the latest Merkle root
+ * Get the latest airdrop index for a token
  */
-async function getLatestRoot() {
-  const latestRoot = await MerkleRoot.findOne({}).sort({ updatedAt: -1 });
-  return latestRoot ? latestRoot.root : null;
-}
-
-/**
- * Mock update Merkle root - to replace with contract call when upgraded
- */
-async function mockUpdateMerkleRoot() {
-  const { root } = await generateMerkleTree();
-  console.log(`Mock Merkle root update: ${root}`);
-  return root;
+async function getLatestAirdropIndex(tokenAddress) {
+  const latestAirdrop = await Airdrop.findOne({ tokenAddress })
+    .sort({ index: -1 })
+    .limit(1);
+  
+  return latestAirdrop ? latestAirdrop.index : -1;
 }
 
 module.exports = {
   generateMerkleTree,
   generateProof,
-  getLatestRoot,
-  mockUpdateMerkleRoot
+  getLatestAirdropIndex
 }; 

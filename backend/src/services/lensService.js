@@ -1,4 +1,4 @@
-const { fetchAccount, fetchAccountGraphStats, fetchFollowing } = require("@lens-protocol/client/actions");
+const { fetchAccount, fetchAccountGraphStats, fetchFollowing, fetchFollowers } = require("@lens-protocol/client/actions");
 const { evmAddress } = require('@lens-protocol/client');
 const ethers = require('ethers');
 const client = require('../config/lens');
@@ -32,7 +32,8 @@ async function getHandleOwner(handle) {
       localName: handle,
     }
   });
-  return account.address;
+  console.log({account});
+  return account.owner;
 } 
 
 /**
@@ -52,11 +53,16 @@ async function getFollowers(handle) {
     }
 
     // In a production implementation, we would fetch actual followers
-    // For now, let's return 100 mock addresses for testing
-    return Array.from({ length: 100 }, () => {
-      const randomWallet = ethers.Wallet.createRandom();
-      return randomWallet.address;
+    const followers = await fetchFollowers(client, {
+      account: evmAddress(account.address),
     });
+    console.log(followers.value.items[0]);
+    return followers.value.items;
+    // For now, let's return 100 mock addresses for testing
+    // return Array.from({ length: 100 }, () => {
+    //   const randomWallet = ethers.Wallet.createRandom();
+    //   return randomWallet.address;
+    // });
   } catch (error) {
     console.error(`Error fetching followers for ${handle}:`, error);
     throw error;

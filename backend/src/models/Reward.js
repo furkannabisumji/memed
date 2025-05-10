@@ -25,6 +25,11 @@ const RewardSchema = new mongoose.Schema({
     enum: ['initial', 'engagement'],
     required: true
   },
+  airdropIndex: {
+    type: Number,
+    required: true,
+    default: 0
+  },
   claimed: {
     type: Boolean,
     default: false
@@ -38,5 +43,8 @@ const RewardSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Compound index to ensure unique claims per user per airdrop round
+RewardSchema.index({ tokenAddress: 1, userAddress: 1, airdropIndex: 1 }, { unique: true });
 
 module.exports = mongoose.model('Reward', RewardSchema); 

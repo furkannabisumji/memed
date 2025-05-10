@@ -11,6 +11,33 @@ const TokenSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  name: {
+    type: String,
+    required: true
+  },
+  ticker: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  image: {
+    type: String,
+    required: true
+  },
+  creator: {
+    type: String,
+    required: true
+  },
+  followers: [{
+    type: String
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
   lastRewardDistribution: {
     type: Date,
     default: Date.now
