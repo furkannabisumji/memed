@@ -10,6 +10,7 @@ import { client } from "./client";
 import { WalletClient } from "viem";
 import { MetadataAttributeType, account } from "@lens-protocol/metadata";
 import lighthouse from "@lighthouse-web3/sdk";
+import { Account } from "@/app/types";
 
 // Fetch a single account by address
 export const getAccountByAddress = async (address: string) => {
@@ -62,23 +63,31 @@ export const getAvailableAccounts = async (address: string) => {
     // console.log("Lens SDK accounts result:", result);
 
     // Ensure we return a consistent format regardless of the API response structure
-    type AccountItem = { account: any };
+    type AccountItem = { account: Account };
     let accountItems: AccountItem[] = [];
 
     if (Array.isArray(result.value)) {
       // Handle array response
-      accountItems = result.value.map((account: any) => ({
+      accountItems = result.value.map((account: Account) => ({
         account: account,
       }));
     } else if (result.value && typeof result.value === "object") {
       if ("items" in result.value && Array.isArray(result.value.items)) {
         // Handle paginated response
-        accountItems = result.value.items.map((item: any) => ({
-          account: item.account || item,
+        accountItems = result.value.items.map((item: AccountItem) => ({
+          account: item.account,
         }));
       } else {
         // Handle single object response
-        accountItems = [{ account: result.value }];
+        // Use unknown as an intermediate step for type safety
+        const singleAccount = result.value as unknown;
+        // Check if it has the expected structure before casting
+        if (singleAccount && typeof singleAccount === 'object' && 'address' in singleAccount) {
+          accountItems = [{ account: singleAccount as Account }];
+        } else {
+          console.warn('Received unexpected account format:', singleAccount);
+          accountItems = [];
+        }
       }
     }
 

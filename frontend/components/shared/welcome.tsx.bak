@@ -2,15 +2,21 @@
 import { useAccount, useWalletClient } from "wagmi";
 import { useConnectKitSign } from "@/hooks/useConnectKitSign";
 import { useState, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { AccountsList } from "./AccountList";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import {
+  getAvailableAccounts,
   createNewAccount,
+  switchToAccount,
+  getAccountByAddress,
   createProfileMetadata,
   uploadToIPFS,
 } from "@/lib/lens";
+import { Loader2 } from "lucide-react";
 import { DisconnectWalletButton } from "./DisconnectWalletButton";
 import ImageUploader from "./ImageUploader";
 import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
@@ -28,16 +34,17 @@ export function Welcome() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [localName, setLocalName] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+  const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
+  const [loadingAvailableAcc, setLoadingAvailableAcc] = useState(false);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
-
-  // Use the account store for all account-related state
-  const {
-    selectedAccount: selectedAccountStore,
+  
+  // Use the account store
+  const { 
+    fetchAccounts: fetchAccountsStore,
     accounts: accountsStore,
     isLoading: isLoadingStore,
-    fetchAccounts: fetchAccountsStore,
-    setSelectedAccount,
-    setIsLoading: setIsLoadingStore,
+    selectAccount: selectAccountStore,
+    selectedAccount: selectedAccountStore
   } = useAccountStore();
 
   // Use useEffect to set isClient to true after component mounts
@@ -46,6 +53,7 @@ export function Welcome() {
   }, []);
 
   useEffect(() => {
+    // This effect doesn't need to do anything on mount
     // Only provide a cleanup function for unmount
     return () => {
       // Dismiss all toasts when component unmounts
@@ -55,78 +63,158 @@ export function Welcome() {
     };
   }, []); // Add empty dependency array to prevent infinite loops
 
-  // Function to fetch accounts - let the store handle loading state
+  // Use a ref to store the previous accounts to prevent unnecessary re-renders
+  const previousAccountsRef = useRef<any>(null);
+
+  // Function to fetch available accounts using the store
   const fetchAccounts = useCallback(async () => {
     if (!address) return;
 
-    try {
-      setIsLoadingStore(true);
-      const accounts = await fetchAccountsStore(address);
+    // Only show loading state on initial fetch or during auto-refresh
+    if (!accountsAvailable) {
+      setLoadingAvailableAcc(true);
+    }
 
-      console.log(`Fetched ${accounts.length} accounts from the store`);
+    try {
+      // Use the store's fetchAccounts method
+      await fetchAccountsStore(address);
+      
+      // Get the accounts from the store
+      const storeAccounts = accountsStore;
+      
+      // Create a format compatible with the existing component
+      const accountsFormat = {
+        items: storeAccounts.map(acc => ({ account: acc.account }))
+      };
+      
+      // Only update if there's a meaningful change
+      const currentItems = accountsAvailable?.accountsAvailable?.items || [];
+      const newItems = accountsFormat.items || [];
+      
+      // Check if the account lists are different
+      const isDifferent =
+        currentItems.length !== newItems.length ||
+        (newItems.length > 0 &&
+          currentItems.length > 0 &&
+          (newItems[0].account?.address !== currentItems[0].account?.address ||
+           newItems[0].account?.username?.localName !== currentItems[0].account?.username?.localName));
+      
+      if (isDifferent || !accountsAvailable) {
+        // Update the ref first
+        previousAccountsRef.current = accountsAvailable;
+        
+        // Then update the local state for UI purposes
+        setAccountsAvailable({ accountsAvailable: accountsFormat });
+      }
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      toast.error("Failed to fetch your profiles");
+      if (!accountsAvailable) {
+        toast.error("Failed to fetch your profiles");
+        setAccountsAvailable({ accountsAvailable: { items: [] } });
+      }
     } finally {
-      setIsLoadingStore(false);
+      // Only change loading state if we're not in auto-refresh mode
+      if (!autoRefreshing) {
+        setLoadingAvailableAcc(false);
+      }
     }
-  }, [address, toast, fetchAccountsStore]);
+  }, [address, toast, accountsAvailable, autoRefreshing, fetchAccountsStore, accountsStore]);
 
   // Fetch accounts on initial load and when address changes
   // Using a ref to prevent infinite loops
   const hasFetchedRef = useRef(false);
 
-  // Use a separate effect for resetting store state to avoid infinite loops
   useEffect(() => {
-    // Only reset the store when disconnecting
-    if (!address || !isConnected) {
-      // Reset the account store state when disconnected
-      // Use a timeout to ensure this happens after the component state updates
-      setTimeout(() => {
-        useAccountStore.getState().resetStore();
-      }, 0);
-    }
-  }, [address, isConnected]);
-
-  // Handle initial fetch and state reset separately
-  useEffect(() => {
-    if (address && isConnected && isClient && !hasFetchedRef.current) {
-      // Initial fetch
+    if (address && isConnected && !hasFetchedRef.current) {
       fetchAccounts();
       hasFetchedRef.current = true;
     } else if (!address || !isConnected) {
-      // Reset component state when disconnected
+      // Reset the ref when address changes to null or user disconnects
       hasFetchedRef.current = false;
+      // Reset all state when wallet is disconnected
+      setAccountsAvailable(null);
+      setLoadingAvailableAcc(false);
       setImage("");
       setLocalName("");
       setTxHash("");
       setIsGenerating(false);
     }
-  }, [address, isConnected, fetchAccounts, isClient]);
+  }, [address, isConnected, fetchAccounts]);
 
-  // Simple function to refresh accounts
+  // Function to refresh accounts
   const refetchAccts = async () => {
+    await fetchAccounts();
+  };
+  
+  // Handle account selection and switching
+  const handleSwitchAccount = async (account: any) => {
+    if (!address || !isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
     try {
-      await fetchAccounts();
-    } catch (error) {
-      console.error("Error refreshing accounts:", error);
-      toast.error("Failed to refresh profiles");
+      // Show loading toast
+      const switchingToastId = `switching-account-${Date.now()}`;
+      toast.loading("Switching to selected profile...", {
+        id: switchingToastId,
+      });
+
+      // Call the SDK function to switch accounts
+      const result = await switchToAccount({
+        profileId: account.id || account,
+        address,
+        signFn: async (message) => await signWithConnectKit(message),
+      });
+
+      // Check if the switch was successful
+      if (result) {
+        // Update the selected account in the store
+        selectAccountStore(account);
+        
+        // Dismiss the loading toast and show success
+        toast.dismiss(switchingToastId);
+        toast.success("Successfully switched to selected profile", {
+          description: "Profile switched",
+          duration: 3000,
+        });
+        
+        // Refetch accounts to ensure we have the latest data
+        fetchAccounts();
+      } else {
+        // Handle the case where the switch failed but didn't throw an error
+        toast.dismiss(switchingToastId);
+        toast.error("Failed to switch profile", {
+          description: "Please try again",
+          duration: 3000,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error switching account:", error);
+      toast.dismiss(`switching-account-${Date.now()}`);
+      toast.error("Error switching profile", {
+        description: error?.message || "Please try again",
+        duration: 3000,
+      });
     }
   };
 
-  // Function to periodically refresh accounts data - simplified to use store state
+  // Function to periodically refresh accounts data
   const startAutoRefresh = useCallback(() => {
     if (autoRefreshing || !isClient) return;
 
     // Dismiss any existing toasts first
     toast.dismissAll();
 
-    // Set auto-refreshing state
+    // Set loading state immediately to show loading indicator
+    setLoadingAvailableAcc(true);
     setAutoRefreshing(true);
 
     let refreshCount = 0;
     const maxRefreshes = 6; // Increased to 6 refreshes (60 seconds total)
     let foundNewAccount = false;
+    let previousAccountCount =
+      accountsAvailable?.accountsAvailable?.items?.length || 0;
 
     // Use a unique ID for this toast
     const refreshStartId = `auto-refresh-start-${Date.now()}`;
@@ -137,17 +225,38 @@ export function Welcome() {
     });
 
     const refreshInterval = setInterval(async () => {
-      // Fetch new accounts using the store
-      await fetchAccountsStore(address || "");
+      // Store the previous count before refreshing
+      previousAccountCount =
+        accountsAvailable?.accountsAvailable?.items?.length || 0;
+
+      // Fetch new accounts
+      await refetchAccts();
       refreshCount++;
 
       // Check if we have a new account by comparing counts
-      const currentAccountCount = accountsStore.length || 0;
+      const currentAccountCount =
+        accountsAvailable?.accountsAvailable?.items?.length || 0;
+
+      if (currentAccountCount > previousAccountCount) {
+        // New account found! Stop refreshing and show success
+        foundNewAccount = true;
+        clearInterval(refreshInterval);
+        setAutoRefreshing(false);
+        setLoadingAvailableAcc(false); // Stop loading state
+        toast.dismissAll();
+        toast.success("Your new profile has been created!", {
+          id: `profile-created-${Date.now()}`,
+          description: "You can now use your new Lens account",
+          duration: 5000,
+        });
+        return;
+      }
 
       if (refreshCount >= maxRefreshes && !foundNewAccount) {
         // Max attempts reached without finding new account
         clearInterval(refreshInterval);
         setAutoRefreshing(false);
+        setLoadingAvailableAcc(false); // Stop loading state
         toast.dismissAll();
         toast.info("Your profile may take longer to appear", {
           id: `refresh-complete-${Date.now()}`,
@@ -160,17 +269,9 @@ export function Welcome() {
     return () => {
       clearInterval(refreshInterval);
       setAutoRefreshing(false);
+      setLoadingAvailableAcc(false); // Ensure loading state is cleared on cleanup
     };
-  }, [
-    toast,
-    autoRefreshing,
-    isClient,
-    fetchAccountsStore,
-    address,
-    accountsStore,
-    selectedAccountStore,
-    setSelectedAccount,
-  ]);
+  }, [toast, refetchAccts, accountsAvailable, autoRefreshing, isClient]);
 
   // Username validation rules for Lens Protocol
   const validateUsername = (username: string) => {
@@ -254,6 +355,12 @@ export function Welcome() {
         bio: `${localName}'s profile`,
       });
 
+      // Upload the metadata to IPFS
+      toast.loading("Uploading your profile metadata to IPFS...", {
+        id: uploadingToastId,
+        description: "This may take a moment",
+      });
+
       const { Hash } = await uploadToIPFS(profileMetadata);
       // Make sure the URI is correctly formatted
       const metadataUri = `${
@@ -284,90 +391,147 @@ export function Welcome() {
           signFn: async (message) => await signWithConnectKit(message),
         });
 
-        // Check if we have a valid account object or just a transaction hash
-        if (result) {
-          console.log("Account creation result:", result);
-
-          // Reset form state completely
-          resetForm();
-
-          // Reset the file input element directly
-          const fileInput = document.getElementById(
-            "imageUploadInput"
-          ) as HTMLInputElement;
-          if (fileInput) {
-            fileInput.value = "";
-          }
-
-          // If we got a transaction hash (string), store it for reference
-          if (typeof result === "string") {
-            setTxHash(result);
-            console.log("Account creation transaction hash:", result);
-
-            toast.dismiss(creatingToastId);
-            toast.success("Account creation initiated!", {
-              id: `account-created-${Date.now()}`,
-              description: "Your profile is being created on the blockchain",
-              duration: 5000,
-            });
-
-            // Start auto-refreshing to detect the new account
-            await fetchAccountsStore(address || "");
-            startAutoRefresh();
-          }
-          // If we got an account object, we can use it directly
-          else if (typeof result === "object" && "address" in result) {
-            toast.dismiss(creatingToastId);
-            toast.success("Your new profile has been created!", {
-              id: `account-created-${Date.now()}`,
-              description: "You can now use your new Lens account",
-              duration: 3000,
-            });
-
-            try {
-              // First refresh accounts to make sure we have the latest list
-              await fetchAccountsStore(address || "");
-
-              // Then select the new account - use the result directly since we have it
-              // This ensures we're selecting the newly created account
-              console.log("Selecting newly created account directly:", result);
-              setSelectedAccount(result as any);
-
-              // Emit event to notify other components
-              accountEvents.emit(ACCOUNT_CREATED);
-            } catch (err) {
-              console.error("Error selecting new account:", err);
-            }
-          }
-        } else {
-          toast.dismiss(creatingToastId);
-          toast.error("Failed to create account", {
-            description: "No result returned from account creation",
-            duration: 5000,
-          });
+        // Set the transaction hash for tracking
+        if (result && typeof result === "string") {
+          setTxHash(result);
+          console.log("Account creation transaction hash:", result);
         }
-      } catch (error: any) {
-        console.error("Error in account creation:", error);
-        // Make sure to dismiss any loading toasts
-        toast.dismiss(uploadingToastId);
+
+        // Reset form state completely
+        resetForm();
+
+        // Reset the file input element directly
+        const fileInput = document.getElementById(
+          "imageUploadInput"
+        ) as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = "";
+        }
+
+        // Set loading state immediately to prevent flickering
+        setLoadingAvailableAcc(true);
+
         toast.dismiss(creatingToastId);
-        toast.error(
-          "An unexpected error occurred during account creation. Please try again.",
+        // Force a new toast with a unique ID to ensure it shows
+        const toastId = `success-${Date.now()}`;
+        toast.success(
+          "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
           {
-            description: error?.message || "Unknown error",
+            id: toastId,
+            description: "Transaction submitted successfully",
             duration: 5000,
           }
         );
-      }
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
-  // If we're not on the client yet, show a loading state
-  if (!isClient) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+        // Add a more detailed explanation toast
+        setTimeout(() => {
+          toast.info("Account creation process", {
+            id: `process-info-${Date.now()}`,
+            description:
+              "Your profile and metadata are being processed on the blockchain. This typically takes 1-2 minutes, but can sometimes take longer.",
+            duration: 8000,
+          });
+        }, 1000);
+
+        // Start auto-refreshing accounts to check for the new account
+        startAutoRefresh();
+
+        // Emit an event to notify other components about the new account
+        accountEvents.emit(ACCOUNT_CREATED);
+      } catch (error: any) {
+        console.error("Error creating account:", error);
+        toast.dismiss(creatingToastId);
+
+        // Handle specific error cases
+        if (
+          error.message?.includes("already taken") ||
+          error.message?.includes("already exists")
+        ) {
+          toast.error(
+            "This username is already taken. Please try a different one.",
+            {
+              description: "Username unavailable",
+              duration: 5000,
+            }
+          );
+        } else if (
+          error.message?.includes("rules") ||
+          error.message?.includes("validation")
+        ) {
+          toast.error(
+            `Your username doesn't meet all Lens Protocol requirements. Try a different username that:
+            - Is between 5-31 characters
+            - Contains only letters, numbers, and underscores
+            - Starts and ends with a letter or number
+            - Has no consecutive underscores
+            - Doesn't contain reserved words like 'lens', 'admin', etc.`,
+            {
+              description: "Username validation failed",
+              duration: 10000,
+            }
+          );
+        } else {
+          toast.error("Failed to create account", {
+            description: error.message || "An unexpected error occurred",
+            duration: 5000,
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error in account creation:", error);
+      // Make sure to dismiss any loading toasts
+      toast.dismiss(uploadingToastId);
+      toast.dismiss(creatingToastId);
+      toast.error(
+        "An unexpected error occurred during account creation. Please try again.",
+        {
+          description: error?.message || "Unknown error",
+          duration: 5000,
+        }
+      );
+    }
+  );
+
+  try {
+    // Use the SDK function to create a new account
+    const result = await createNewAccount({
+      localName,
+      metadataUri,
+      address,
+      walletClient,
+      signFn: async (message) => await signWithConnectKit(message),
+    });
+
+    // Set the transaction hash for tracking
+    if (result && typeof result === "string") {
+      setTxHash(result);
+      console.log("Account creation transaction hash:", result);
+    }
+
+    // Reset form state completely
+    resetForm();
+
+    // Reset the file input element directly
+    const fileInput = document.getElementById(
+      "imageUploadInput"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
+    }
+
+    // Set loading state immediately to prevent flickering
+    setLoadingAvailableAcc(true);
+
+    toast.dismiss(creatingToastId);
+    // Force a new toast with a unique ID to ensure it shows
+    const toastId = `success-${Date.now()}`;
+    toast.success(
+      "Your new Lens profile has been created. It may take a few minutes for your profile picture to appear.",
+      {
+        id: toastId,
+        description: "Transaction submitted successfully",
+        duration: 5000,
+      }
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Loading...</h2>
           <p className="text-gray-500">
@@ -427,31 +591,32 @@ export function Welcome() {
                   variant="outline"
                   size="sm"
                   onClick={() => refetchAccts()}
-                  disabled={isLoadingStore}
+                  disabled={loadingAvailableAcc}
                   className="cursor-pointer"
                 >
-                  {isLoadingStore ? "Loading..." : "Refresh"}
+                  {loadingAvailableAcc ? "Loading..." : "Refresh"}
                 </Button>
               </div>
 
-              {isLoadingStore ? (
+              {loadingAvailableAcc ? (
                 <div className="text-center py-4 text-gray-500">
                   Loading your profiles...
                 </div>
-              ) : accountsStore && accountsStore.length > 0 ? (
-                <AccountsList
-                  accountsAvailable={{
-                    // @ts-ignore
-                    items: accountsStore.map((acc) => ({
-                      account: acc.account,
-                    })),
-                    pageInfo: { next: null, prev: null },
-                  }}
-                />
+              ) : accountsAvailable?.accountsAvailable?.items ? (
+                accountsAvailable.accountsAvailable.items.length > 0 ? (
+                  <AccountsList
+                    accountsAvailable={accountsAvailable.accountsAvailable}
+                    onAccountSelected={handleSwitchAccount}
+                  />
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    No profiles found. Create one above or connect a different
+                    wallet.
+                  </div>
+                )
               ) : (
                 <div className="text-center py-4 text-gray-500">
-                  No profiles found. Create one above or connect a different
-                  wallet.
+                  Could not load profiles. Please try refreshing.
                 </div>
               )}
             </div>
