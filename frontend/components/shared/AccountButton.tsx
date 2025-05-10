@@ -475,5 +475,12 @@ export function AccountButton({ className }: AccountButtonProps) {
     );
   }
 
-  return null;
+  return (
+    <div className={`flex items-center justify-center h-10 ${className || ""}`}>
+      <div className="relative w-5 h-5">
+        <div className="absolute w-full h-full rounded-full border-2 border-t-transparent border-primary animate-spin"></div>
+      </div>
+      <span className="ml-2 text-sm text-gray-600">Connecting...</span>
+    </div>
+  );
 }
