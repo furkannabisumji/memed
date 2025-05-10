@@ -12,20 +12,19 @@ const albertsans = Albert_Sans({
 });
 export default function Header() {
   const { address, isConnected } = useAccount();
-  
+
   // Only fetch accounts if address is available
   React.useEffect(() => {
     const fetchAccounts = async () => {
       if (address && isConnected) {
         try {
-          const accounts = await getAvailableAccounts(address);
-          console.log('Available accounts:', accounts);
+          await getAvailableAccounts(address);
         } catch (error) {
-          console.error('Error fetching accounts:', error);
+          console.error("Error fetching accounts:", error);
         }
       }
     };
-    
+
     fetchAccounts();
   }, [address, isConnected]);
   return (

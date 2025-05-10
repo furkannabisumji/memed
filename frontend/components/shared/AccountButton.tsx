@@ -10,6 +10,7 @@ import { AccountsList } from "./AccountList";
 import { ConnectKitButton } from "connectkit";
 import { Copy, LogOut, ExternalLink } from "lucide-react";
 import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
+import { useAccountStore } from "@/store/accountStore";
 
 interface AccountButtonProps {
   className?: string;
@@ -26,8 +27,16 @@ export function AccountButton({ className }: AccountButtonProps) {
   // Client-side only states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  // Get account state from the store
+  const {
+    selectedAccount,
+    accounts: accountsStore,
+    isLoading: isLoadingStore,
+    fetchAccounts: fetchAccountsStore,
+    setSelectedAccount,
+  } = useAccountStore();
 
   // Set mounted state after hydration
   useEffect(() => {
@@ -38,10 +47,7 @@ export function AccountButton({ className }: AccountButtonProps) {
   const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
   const [loadingAvailableAcc, setLoadingAvailableAcc] = useState(false);
 
-  // Use a ref to store previous accounts data to prevent unnecessary re-renders
-  const previousAccountsRef = useRef<any>(null);
-
-  // Function to fetch accounts using SDK with optimized rendering
+  // Function to fetch accounts using the store implementation
   const fetchAccounts = useCallback(async () => {
     if (!address) return;
 
@@ -51,63 +57,60 @@ export function AccountButton({ className }: AccountButtonProps) {
     }
 
     try {
-      const accounts = await getAvailableAccounts(address);
-      // console.log("Fetched accounts:", accounts);
+      // Use the store's fetchAccounts method
+      await fetchAccountsStore(address);
 
-      // Only update state if the accounts have actually changed
-      // This prevents unnecessary re-renders
-      const currentItems = accountsAvailable?.accountsAvailable?.items || [];
-      const newItems = accounts.items || [];
+      // Get the accounts from the store
+      const storeAccounts = accountsStore;
 
-      // Check if the account lists are different by comparing lengths and first account
-      const isDifferent =
-        currentItems.length !== newItems.length ||
-        (newItems.length > 0 &&
-          currentItems.length > 0 &&
-          newItems[0].account?.id !== currentItems[0].account?.id);
+      // Create a format compatible with the existing component
+      const accountsFormat = {
+        items: storeAccounts.map((acc) => ({ account: acc.account })),
+      };
 
-      if (isDifferent || !accountsAvailable) {
-        // Store current accounts in ref before updating
-        previousAccountsRef.current = accountsAvailable;
-
-        // Update with new accounts
-        setAccountsAvailable({ accountsAvailable: accounts });
-
-        // If we have a new account (more accounts than before), select the first one
-        if (newItems.length > currentItems.length && newItems.length > 0) {
-          // A new account was likely created, select it automatically
-          setSelectedAccount(newItems[0].account);
-        } else if (!selectedAccount && newItems.length > 0) {
-          // If no account is selected yet but we have accounts, select the first one
-          setSelectedAccount(newItems[0].account);
-        }
-      }
+      // Only update local state if needed for UI purposes
+      setAccountsAvailable({ accountsAvailable: accountsFormat });
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      // Only set empty state if we don't have any accounts yet
       if (!accountsAvailable) {
         setAccountsAvailable({ accountsAvailable: { items: [] } });
       }
     } finally {
       setLoadingAvailableAcc(false);
     }
-  }, [address, accountsAvailable, selectedAccount]);
-
-  // Function to refresh accounts
-  const refetchAccts = useCallback(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+  }, [address, accountsAvailable, fetchAccountsStore, accountsStore]);
 
   // Memoize account items to prevent unnecessary re-renders
   const accountItems = useMemo(() => {
     return accountsAvailable?.accountsAvailable?.items || [];
   }, [accountsAvailable]);
 
-  // Memoize first account and hasAccounts
-  const firstAccount = useMemo(() => accountItems[0]?.account, [accountItems]);
-  const hasAccounts = useMemo(() => accountItems.length > 0, [accountItems]);
+  // Memoize if the user has any accounts
+  const hasAccounts = useMemo(() => {
+    return accountItems && accountItems.length > 0;
+  }, [accountItems]);
 
-  // console.log(hasAccounts);
+  // Get the first account for display if no selected account
+  const firstAccount = useMemo(() => {
+    return accountItems && accountItems.length > 0
+      ? accountItems[0].account
+      : null;
+  }, [accountItems]);
+
+  // Effect to initialize selected account if needed, but only on initial mount
+  // Using a ref to ensure we don't override user selections
+  const initialSelectionMadeRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialSelectionMadeRef.current && !selectedAccount && firstAccount) {
+      console.log(
+        "AccountButton making initial account selection:",
+        firstAccount
+      );
+      setSelectedAccount(firstAccount);
+      initialSelectionMadeRef.current = true;
+    }
+  }, [firstAccount, selectedAccount, setSelectedAccount]);
 
   // Fetch accounts on mount and when address changes
   useEffect(() => {
@@ -122,10 +125,10 @@ export function AccountButton({ className }: AccountButtonProps) {
       }, 5000); // Check every 5 seconds
 
       // Set up event listener for account creation
-      const unsubscribe = accountEvents.on(ACCOUNT_CREATED, () => {
+      const unsubscribe = accountEvents.on(ACCOUNT_CREATED, async () => {
         console.log("Account creation event received in AccountButton");
         // Force an immediate refresh when a new account is created
-        fetchAccounts();
+        await fetchAccounts();
       });
 
       return () => {
@@ -134,30 +137,6 @@ export function AccountButton({ className }: AccountButtonProps) {
       };
     }
   }, [address, isMounted, fetchAccounts]);
-
-  // Set the first account as selected by default if no account is selected
-  useEffect(() => {
-    if (hasAccounts && !selectedAccount) {
-      setSelectedAccount(firstAccount);
-    }
-  }, [hasAccounts, firstAccount, selectedAccount]);
-
-  // Debug selected account metadata
-  useEffect(() => {
-    if (selectedAccount?.metadata) {
-      console.log("Selected Account Metadata:", selectedAccount.metadata);
-      console.log("Picture type:", typeof selectedAccount.metadata.picture);
-      console.log("Picture value:", selectedAccount.metadata.picture);
-    }
-  }, [selectedAccount]);
-
-  // Handle account selection
-  const handleAccountSelected = (account: any) => {
-    setSelectedAccount(account);
-    setIsModalOpen(false);
-    // Refetch accounts to ensure we have the latest data
-    refetchAccts();
-  };
 
   // Format address for display
   const formatAddress = (addr: string | undefined) => {
@@ -178,8 +157,9 @@ export function AccountButton({ className }: AccountButtonProps) {
   const handleDisconnect = () => {
     disconnect();
     setIsModalOpen(false);
-    // Reset the selected account and other state
-    setSelectedAccount(null);
+
+    // Reset the entire account store instead of just the selected account
+    useAccountStore.getState().resetStore();
 
     // Force a refresh of the page to ensure all components update correctly
     setTimeout(() => {
@@ -222,7 +202,7 @@ export function AccountButton({ className }: AccountButtonProps) {
 
   // Go to welcome page to create account
   const goToWelcomePage = () => {
-    router.push("/welcome");
+    router.push("/accounts");
   };
 
   // Don't render anything complex during server-side rendering
@@ -264,11 +244,18 @@ export function AccountButton({ className }: AccountButtonProps) {
                   typeof (selectedAccount || firstAccount).metadata.picture ===
                   "string"
                     ? (selectedAccount || firstAccount).metadata.picture
-                    : (selectedAccount || firstAccount).metadata.picture
-                        ?.original?.url ||
-                      (selectedAccount || firstAccount).metadata.picture
-                        ?.optimized?.url ||
-                      (selectedAccount || firstAccount).metadata.picture?.uri ||
+                    : (
+                        (selectedAccount || firstAccount).metadata
+                          .picture as any
+                      )?.original?.url ||
+                      (
+                        (selectedAccount || firstAccount).metadata
+                          .picture as any
+                      )?.optimized?.url ||
+                      (
+                        (selectedAccount || firstAccount).metadata
+                          .picture as any
+                      )?.uri ||
                       "/fallback.png"
                 }
                 alt="Profile"
@@ -385,12 +372,18 @@ export function AccountButton({ className }: AccountButtonProps) {
                               .picture === "string"
                               ? (selectedAccount || firstAccount).metadata
                                   .picture
-                              : (selectedAccount || firstAccount).metadata
-                                  .picture?.original?.url ||
-                                (selectedAccount || firstAccount).metadata
-                                  .picture?.optimized?.url ||
-                                (selectedAccount || firstAccount).metadata
-                                  .picture?.uri ||
+                              : (
+                                  (selectedAccount || firstAccount).metadata
+                                    .picture as any
+                                )?.original?.url ||
+                                (
+                                  (selectedAccount || firstAccount).metadata
+                                    .picture as any
+                                )?.optimized?.url ||
+                                (
+                                  (selectedAccount || firstAccount).metadata
+                                    .picture as any
+                                )?.uri ||
                                 "/placeholder-avatar.png"
                           }
                           alt="Profile"
@@ -413,7 +406,7 @@ export function AccountButton({ className }: AccountButtonProps) {
                     )}
                     <div>
                       <div className="font-medium">
-                        {selectedAccount.metadata?.displayName ||
+                        {(selectedAccount.metadata as any)?.displayName ||
                           (selectedAccount.username?.localName &&
                             `@${selectedAccount.username.localName}`) ||
                           "Unknown Account"}
@@ -437,7 +430,6 @@ export function AccountButton({ className }: AccountButtonProps) {
                 <div className="max-h-60 overflow-y-auto">
                   <AccountsList
                     accountsAvailable={accountsAvailable.accountsAvailable}
-                    onAccountSelected={handleAccountSelected}
                   />
                 </div>
               ) : (

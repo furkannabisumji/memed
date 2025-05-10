@@ -1,14 +1,17 @@
 import * as React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { AccountsAvailableResponse } from "@/app/types";
+import {
+  AccountManaged,
+  AccountOwned,
+  AccountsAvailableResponse,
+} from "@/app/types";
 import Image from "next/image";
 import { client } from "@/lib/client";
-import { enableSignless } from "@lens-protocol/client/actions";
 import {
   Tooltip,
   TooltipContent,
@@ -19,18 +22,17 @@ import {
 import { useWalletClient } from "wagmi";
 import { signMessageWith } from "@/lib/lens";
 import { useCustomToast } from "@/components/ui/custom-toast";
+import { useAccountStore } from "@/store/accountStore";
 
 export function AccountsList({
   accountsAvailable,
-  onAccountSelected,
 }: {
   accountsAvailable: AccountsAvailableResponse;
-  onAccountSelected?: (account: any) => void;
 }): React.ReactElement {
   // Initialize all hooks at the top of the component
   const { data: walletClient } = useWalletClient();
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const toast = useCustomToast();
+  const { setSelectedAccount } = useAccountStore();
 
   // Add client-side only rendering to prevent hydration errors
   const [isClient, setIsClient] = useState(false);
@@ -128,25 +130,20 @@ export function AccountsList({
         return console.error(authenticated.error);
       }
 
-      const sessionClient = authenticated.value;
-      // We're skipping signless setup to avoid toast issues
-      console.log("Authentication successful, skipping signless setup");
-
       // Store the selected account for display
       const accountToStore = filteredAccounts.items.find(
-        (item: any) => item.account.address === address
+        (item: AccountManaged | AccountOwned) =>
+          item.account.address === address
       )?.account;
-
-      setSelectedAccount(accountToStore);
 
       toast.success("Profile switched successfully", {
         description: "You are now using a different Lens profile",
         duration: 3000,
       });
 
-      // Call the onAccountSelected callback if provided
-      if (onAccountSelected) {
-        onAccountSelected(accountToStore);
+      // Use the account store to select the account directly
+      if (accountToStore) {
+        setSelectedAccount(accountToStore);
       }
     } catch (error: any) {
       console.error("Error switching profile:", error);
@@ -159,52 +156,8 @@ export function AccountsList({
     }
   };
 
-  // Client-side rendering check already done above
-
   return (
     <TooltipProvider>
-      {/* Display selected account details if available */}
-      {selectedAccount && (
-        <div className="mb-4 p-3 border rounded-lg bg-secondary">
-          <h3 className="font-medium mb-1">Active Profile</h3>
-          <div className="flex items-center gap-2">
-            {selectedAccount.metadata?.picture ? (
-              <div className="w-10 h-10 rounded-full overflow-hidden">
-                <Image
-                  src={
-                    typeof selectedAccount.metadata.picture === "string"
-                      ? selectedAccount.metadata.picture
-                      : selectedAccount.metadata.picture?.original?.url ||
-                        selectedAccount.metadata.picture?.optimized?.url ||
-                        selectedAccount.metadata.picture?.uri ||
-                        "/placeholder-avatar.png"
-                  }
-                  alt={selectedAccount.username?.localName || "Profile"}
-                  width={40}
-                  height={40}
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-sm font-bold">
-                  {selectedAccount.username?.localName?.[0]?.toUpperCase() ||
-                    "?"}
-                </span>
-              </div>
-            )}
-            <div>
-              <p className="font-medium">
-                {selectedAccount.username?.localName || "Unknown"}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {selectedAccount.address}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="mb-2">
         <p className="text-sm text-gray-500 mb-2">
           Click on a profile to switch to it
