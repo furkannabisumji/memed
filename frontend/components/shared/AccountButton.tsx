@@ -472,7 +472,7 @@ export function AccountButton({ className }: AccountButtonProps) {
       <div className="relative w-5 h-5">
         <div className="absolute w-full h-full rounded-full border-2 border-t-transparent border-primary animate-spin"></div>
       </div>
-      <span className="ml-2 text-sm text-gray-600">Connecting...</span>
+      <span className="ml-2 text-sm text-gray-600">Initializing...</span>
     </div>
   );
 }

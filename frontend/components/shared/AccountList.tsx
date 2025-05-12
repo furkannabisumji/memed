@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/tooltip";
 
 import { useWalletClient } from "wagmi";
-import { signMessageWith } from "@/lib/lens";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import { useAccountStore } from "@/store/accountStore";
+import { useConnectKitSign } from "@/hooks/useConnectKitSign";
 
 export function AccountsList({
   accountsAvailable,
@@ -33,7 +33,7 @@ export function AccountsList({
   const { data: walletClient } = useWalletClient();
   const toast = useCustomToast();
   const { setSelectedAccount } = useAccountStore();
-
+  const { signWithConnectKit } = useConnectKitSign();
   // Add client-side only rendering to prevent hydration errors
   const [isClient, setIsClient] = useState(false);
 
@@ -110,8 +110,8 @@ export function AccountsList({
         },
         signMessage: async (message) => {
           try {
-            // Using the improved signMessageWith function which has multiple fallbacks
-            return await signMessageWith(message, owner);
+            // Using the improved signWithConnectKit function
+            return await signWithConnectKit(message);
           } catch (error) {
             console.error("Error signing message:", error);
             throw error;
