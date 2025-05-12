@@ -28,4 +28,6 @@ router.post('/admin/distribute-rewards', async (req, res, next) => {
   }
 });
 
+// router.post('/rewards/add', lensController.addRewardsForUser); not need atm
+
 module.exports = router; 
