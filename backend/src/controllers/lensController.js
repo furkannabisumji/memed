@@ -1,9 +1,9 @@
-const lensService = require('../services/lensService');
-const merkleService = require('../services/merkleService');
-const ethers = require('ethers');
-const {factory_contract} = require('../config/factory');
-const Token = require('../models/Token');
-const Reward = require('../models/Reward');
+const lensService = require("../services/lensService");
+const merkleService = require("../services/merkleService");
+const ethers = require("ethers");
+const { factory_contract } = require("../config/factory");
+const Token = require("../models/Token");
+const Reward = require("../models/Reward");
 /**
  * Get follower statistics for a Lens handle
  * @param {Object} req - Express request object
@@ -11,24 +11,23 @@ const Reward = require('../models/Reward');
  * @param {Function} next - Express next middleware function
  */
 
-
 async function getMintableCheckFunction(req, res, next) {
-try {
-  const { handle } = req.params;
-  const result = await lensService.getFollowerStats(handle);
+  try {
+    const { handle } = req.params;
+    const result = await lensService.getFollowerStats(handle);
 
-  if(result.value.followers > 50000) {
-    return true;
-  } else {
-    return true;
+    if (result.value.followers > 50000) {
+      return true;
+    } else {
+      return true;
+    }
+  } catch (error) {
+    console.error("Error fetching followers:", error);
+    if (error.message === "Account not found") {
+      return res.status(404).json({ error: "Account not found" });
+    }
+    next(error);
   }
-} catch (error) {
-  console.error('Error fetching followers:', error);
-  if (error.message === 'Account not found') {
-    return res.status(404).json({ error: 'Account not found' });
-  }
-  next(error);
-}
 }
 
 const getFollowerStats = async (req, res, next) => {
@@ -37,23 +36,22 @@ const getFollowerStats = async (req, res, next) => {
     const result = await lensService.getFollowerStats(handle);
     res.json(result);
   } catch (error) {
-    console.error('Error fetching followers:', error);
-    if (error.message === 'Account not found') {
-      return res.status(404).json({ error: 'Account not found' });
+    console.error("Error fetching followers:", error);
+    if (error.message === "Account not found") {
+      return res.status(404).json({ error: "Account not found" });
     }
     next(error);
   }
 };
 
-
 const getMintableCheck = async (req, res, next) => {
   getMintableCheckFunction(req, res, next);
- 
 };
 
 const mintMemeCoins = async (req, res, next) => {
   try {
-    const { name, ticker, description, image, message, signature, timestamp } = req.body;
+    const { name, ticker, description, image, message, signature, timestamp } =
+      req.body;
     const { handle } = req.params;
 
     // 1. Check timestamp is recent (e.g., within 5 minutes)
@@ -74,8 +72,8 @@ const mintMemeCoins = async (req, res, next) => {
 
     // 3. Check that the message is in the expected format
     const expectedMessage = `Mint meme for handle: ${handle} at ${timestamp}`;
-    console.log({expectedMessage});
-    console.log({message});
+    console.log({ expectedMessage });
+    console.log({ message });
     // if (message !== expectedMessage) {
     //   return res.status(400).json({ error: 'Invalid message format' });
     // }
@@ -92,57 +90,69 @@ const mintMemeCoins = async (req, res, next) => {
     if (checkTrue) {
       try {
         // Create the meme token
-        const tx = await factory_contract.createMeme(handleOwner, handle, name, ticker, description, image);
-        console.log({tx});
+        const tx = await factory_contract.createMeme(
+          handleOwner,
+          handle,
+          name,
+          ticker,
+          description,
+          image
+        );
+        console.log({ tx });
         // Wait for transaction receipt to get the token address
         const receipt = await tx.wait();
 
-        
         // In a production scenario, we would extract the token address from the event
         // For now, simulate it
         let tokenAddress;
         try {
           // Try to find the TokenCreated event to get the token address
           const event = receipt.logs
-            .filter(log => log.topics[0] === ethers.id("TokenCreated(address,address,string,string,string,string,string,uint256)"))
-            .map(log => factory_contract.interface.parseLog(log))[0];
-          
+            .filter(
+              (log) =>
+                log.topics[0] ===
+                ethers.id(
+                  "TokenCreated(address,address,string,string,string,string,string,uint256)"
+                )
+            )
+            .map((log) => factory_contract.interface.parseLog(log))[0];
+
           tokenAddress = event.args.token;
         } catch (error) {
-          console.error('Error parsing event logs:', error);
+          console.error("Error parsing event logs:", error);
         }
-        
+
         // Store token info
         await Token.findOneAndUpdate(
           { handle },
-          { 
+          {
             handle,
             tokenAddress,
             lastRewardDistribution: Date.now(),
-            totalDistributed: "0"
+            totalDistributed: "0",
           },
           { upsert: true }
         );
-        
+
         // After successful minting, distribute initial rewards to random followers
         await distributeInitialRewards(handle, tokenAddress);
-        
-        return res.status(200).json({ 
-          message: 'Meme created successfully and initial rewards distributed', 
+
+        return res.status(200).json({
+          message: "Meme created successfully and initial rewards distributed",
           tx: tx.hash,
-          tokenAddress
+          tokenAddress,
         });
       } catch (error) {
-        console.error('Error creating meme:', error);
-        return res.status(500).json({ error: 'Failed to create meme' });
+        console.error("Error creating meme:", error);
+        return res.status(500).json({ error: "Failed to create meme" });
       }
     } else {
-      return res.status(400).json({ error: 'Account not mintable' });
+      return res.status(400).json({ error: "Account not mintable" });
     }
   } catch (error) {
-    console.error('Error in mintMemeCoins:', error);
-    if (error.message === 'Account not found') {
-      return res.status(404).json({ error: 'Account not found' });
+    console.error("Error in mintMemeCoins:", error);
+    if (error.message === "Account not found") {
+      return res.status(404).json({ error: "Account not found" });
     }
     next(error);
   }
@@ -155,81 +165,95 @@ const mintMemeCoins = async (req, res, next) => {
  */
 async function distributeInitialRewards(handle, tokenAddress) {
   try {
-    console.log(`Distributing initial rewards for ${handle} with token ${tokenAddress}`);
-    
+    console.log(
+      `Distributing initial rewards for ${handle} with token ${tokenAddress}`
+    );
+
     // 1. Get followers of the handle
     const followers = await lensService.getFollowers(handle);
-    console.log({followers});
-    
+    console.log({ followers });
+
     // 2. Select 5000 random followers (or all if less than 5000)
     const followerCount = Math.min(followers.length, 5000);
-    console.log({followerCount});
+    console.log({ followerCount });
 
-    if(followerCount >= process.env.MIN_FOLLOWERS_REQUIRED) {
+    if (followerCount >= process.env.MIN_FOLLOWERS_REQUIRED) {
       // Extract just the follower addresses
-      const selectedFollowers = selectRandomFollowers(followers, followerCount)
-        .map(follower => follower.follower.address); // Extract the address field
-      console.log({selectedFollowers});
+      const selectedFollowers = selectRandomFollowers(
+        followers,
+        followerCount
+      ).map((follower) => follower.follower.address); // Extract the address field
+      console.log({ selectedFollowers });
 
       // 3. Calculate token amount per follower (100 tokens each)
       const tokensPerFollower = ethers.parseUnits("100", 18).toString();
-      console.log({tokensPerFollower});
+      console.log({ tokensPerFollower });
 
       // 4. Get the latest airdrop index
-      const airdropIndex = await merkleService.getLatestAirdropIndex(tokenAddress) + 1;
-      console.log({airdropIndex});
+      const airdropIndex =
+        (await merkleService.getLatestAirdropIndex(tokenAddress)) + 1;
+      console.log({ airdropIndex });
 
       // 5. Create reward records in database
-      const rewardPromises = selectedFollowers.map(followerAddress => 
+      const rewardPromises = selectedFollowers.map((followerAddress) =>
         Reward.create({
           handle,
           tokenAddress,
           userAddress: followerAddress, // Now using the extracted address
           amount: tokensPerFollower,
-          type: 'initial',
+          type: "initial",
           airdropIndex,
-          claimed: false
+          claimed: false,
         })
       );
-      
+
       await Promise.all(rewardPromises);
-      
+
       // 6. Generate new Merkle tree and root
-      const { root } = await merkleService.generateMerkleTree(tokenAddress, airdropIndex);
-      
+      const { root } = await merkleService.generateMerkleTree(
+        tokenAddress,
+        airdropIndex
+      );
+
       // 7. Set the Merkle root on the contract
       try {
-        const tx = await airdrop_contract.setMerkleRoot(tokenAddress, airdropIndex, root);
+        const tx = await airdrop_contract.setMerkleRoot(
+          tokenAddress,
+          airdropIndex,
+          root
+        );
         await tx.wait();
-        console.log(`Merkle root set for token ${tokenAddress} at index ${airdropIndex}`);
+        console.log(
+          `Merkle root set for token ${tokenAddress} at index ${airdropIndex}`
+        );
       } catch (error) {
-        console.error('Error setting Merkle root on contract:', error);
-        if (error.message.includes('Too soon to set')) {
-          console.log('Previous airdrop was too recent, will retry later');
+        console.error("Error setting Merkle root on contract:", error);
+        if (error.message.includes("Too soon to set")) {
+          console.log("Previous airdrop was too recent, will retry later");
         } else {
           throw error;
         }
       }
-      
+
       // 8. Update total distributed
-      const totalDistributed = ethers.parseUnits(
-        (selectedFollowers.length * 100).toString(), 
-        18
-      ).toString();
-      
-      await Token.findOneAndUpdate(
-        { handle },
-        { $set: { totalDistributed } }
+      const totalDistributed = ethers
+        .parseUnits((selectedFollowers.length * 100).toString(), 18)
+        .toString();
+
+      await Token.findOneAndUpdate({ handle }, { $set: { totalDistributed } });
+
+      console.log(
+        `Initial rewards distributed to ${selectedFollowers.length} followers of ${handle}`
       );
-      
-      console.log(`Initial rewards distributed to ${selectedFollowers.length} followers of ${handle}`);
       return selectedFollowers.length;
     } else {
-      console.log(`Not enough followers for ${handle}, skipping initial rewards distribution`);
+      console.log(
+        `Not enough followers for ${handle}, skipping initial rewards distribution`
+      );
       return 0;
     }
   } catch (error) {
-    console.error('Error distributing initial rewards:', error);
+    console.error("Error distributing initial rewards:", error);
     throw error;
   }
 }
@@ -239,91 +263,110 @@ async function distributeInitialRewards(handle, tokenAddress) {
  */
 async function distributeEngagementRewards() {
   try {
-    console.log('Starting engagement rewards distribution');
-    
+    console.log("Starting engagement rewards distribution");
+
     // Get all tokens
     const tokens = await Token.find();
     let totalRewardedUsers = 0;
-    
+
     for (const token of tokens) {
       const { handle, tokenAddress, lastRewardDistribution } = token;
-      
+
       // Get engagement data since last distribution
       const engagementData = await lensService.getEngagementMetrics(handle);
       let newEngagement = 0;
       for (const engagement of engagementData) {
-        let post = await Post.findOneAndUpdate({ postId: engagement.postId }, { engagement: engagement.engagement });
+        let post = await Post.findOneAndUpdate(
+          { postId: engagement.postId },
+          { engagement: engagement.engagement }
+        );
         if (!post) {
           post = new Post({
             postId: engagement.postId,
-            engagement: engagement.engagement
+            engagement: engagement.engagement,
           });
           await post.save();
         }
-        Object.keys(engagement.engagement).map((key)=>{
+        Object.keys(engagement.engagement).map((key) => {
           newEngagement += engagement.engagement[key] - post.engagement[key];
         });
-        console.log({newEngagement});
+        console.log({ newEngagement });
       }
-      
+
       // If 100,000+ engagements, distribute rewards to 5000 followers
       if (newEngagement >= 1) {
-        console.log(`${handle} has ${newEngagement} engagements - distributing rewards`);
-        
+        console.log(
+          `${handle} has ${newEngagement} engagements - distributing rewards`
+        );
+
         // Get followers
         const followers = await lensService.getFollowers(handle);
-        
+
         // Select up to 5000 followers
         const followerCount = Math.min(followers.length, 5000);
-        const selectedFollowers = selectRandomFollowers(followers, followerCount);
-        
+        const selectedFollowers = selectRandomFollowers(
+          followers,
+          followerCount
+        );
+
         // Calculate tokens per follower (100 tokens each)
         const tokensPerFollower = ethers.parseUnits("100", 18).toString();
-        
+
         // Create reward records
-        const rewardPromises = selectedFollowers.map(follower => 
+        const rewardPromises = selectedFollowers.map((follower) =>
           Reward.create({
             handle,
             tokenAddress,
             userAddress: follower,
             amount: tokensPerFollower,
-            type: 'engagement',
-            claimed: false
+            type: "engagement",
+            claimed: false,
           })
         );
-        
+
         await Promise.all(rewardPromises);
-        
+
         // Update token distribution info
         const newDistributed = ethers.parseUnits(
-          (selectedFollowers.length * 100).toString(), 
+          (selectedFollowers.length * 100).toString(),
           18
         );
-        
-        const currentDistributed = ethers.parseUnits(token.totalDistributed || "0", 0);
-        const totalDistributed = (currentDistributed + newDistributed).toString();
-        
+
+        const currentDistributed = ethers.parseUnits(
+          token.totalDistributed || "0",
+          0
+        );
+        const totalDistributed = (
+          currentDistributed + newDistributed
+        ).toString();
+
         await Token.findByIdAndUpdate(token._id, {
           lastRewardDistribution: Date.now(),
-          totalDistributed
+          totalDistributed,
         });
-        
+
         totalRewardedUsers += selectedFollowers.length;
-        console.log(`Distributed engagement rewards for ${handle}: ${selectedFollowers.length} followers rewarded`);
+        console.log(
+          `Distributed engagement rewards for ${handle}: ${selectedFollowers.length} followers rewarded`
+        );
       } else {
-        console.log(`${handle} has only ${engagementData.totalEngagements} engagements - no rewards`);
+        console.log(
+          `${handle} has only ${engagementData.totalEngagements} engagements - no rewards`
+        );
       }
     }
-    
+
     // Update Merkle root after all distributions
     if (totalRewardedUsers > 0) {
       await merkleService.mockUpdateMerkleRoot();
     }
-    
-    console.log(`Engagement rewards distribution completed: ${totalRewardedUsers} total users rewarded`);
+
+    console.log(
+      `Engagement rewards distribution completed: ${totalRewardedUsers} total users rewarded`
+    );
     return totalRewardedUsers;
   } catch (error) {
-    console.error('Error distributing engagement rewards:', error);
+    console.error("Error distributing engagement rewards:", error);
     throw error;
   }
 }
@@ -334,34 +377,34 @@ async function distributeEngagementRewards() {
 const generateClaimData = async (req, res, next) => {
   try {
     const userAddress = req.params.userAddress;
-    console.log({userAddress});
-    
+    console.log({ userAddress });
+
     // Get all unclaimed rewards for the user
-    const rewards = await Reward.find({ 
-      userAddress, 
-      claimed: false 
+    const rewards = await Reward.find({
+      userAddress,
+      claimed: false,
     });
-    console.log({rewards});
-    
+    console.log({ rewards });
+
     if (!rewards || rewards.length === 0) {
-      return res.status(404).json({ error: 'No unclaimed rewards found' });
+      return res.status(404).json({ error: "No unclaimed rewards found" });
     }
-    
+
     // Group rewards by token
     const rewardsByToken = {};
-    
+
     for (const reward of rewards) {
       if (!rewardsByToken[reward.tokenAddress]) {
         rewardsByToken[reward.tokenAddress] = {
           tokenAddress: reward.tokenAddress,
           handle: reward.handle,
           airdropIndex: reward.airdropIndex,
-          rewards: []
+          rewards: [],
         };
       }
       rewardsByToken[reward.tokenAddress].rewards.push(reward);
     }
-    
+
     // Generate Merkle proofs for each token
     const claims = [];
     for (const tokenData of Object.values(rewardsByToken)) {
@@ -370,7 +413,7 @@ const generateClaimData = async (req, res, next) => {
         userAddress,
         tokenData.airdropIndex
       );
-      
+
       if (proof.length > 0) {
         claims.push({
           token: tokenData.tokenAddress,
@@ -378,19 +421,18 @@ const generateClaimData = async (req, res, next) => {
           amount: amount,
           proof,
           leaf,
-          index: tokenData.airdropIndex
+          index: tokenData.airdropIndex,
         });
       }
     }
-    
+
     return res.status(200).json({
       address: userAddress,
       proofs: claims,
-      airdropContract: process.env.AIRDROP_CONTRACT_ADDRESS
+      airdropContract: process.env.AIRDROP_CONTRACT_ADDRESS,
     });
-    
   } catch (error) {
-    console.error('Error generating claim data:', error);
+    console.error("Error generating claim data:", error);
     next(error);
   }
 };
@@ -401,48 +443,49 @@ const generateClaimData = async (req, res, next) => {
 const recordClaim = async (req, res, next) => {
   try {
     const { userAddress, tokenAddress, amount, transactionHash } = req.body;
-    
+
     // Validate required fields
     if (!userAddress || !tokenAddress || !amount || !transactionHash) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: "Missing required fields" });
     }
-    
+
     // Find rewards for this user/token
     const rewards = await Reward.find({
       userAddress,
       tokenAddress,
-      claimed: false
+      claimed: false,
     });
-    
+
     if (!rewards || rewards.length === 0) {
-      return res.status(404).json({ error: 'No matching unclaimed rewards found' });
+      return res
+        .status(404)
+        .json({ error: "No matching unclaimed rewards found" });
     }
-    
+
     // Mark as claimed
     await Reward.updateMany(
       {
         userAddress,
         tokenAddress,
-        claimed: false
+        claimed: false,
       },
       {
         $set: {
           claimed: true,
-          claimTransactionHash: transactionHash
-        }
+          claimTransactionHash: transactionHash,
+        },
       }
     );
-    
+
     return res.status(200).json({
-      message: 'Claim recorded successfully',
+      message: "Claim recorded successfully",
       userAddress,
       tokenAddress,
       amount,
-      transactionHash
+      transactionHash,
     });
-    
   } catch (error) {
-    console.error('Error recording claim:', error);
+    console.error("Error recording claim:", error);
     next(error);
   }
 };
@@ -452,16 +495,16 @@ const recordClaim = async (req, res, next) => {
  */
 function selectRandomFollowers(followers, count) {
   if (followers.length <= count) return followers;
-  
+
   const selected = [];
   const copied = [...followers];
-  
+
   for (let i = 0; i < count; i++) {
     const randomIndex = Math.floor(Math.random() * copied.length);
     selected.push(copied[randomIndex]);
     copied.splice(randomIndex, 1);
   }
-  
+
   return selected;
 }
 
@@ -476,51 +519,58 @@ const addRewardsForUser = async (req, res, next) => {
 
     // Validate inputs
     if (!tokenAddress || !userAddress || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
     // Get the latest airdrop index for this token
-    const airdropIndex = await merkleService.getLatestAirdropIndex(tokenAddress) + 1;
+    const airdropIndex =
+      (await merkleService.getLatestAirdropIndex(tokenAddress)) + 1;
 
     // Create the new reward record
     const reward = await Reward.create({
       tokenAddress,
       userAddress,
       amount: ethers.parseUnits(amount.toString(), 18).toString(), // Convert to wei
-      type: 'manual',
+      type: "manual",
       airdropIndex,
-      claimed: false
+      claimed: false,
     });
 
-    console.log('Created new reward:', reward);
+    console.log("Created new reward:", reward);
 
     // Generate new Merkle tree and root
-    const { root } = await merkleService.generateMerkleTree(tokenAddress, airdropIndex);
-    
+    const { root } = await merkleService.generateMerkleTree(
+      tokenAddress,
+      airdropIndex
+    );
+
     // Update the root on the contract
     try {
-      const tx = await airdrop_contract.setMerkleRoot(tokenAddress, airdropIndex, root);
+      const tx = await airdrop_contract.setMerkleRoot(
+        tokenAddress,
+        airdropIndex,
+        root
+      );
       await tx.wait();
-      console.log('Updated Merkle root on chain');
+      console.log("Updated Merkle root on chain");
 
       return res.status(200).json({
-        message: 'Rewards added successfully',
+        message: "Rewards added successfully",
         reward,
         merkleRoot: root,
-        transactionHash: tx.hash
+        transactionHash: tx.hash,
       });
     } catch (error) {
-      console.error('Error setting merkle root:', error);
+      console.error("Error setting merkle root:", error);
       // Even if contract update fails, reward is still created
       return res.status(200).json({
-        message: 'Reward created but merkle root update failed',
+        message: "Reward created but merkle root update failed",
         reward,
-        error: error.message
+        error: error.message,
       });
     }
-
   } catch (error) {
-    console.error('Error adding rewards:', error);
+    console.error("Error adding rewards:", error);
     next(error);
   }
 };
@@ -532,5 +582,5 @@ module.exports = {
   distributeEngagementRewards,
   generateClaimData,
   recordClaim,
-  addRewardsForUser
-}; 
+  addRewardsForUser,
+};
