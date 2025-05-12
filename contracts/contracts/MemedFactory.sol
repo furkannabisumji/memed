@@ -121,11 +121,15 @@ contract MemedFactory is Ownable {
         return lensUsername;
     }
 
-    function getTokens() external view returns (TokenData[] memory) {
-        uint length = tokens.length;
+    function getTokens(address _user) external view returns (TokenData[] memory) {
+        uint length = address(0) == _user ? tokens.length : 1;
         TokenData[] memory result = new TokenData[](length);
-        for (uint i = 0; i < length; i++) {
-            result[i] = tokenData[tokens[i]];
+        if(address(0) == _user) {
+            for (uint i = 0; i < length; i++) {
+                result[i] = tokenData[tokens[i]];
+            }
+        } else {
+            result[0] = tokenData[getByAddress(_user)];
         }
         return result;
     }

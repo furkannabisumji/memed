@@ -1,6 +1,7 @@
 const lensService = require('../services/lensService');
 const merkleService = require('../services/merkleService');
 const ethers = require('ethers');
+const {factory_contract} = require('../config/factory');
 const Token = require('../models/Token');
 const Reward = require('../models/Reward');
 /**
@@ -10,12 +11,6 @@ const Reward = require('../models/Reward');
  * @param {Function} next - Express next middleware function
  */
 
-const createMemeABI = require('../config/abi.json');
-const airdropABI = require('../config/airdropABI.json');
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL_LENS);
-const wallet = new ethers.Wallet(process.env.ADMIN_PVT_KEY, provider);
-const factory_contract = new ethers.Contract(process.env.FACTORY_CONTRACT_ADDRESS, createMemeABI, wallet);  
-const airdrop_contract = new ethers.Contract(process.env.AIRDROP_CONTRACT_ADDRESS, airdropABI, wallet);
 
 async function getMintableCheckFunction(req, res, next) {
 try {
@@ -256,11 +251,26 @@ async function distributeEngagementRewards() {
       const { handle, tokenAddress, lastRewardDistribution } = token;
       
       // Get engagement data since last distribution
-      const engagementData = await lensService.getEngagementMetrics(handle, lastRewardDistribution);
+      const engagementData = await lensService.getEngagementMetrics(handle);
+      let newEngagement = 0;
+      for (const engagement of engagementData) {
+        let post = await Post.findOneAndUpdate({ postId: engagement.postId }, { engagement: engagement.engagement });
+        if (!post) {
+          post = new Post({
+            postId: engagement.postId,
+            engagement: engagement.engagement
+          });
+          await post.save();
+        }
+        Object.keys(engagement.engagement).map((key)=>{
+          newEngagement += engagement.engagement[key] - post.engagement[key];
+        });
+        console.log({newEngagement});
+      }
       
       // If 100,000+ engagements, distribute rewards to 5000 followers
-      if (engagementData.totalEngagements >= 100000) {
-        console.log(`${handle} has ${engagementData.totalEngagements} engagements - distributing rewards`);
+      if (newEngagement >= 1) {
+        console.log(`${handle} has ${newEngagement} engagements - distributing rewards`);
         
         // Get followers
         const followers = await lensService.getFollowers(handle);

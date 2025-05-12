@@ -13,7 +13,7 @@ const RewardSchema = new mongoose.Schema({
   },
   userAddress: {
     type: String,
-    required: true,
+    required: false,
     index: true
   },
   amount: {

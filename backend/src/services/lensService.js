@@ -1,7 +1,8 @@
-const { fetchAccount, fetchAccountGraphStats, fetchFollowing, fetchFollowers } = require("@lens-protocol/client/actions");
+const { fetchAccount, fetchAccountGraphStats, fetchPosts, fetchFollowers } = require("@lens-protocol/client/actions");
 const { evmAddress } = require('@lens-protocol/client');
 const ethers = require('ethers');
 const client = require('../config/lens');
+const { factory_contract } = require("../config/factory");
 
 /**
  * Get account information and follower statistics for a Lens handle
@@ -69,20 +70,41 @@ async function getFollowers(handle) {
   }
 }
 
+async function getFollowerWithTokenHoldings(tokenAddress) {
+const holder = (await factory_contract.getTokens(tokenAddress))[0][7];
+console.log({holder});
+return holder;
+}
+getFollowerWithTokenHoldings("0x9A2a37AB58F85Fd94e22Cc1aCfA3030Cb919E131");
+
 /**
- * Get engagement metrics for a handle since a timestamp
- * This is a mock function until we implement the real version
+ * Get engagement metrics for a handle
  */
-async function getEngagementMetrics(handle, sinceTimestamp) {
+async function getEngagementMetrics(handle) {
   try {
-    // In a production implementation, we would fetch actual metrics from Lens API
-    return {
-      totalEngagements: Math.floor(Math.random() * 200000),
-      likes: Math.floor(Math.random() * 150000),
-      comments: Math.floor(Math.random() * 50000),
-      mirrors: Math.floor(Math.random() * 10000),
-      since: sinceTimestamp || Date.now() - 7 * 24 * 60 * 60 * 1000 // Default to last week
-    };
+    const { value: account } = await fetchAccount(client, {
+      username: {
+        localName: handle,
+      }
+    });
+    
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    
+    const engagementMetrics = await fetchPosts(client, {
+      filter: {
+        authors: [evmAddress(account.address)]
+      }
+    });
+    let engagement = [];
+    for (const post of engagementMetrics.value.items) {
+        engagement.push({
+            postId: post.id,
+            engagement: post.stats
+        })
+    }
+    return engagement;
   } catch (error) {
     console.error(`Error fetching engagement metrics for ${handle}:`, error);
     throw error;
@@ -93,5 +115,6 @@ module.exports = {
   getFollowerStats,
   getHandleOwner,
   getFollowers,
-  getEngagementMetrics
+  getEngagementMetrics,
+  getFollowerWithTokenHoldings
 }; 
