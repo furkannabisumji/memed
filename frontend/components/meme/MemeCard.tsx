@@ -15,18 +15,18 @@ export default function MemeCard({ meme }: {
     }
 }) {
     return (
-        <Link href={`/meme/${meme.id}`} className="group">
-            <div className="relative overflow-hidden rounded-md transition-all bg-white border-2 border-black group-hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+        <Link href={`/meme/${meme.id}`}>
+            <div className="relative overflow-hidden rounded-md transition-all duration-300 bg-white border-2 border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px]">
                 <div className="relative aspect-square">
                     <Image
                         src={meme.image || "/fallback.png"}
                         alt={meme.title}
                         fill
-                        className="object-cover transition-transform group-hover:scale-105"
+                        className="object-cover transition-transform hover:scale-105"
                     />
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-4 transition-transform bg-white border-t-2 border-black">
-                    <div className="flex items-center justify-between">
+                <div className="p-4 bg-white border-t-2 border-black">
+                    <div className="flex items-center justify-between mb-3">
                         <div>
                             <h3 className="text-lg font-bold text-black">{meme.title}</h3>
                             <p className="text-sm text-gray-600">@{meme.creator}</p>
@@ -36,9 +36,19 @@ export default function MemeCard({ meme }: {
                             <span className="font-bold">${meme.tokenSymbol}</span>
                         </div>
                     </div>
+                    
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500">Price</p>
+                            <p className="text-xl font-bold text-primary">${meme.price}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500 text-right">Likes</p>
+                            <p className="text-xl font-bold text-right">{meme.likes.toLocaleString()}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </Link>
-
     )
 }
