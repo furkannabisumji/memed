@@ -6,7 +6,14 @@ import { Albert_Sans } from "next/font/google";
 import { useAccount } from "wagmi";
 import { getAvailableAccounts } from "@/lib/lens";
 import { AccountButton } from "./AccountButton";
-import { Home, Search, Gift, Rocket, BarChart2, HelpCircle } from "lucide-react";
+import {
+  Home,
+  Search,
+  Gift,
+  Rocket,
+  BarChart2,
+  HelpCircle,
+} from "lucide-react";
 
 const albertsans = Albert_Sans({
   weight: ["300", "400", "500", "700"],
@@ -46,6 +53,11 @@ export default function Header() {
               Explore
             </Button>
           </Link>
+          <Link href={"/rewards"}>
+            <Button variant={"ghost"} className="cursor-pointer">
+              Rewards
+            </Button>
+          </Link>
           <Link href={"/launch"}>
             <Button variant={"ghost"} className="cursor-pointer">
               Launch Meme
@@ -65,7 +77,7 @@ export default function Header() {
       {/* Mobile Nav - Simple Top Bar */}
       <div className="md:hidden justify-between my-2 px-2 relative flex">
         <nav className="cursor-pointer flex justify-center items-center bg-[#DCDCDC] p-1 rounded-md">
-          <Link href={'/'}>
+          <Link href={"/"}>
             <div className="logo p-2 bg-[#28D358] text-white font-bold rounded-md">
               MF
             </div>
@@ -76,7 +88,7 @@ export default function Header() {
           <AccountButton />
         </div>
       </div>
-      
+
       {/* Mobile Bottom Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
         <div className="flex justify-around items-center h-16">
@@ -112,7 +124,7 @@ export default function Header() {
           </Link>
         </div>
       </div>
-      
+
       {/* Add bottom padding to main content to account for fixed nav */}
       <style jsx global>{`
         body {
