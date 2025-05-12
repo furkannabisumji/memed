@@ -89,12 +89,10 @@ const mintMemeCoins = async (req, res, next) => {
 
     // 5. Mintable check
     let checkTrue = await getMintableCheckFunction(req, res, next);
-    console.log({checkTrue});
     if (checkTrue) {
       try {
         // Create the meme token
-        const owner = wallet.address;
-        const tx = await factory_contract.createMeme(wallet.address, handle, name, ticker, description, image);
+        const tx = await factory_contract.createMeme(handleOwner, handle, name, ticker, description, image);
         console.log({tx});
         // Wait for transaction receipt to get the token address
         const receipt = await tx.wait();
