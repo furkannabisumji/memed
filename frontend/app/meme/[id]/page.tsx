@@ -11,22 +11,14 @@ import {
   MessageCircle,
   Repeat,
   Flame,
-  Trophy,
-  TrendingUp,
   Zap,
   Lock,
-  AlertCircle,
-  Info,
-  Users,
-  BarChart3,
-  LineChart,
   Loader2,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCustomToast } from "@/components/ui/custom-toast";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Header from "@/components/shared/Header";
@@ -35,6 +27,15 @@ import MemeStaking from "@/components/meme/MemeStaking";
 import MemeBattles from "@/components/meme/MemeBattles";
 import MemeSupporters from "@/components/meme/MemeSupporters";
 import MemeDetails from "@/components/meme/MemeDetails";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import CommentModal from "@/components/meme/CommentModal";
 
 export default function MemeViewPage() {
   const params = useParams();
@@ -49,6 +50,9 @@ export default function MemeViewPage() {
   const [stakeAmount, setStakeAmount] = useState<string>("");
   const [isStaking, setIsStaking] = useState(false);
   const [engagementReward, setEngagementReward] = useState<number>(5); // Tokens per engagement
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -109,6 +113,12 @@ export default function MemeViewPage() {
 
   // Handle engagement actions
   const handleEngagement = (type: "like" | "comment" | "mirror") => {
+    // For comments, open the modal instead of immediately showing success
+    if (type === "comment") {
+      setIsCommentModalOpen(true);
+      return;
+    }
+
     // This would connect to the contract in the future
     console.log(`Engaged with ${type}`);
 
@@ -116,6 +126,30 @@ export default function MemeViewPage() {
     toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added`, {
       description: `You earned ${engagementReward} ${profile.tokenSymbol} tokens!`,
     });
+  };
+
+  // Handle comment submission
+  const handleSubmitComment = () => {
+    if (!commentText.trim()) {
+      toast.error("Comment required", {
+        description: "Please enter a comment",
+      });
+      return;
+    }
+
+    setIsSubmittingComment(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmittingComment(false);
+      setIsCommentModalOpen(false);
+      setCommentText("");
+
+      // Show success toast
+      toast.success("Comment added", {
+        description: `You earned ${engagementReward} ${profile.tokenSymbol} tokens!`,
+      });
+    }, 1000);
   };
 
   // Handle staking
@@ -435,6 +469,16 @@ export default function MemeViewPage() {
                     </Badge>
                   </Button>
 
+                  {/* Comment Modal */}
+                  <Dialog open={isCommentModalOpen} onOpenChange={setIsCommentModalOpen}>
+                    <DialogTrigger asChild>
+                      <span style={{ display: 'none' }}></span>
+                    </DialogTrigger>
+                    <CommentModal
+                      engagementReward={engagementReward}
+                      profile={profile}
+                    />
+                  </Dialog>
                   <Button
                     variant="outline"
                     size="sm"
