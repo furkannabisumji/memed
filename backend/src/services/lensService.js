@@ -75,7 +75,7 @@ const holder = (await factory_contract.getTokens(tokenAddress))[0][7];
 console.log({holder});
 return holder;
 }
-getFollowerWithTokenHoldings("0x9A2a37AB58F85Fd94e22Cc1aCfA3030Cb919E131");
+//getFollowerWithTokenHoldings("0x9A2a37AB58F85Fd94e22Cc1aCfA3030Cb919E131");
 
 /**
  * Get engagement metrics for a handle
