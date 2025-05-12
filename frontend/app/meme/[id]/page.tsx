@@ -345,7 +345,7 @@ export default function MemeViewPage() {
                     <p className="text-gray-500 dark:text-gray-400">
                       @{profile.username}
                     </p>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-500">
                       <span>Created by</span>
                       <Link
                         href={`/profile/${profile.creatorHandle}`}
@@ -442,7 +442,7 @@ export default function MemeViewPage() {
                 </div>
 
                 {/* Engagement Actions */}
-                <div className="flex justify-center md:justify-start gap-4 mt-6">
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
                   <Button
                     variant="outline"
                     size="sm"
@@ -470,9 +470,12 @@ export default function MemeViewPage() {
                   </Button>
 
                   {/* Comment Modal */}
-                  <Dialog open={isCommentModalOpen} onOpenChange={setIsCommentModalOpen}>
+                  <Dialog
+                    open={isCommentModalOpen}
+                    onOpenChange={setIsCommentModalOpen}
+                  >
                     <DialogTrigger asChild>
-                      <span style={{ display: 'none' }}></span>
+                      <span style={{ display: "none" }}></span>
                     </DialogTrigger>
                     <CommentModal
                       engagementReward={engagementReward}
