@@ -256,17 +256,17 @@ export default function RewardsPage() {
   const [claimingToken, setClaimingToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("available");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
-  type TabType = 'available' | 'initial' | 'engagement';
-  
+  type TabType = "available" | "initial" | "engagement";
+
   const [pages, setPages] = useState<Record<TabType, number>>({
     available: 1,
     initial: 1,
-    engagement: 1
+    engagement: 1,
   });
   const [hasMore, setHasMore] = useState<Record<TabType, boolean>>({
     available: true,
     initial: true,
-    engagement: true
+    engagement: true,
   });
   const ITEMS_PER_PAGE = 8;
 
@@ -307,7 +307,11 @@ export default function RewardsPage() {
   }, [activeTab, updateUnderlinePosition]);
 
   // Function to fetch available rewards
-  const fetchRewards = async (pageNum: number, tabType: TabType = 'available', reset: boolean = false) => {
+  const fetchRewards = async (
+    pageNum: number,
+    tabType: TabType = "available",
+    reset: boolean = false
+  ) => {
     if (pageNum === 1) {
       setIsLoading(true);
     }
@@ -317,10 +321,14 @@ export default function RewardsPage() {
 
     // Get the appropriate data based on tab
     let sourceData = dummyAvailableRewards;
-    if (tabType === 'initial') {
-      sourceData = dummyAvailableRewards.filter(reward => reward.type === 'initial');
-    } else if (tabType === 'engagement') {
-      sourceData = dummyAvailableRewards.filter(reward => reward.type === 'engagement');
+    if (tabType === "initial") {
+      sourceData = dummyAvailableRewards.filter(
+        (reward) => reward.type === "initial"
+      );
+    } else if (tabType === "engagement") {
+      sourceData = dummyAvailableRewards.filter(
+        (reward) => reward.type === "engagement"
+      );
     }
 
     // Simulate paginated data fetch
@@ -329,21 +337,24 @@ export default function RewardsPage() {
     const paginatedRewards = sourceData.slice(startIndex, endIndex);
 
     // Check if there are more items to load
-    setHasMore(prev => ({
+    setHasMore((prev) => ({
       ...prev,
-      [tabType]: endIndex < sourceData.length
+      [tabType]: endIndex < sourceData.length,
     }));
 
     if (reset) {
-      setRewards(tabType === 'available' ? paginatedRewards : 
-        sourceData.slice(0, endIndex));
+      setRewards(
+        tabType === "available"
+          ? paginatedRewards
+          : sourceData.slice(0, endIndex)
+      );
     } else {
-      setRewards(prev => [...prev, ...paginatedRewards]);
+      setRewards((prev) => [...prev, ...paginatedRewards]);
     }
 
-    setPages(prev => ({
+    setPages((prev) => ({
       ...prev,
-      [tabType]: pageNum
+      [tabType]: pageNum,
     }));
     setIsLoading(false);
   };
@@ -351,7 +362,7 @@ export default function RewardsPage() {
   // Initialize rewards on mount
   useEffect(() => {
     if (address) {
-      fetchRewards(1, 'available', true);
+      fetchRewards(1, "available", true);
     } else {
       setIsLoading(false);
       setRewards([]);
@@ -574,9 +585,21 @@ export default function RewardsPage() {
                     Loading...
                   </>
                 ) : !hasMore[activeTab as TabType] ? (
-                  `No More ${activeTab === 'initial' ? 'Initial' : activeTab === 'engagement' ? 'Engagement' : ''} Rewards`
+                  `No More ${
+                    activeTab === "initial"
+                      ? "Initial"
+                      : activeTab === "engagement"
+                      ? "Engagement"
+                      : ""
+                  } Rewards`
                 ) : (
-                  `Load More ${activeTab === 'initial' ? 'Initial' : activeTab === 'engagement' ? 'Engagement' : ''} Rewards`
+                  `Load More ${
+                    activeTab === "initial"
+                      ? "Initial"
+                      : activeTab === "engagement"
+                      ? "Engagement"
+                      : ""
+                  } Rewards`
                 )}
               </Button>
             </div>
@@ -596,7 +619,7 @@ export default function RewardsPage() {
 }
 
 // Reward Card Component
-export function RewardCard({
+function RewardCard({
   reward,
   onClaim,
   isClaiming,
