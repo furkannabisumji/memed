@@ -82,10 +82,14 @@ export const getAvailableAccounts = async (address: string) => {
         // Use unknown as an intermediate step for type safety
         const singleAccount = result.value as unknown;
         // Check if it has the expected structure before casting
-        if (singleAccount && typeof singleAccount === 'object' && 'address' in singleAccount) {
+        if (
+          singleAccount &&
+          typeof singleAccount === "object" &&
+          "address" in singleAccount
+        ) {
           accountItems = [{ account: singleAccount as Account }];
         } else {
-          console.warn('Received unexpected account format:', singleAccount);
+          console.warn("Received unexpected account format:", singleAccount);
           accountItems = [];
         }
       }
@@ -261,86 +265,86 @@ export const createNewAccount = async ({
 };
 
 // Switch to a different account
-export const switchToAccount = async ({
-  profileId,
-  address,
-  signFn,
-}: {
-  profileId: string;
-  address: string;
-  signFn: (message: string) => Promise<string>;
-}) => {
-  // First login to get an authenticated client
-  const authenticated = await client.login({
-    accountOwner: {
-      account: evmAddress(address),
-      app: process.env.NEXT_PUBLIC_APP_ADDRESS || "",
-      owner: address,
-    },
-    signMessage: signFn,
-  });
+// export const switchToAccount = async ({
+//   profileId,
+//   address,
+//   signFn,
+// }: {
+//   profileId: string;
+//   address: string;
+//   signFn: (message: string) => Promise<string>;
+// }) => {
+//   // First login to get an authenticated client
+//   const authenticated = await client.login({
+//     accountOwner: {
+//       account: evmAddress(address),
+//       app: process.env.NEXT_PUBLIC_APP_ADDRESS || "",
+//       owner: address,
+//     },
+//     signMessage: signFn,
+//   });
 
-  if (authenticated.isErr()) {
-    console.error("Login failed:", authenticated.error);
-    throw new Error(`Login failed: ${authenticated.error.message}`);
-  }
+//   if (authenticated.isErr()) {
+//     console.error("Login failed:", authenticated.error);
+//     throw new Error(`Login failed: ${authenticated.error.message}`);
+//   }
 
-  const sessionClient = authenticated.value;
+//   const sessionClient = authenticated.value;
 
-  // Switch to the selected account
-  const result = await sessionClient.switchAccount({
-    account: profileId,
-  });
+//   // Switch to the selected account
+//   const result = await sessionClient.switchAccount({
+//     account: profileId,
+//   });
 
-  if (result.isErr()) {
-    console.error("Account switch failed:", result.error);
-    throw new Error(`Account switch failed: ${result.error.message}`);
-  }
+//   if (result.isErr()) {
+//     console.error("Account switch failed:", result.error);
+//     throw new Error(`Account switch failed: ${result.error.message}`);
+//   }
 
-  return result.value;
-};
+//   return result.value;
+// };
 
-export async function signMessageWith(message: string, address: string) {
-  try {
-    // First try using the window.__WAGMI_CONFIG if available (ConnectKit integration)
-    const wagmiConfig = (window as any).__WAGMI_CONFIG;
-    if (wagmiConfig && wagmiConfig.signMessage) {
-      try {
-        // Add a small delay to ensure any ConnectKit modals are fully rendered
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        return await wagmiConfig.signMessage({ message, account: address });
-      } catch (wagmiError) {
-        console.warn(
-          "Failed to sign with Wagmi config, falling back to ethereum provider:",
-          wagmiError
-        );
-        // Fall through to the ethereum provider method
-      }
-    }
+// export async function signMessageWith(message: string, address: string) {
+//   try {
+//     // First try using the window.__WAGMI_CONFIG if available (ConnectKit integration)
+//     const wagmiConfig = (window as any).__WAGMI_CONFIG;
+//     if (wagmiConfig && wagmiConfig.signMessage) {
+//       try {
+//         // Add a small delay to ensure any ConnectKit modals are fully rendered
+//         await new Promise((resolve) => setTimeout(resolve, 500));
+//         return await wagmiConfig.signMessage({ message, account: address });
+//       } catch (wagmiError) {
+//         console.warn(
+//           "Failed to sign with Wagmi config, falling back to ethereum provider:",
+//           wagmiError
+//         );
+//         // Fall through to the ethereum provider method
+//       }
+//     }
 
-    // Fallback to using the window.ethereum provider directly
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) {
-      throw new Error("No ethereum provider found");
-    }
+//     // Fallback to using the window.ethereum provider directly
+//     const ethereum = (window as any).ethereum;
+//     if (!ethereum) {
+//       throw new Error("No ethereum provider found");
+//     }
 
-    // Try to ensure the account is connected before signing
-    await ethereum.request({
-      method: "eth_requestAccounts",
-      params: [],
-    });
+//     // Try to ensure the account is connected before signing
+//     await ethereum.request({
+//       method: "eth_requestAccounts",
+//       params: [],
+//     });
 
-    // Add a small delay to ensure any wallet UI is fully rendered
-    await new Promise((resolve) => setTimeout(resolve, 300));
+//     // Add a small delay to ensure any wallet UI is fully rendered
+//     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const signature = await ethereum.request({
-      method: "personal_sign",
-      params: [message, address],
-    });
+//     const signature = await ethereum.request({
+//       method: "personal_sign",
+//       params: [message, address],
+//     });
 
-    return signature;
-  } catch (error) {
-    console.error("Error signing message with lens:", error);
-    throw error;
-  }
-}
+//     return signature;
+//   } catch (error) {
+//     console.error("Error signing message with lens:", error);
+//     throw error;
+//   }
+// }

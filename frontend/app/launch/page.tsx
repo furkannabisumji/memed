@@ -14,25 +14,41 @@ import ConnectProfile from "@/components/meme/ConnectProfile";
 import CreateMemeForm from "@/components/meme/CreateMemeForm";
 import TokenSettingForm from "@/components/meme/TokenSettingForm";
 import { useAccountStore } from "@/store/accountStore";
+import { useAccount } from "wagmi";
+import { useCustomToast } from "@/components/ui/custom-toast";
+import { useConnectKitSign } from "@/hooks/useConnectKitSign";
 
 export default function LaunchPage() {
-  const [memeImage, setMemeImage] = useState<string | null>(null);
+  const { selectedAccount, accounts } = useAccountStore();
+  const { signWithConnectKit } = useConnectKitSign();
+  const { address } = useAccount();
+  const toast = useCustomToast();
+  const [memeImage, setMemeImage] = useState<string | null>(
+    "bafkreibh4leq5nkyviyxhurdztupcl44l47i2zvbhtxlxrruutk6je7g7m"
+  );
   const [step, setStep] = useState(1);
   // const [isUploading, setIsUploading] = useState(false)
   const [isMinting, setIsMinting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const { selectedAccount, accounts } = useAccountStore();
+  const [memeTitle, setMemeTitle] = useState<string>("Timer");
+  const [memeDescription, setMemeDescription] = useState<string>(
+    "A brief journey through time"
+  );
+  const [memeSymbol, setMemeSymbol] = useState<string>("TIM");
+
+  // console.log({
+  //   memeTitle,
+  //   memeDescription,
+  //   memeImage,
+  //   step,
+  //   isMinting,
+  //   showSuccess,
+  //   selectedAccount,
+  //   accounts,
+  //   memeSymbol,
+  // });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // const handleImageUpload = () => {
-  // setIsUploading(true)
-  // // Simulate upload delay
-  // setTimeout(() => {
-  //   setMemeImage("/placeholder.svg?height=400&width=400")
-  //   setIsUploading(false)
-  // }, 1500)
-  // }
 
   const handleNextStep = () => {
     if (step < 4) {
@@ -48,11 +64,67 @@ export default function LaunchPage() {
     }
   };
 
-  const handleMint = () => {
+  // console.log(selectedAccount);
+
+  const handleMint = async () => {
+    if (!address) {
+      toast.error("Wallet not connected");
+      return;
+    }
+
+    if (!selectedAccount?.username.localName) {
+      toast.error("No Lens handle selected");
+      return;
+    }
+
     setIsMinting(true);
-    // Simulate minting delay
-    setTimeout(() => {
-      setIsMinting(false);
+
+    try {
+      // Generate timestamp
+      const timestamp = Date.now();
+      const handle = selectedAccount.username.localName;
+
+      // Create message
+      const message = `Mint meme for handle: ${handle} at ${timestamp}`;
+      const signature = await signWithConnectKit(message);
+
+      console.log(
+        {
+          name: memeTitle,
+          ticker: memeSymbol,
+          description: memeDescription,
+          image: memeImage,
+          message,
+          signature,
+          timestamp,
+        },
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}api/mintMemeCoins/${handle}`
+      );
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}api/mintMemeCoins/${handle}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: memeTitle,
+            ticker: memeSymbol,
+            description: memeDescription,
+            image: memeImage,
+            message,
+            signature,
+            timestamp,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to mint meme coins");
+      }
+
       setShowSuccess(true);
 
       // Trigger confetti
@@ -63,7 +135,17 @@ export default function LaunchPage() {
           origin: { y: 0.6 },
         });
       }
-    }, 3000);
+      console.log(response);
+    } catch (error) {
+      console.error("Minting error:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to mint meme coins. Please try again."
+      );
+    } finally {
+      setIsMinting(false);
+    }
   };
 
   if (showSuccess) {
@@ -91,7 +173,7 @@ export default function LaunchPage() {
               <div className="p-8 mb-8 border-2 border-black">
                 <div className="relative w-64 h-64 mx-auto mb-6">
                   <Image
-                    src={memeImage || "/placeholder.svg?height=400&width=400"}
+                    src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeImage}`}
                     alt="Your meme"
                     fill
                     className="object-contain"
@@ -166,6 +248,10 @@ export default function LaunchPage() {
                   setMemeImage={setMemeImage}
                   handlePrevStep={handlePrevStep}
                   handleNextStep={handleNextStep}
+                  memeTitle={memeTitle}
+                  setMemeTitle={setMemeTitle}
+                  memeDescription={memeDescription}
+                  setMemeDescription={setMemeDescription}
                 />
               )}
               {step === 3 && (
@@ -174,6 +260,10 @@ export default function LaunchPage() {
                   handleMint={handleMint}
                   isMinting={isMinting}
                   memeImage={memeImage}
+                  memeSymbol={memeSymbol}
+                  setMemeSymbol={setMemeSymbol}
+                  memeTitle={memeTitle}
+                  setMemeTitle={setMemeTitle}
                 />
               )}
             </motion.div>

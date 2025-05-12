@@ -3,7 +3,7 @@ import "./globals.css";
 
 import { Albert_Sans } from "next/font/google";
 import { Web3Provider } from "@/providers/Web3Provider";
-import CustomApolloProvider from "@/providers/ApolloProvider";
+// import CustomApolloProvider from "@/providers/ApolloProvider";
 import { ToastProvider } from "@/components/ui/custom-toast";
 
 const albertsans = Albert_Sans({
@@ -25,13 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${albertsans.className} antialiased`}>
-        <CustomApolloProvider>
-          <Web3Provider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </Web3Provider>
-        </CustomApolloProvider>
+        <Web3Provider>
+          <ToastProvider>{children}</ToastProvider>
+        </Web3Provider>
       </body>
     </html>
   );

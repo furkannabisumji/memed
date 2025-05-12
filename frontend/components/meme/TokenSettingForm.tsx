@@ -11,11 +11,19 @@ export default function TokenSettingForm({
   handleMint,
   isMinting,
   memeImage,
+  memeSymbol,
+  setMemeSymbol,
+  memeTitle,
+  setMemeTitle,
 }: {
   handlePrevStep: () => void;
   handleMint: () => void;
   isMinting: boolean;
   memeImage: string | null;
+  memeSymbol: string;
+  setMemeSymbol: (symbol: string) => void;
+  memeTitle: string;
+  setMemeTitle: (title: string) => void;
 }) {
   return (
     <div className="p-8 border-2 border-black">
@@ -34,6 +42,8 @@ export default function TokenSettingForm({
               id="token-name"
               placeholder="e.g., DogeToken"
               className="border-2 border-black"
+              value={memeTitle}
+              onChange={(e) => setMemeTitle(e.target.value)}
             />
           </div>
 
@@ -45,6 +55,8 @@ export default function TokenSettingForm({
               id="token-symbol"
               placeholder="e.g., DOGE"
               className="border-2 border-black"
+              value={memeSymbol}
+              onChange={(e) => setMemeSymbol(e.target.value)}
             />
           </div>
 
@@ -78,10 +90,11 @@ export default function TokenSettingForm({
         <div className="space-y-6">
           <div className="relative w-full aspect-square max-w-xs mx-auto">
             <Image
-              src={memeImage || "/placeholder.svg"}
+              src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeImage}`}
               alt="Uploaded meme"
               fill
               className="object-contain"
+              priority
             />
           </div>
 
