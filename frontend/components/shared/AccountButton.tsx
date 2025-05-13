@@ -206,6 +206,7 @@ export function AccountButton({ className }: AccountButtonProps) {
   };
 
   // Don't render anything complex during server-side rendering
+  // Handle mounting state first
   if (!isMounted) {
     return (
       <div
@@ -214,13 +215,26 @@ export function AccountButton({ className }: AccountButtonProps) {
     );
   }
 
-  if (!isConnected && !isConnecting) {
+  // Handle connecting state
+  if (isConnecting) {
+    return (
+      <div className={`flex items-center justify-center h-10 ${className || ""}`}>
+        <div className="relative w-5 h-5">
+          <div className="absolute w-full h-full rounded-full border-2 border-t-transparent border-primary animate-spin"></div>
+        </div>
+        <span className="ml-2 text-sm text-gray-600">Connecting...</span>
+      </div>
+    );
+  }
+
+  // Handle disconnected state
+  if (!isConnected) {
     return <ConnectKitButton />;
   }
 
-  if (isConnected) {
-    return (
-      <div className="relative">
+  // At this point, we know the user is connected
+  return (
+    <div className="relative">
         {/* Account Button */}
         <button
           ref={buttonRef}
@@ -322,7 +336,7 @@ export function AccountButton({ className }: AccountButtonProps) {
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
                   <span className="text-sm font-medium">Connected to:</span>
-                  <span className="text-sm">Lens Testnet</span>
+                  <span className="text-sm">Lens Mainnet</span>
                 </div>
 
                 {/* Wallet Address */}
@@ -465,14 +479,4 @@ export function AccountButton({ className }: AccountButtonProps) {
         )}
       </div>
     );
-  }
-
-  return (
-    <div className={`flex items-center justify-center h-10 ${className || ""}`}>
-      <div className="relative w-5 h-5">
-        <div className="absolute w-full h-full rounded-full border-2 border-t-transparent border-primary animate-spin"></div>
-      </div>
-      <span className="ml-2 text-sm text-gray-600">Initializing...</span>
-    </div>
-  );
 }
