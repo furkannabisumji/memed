@@ -19,6 +19,7 @@ contract MemedFactory is Ownable {
     }
 
     mapping(string => TokenData) public tokenData;
+    mapping(address => address[]) followings;
     string[] public tokens;
 
     // Events
@@ -91,6 +92,7 @@ contract MemedFactory is Ownable {
         }
         if (!isFollowed) {
             tokenData[lensUsername].followers.push(_user);
+            followings[_user].push(msg.sender);
             emit Followed(msg.sender, _user, block.timestamp);
         }
     }
@@ -100,12 +102,16 @@ contract MemedFactory is Ownable {
         require(tokenData[lensUsername].token != address(0), "not minted");
         require(msg.sender == tokenData[lensUsername].token, "unauthorized");
         for (uint i = 0; i < tokenData[lensUsername].followers.length; i++) {
-            if (tokenData[lensUsername].followers[i] == _user) {
-                tokenData[lensUsername].followers[i] = tokenData[lensUsername]
-                    .followers[tokenData[lensUsername].followers.length - 1];
-                tokenData[lensUsername].followers.pop();
-                emit Unfollowed(msg.sender, _user, block.timestamp);
-                break;
+                if(tokenData[lensUsername].followers[i] == _user) {
+                    delete tokenData[lensUsername].followers[i];
+                    for (uint j = 0; j < followings[_user].length; j++) {
+                        if (followings[_user][j] == msg.sender) {
+                            delete followings[_user][j];
+                            break;
+                        }
+                    }
+                    emit Unfollowed(msg.sender, _user, block.timestamp);
+                    break;
             }
         }
     }
@@ -132,5 +138,9 @@ contract MemedFactory is Ownable {
             result[0] = tokenData[getByAddress(_user)];
         }
         return result;
+    }
+
+    function getFollowings(address _user) external view returns (address[] memory) {
+        return followings[_user];
     }
 }
