@@ -72,11 +72,20 @@ async function getFollowers(handle) {
 
 async function getFollowerWithTokenHoldings(tokenAddress) {
 const holder = (await factory_contract.getTokens(tokenAddress))[0][7];
-console.log({holder});
-return holder;
+let holderWithLens = [];
+for (const address of holder) {
+    const { value: account } = await fetchAccount(client, {
+        address: evmAddress(address)
+    });
+    if (account) {
+        holderWithLens.push({
+            address: account.address,
+            handle: account.username
+        });
+    }
 }
-//getFollowerWithTokenHoldings("0x9A2a37AB58F85Fd94e22Cc1aCfA3030Cb919E131");
-
+return holderWithLens;
+}
 /**
  * Get engagement metrics for a handle
  */
@@ -99,10 +108,12 @@ async function getEngagementMetrics(handle) {
     });
     let engagement = [];
     for (const post of engagementMetrics.value.items) {
+      if(post.stats){
         engagement.push({
             postId: post.id,
             engagement: post.stats
         })
+      }
     }
     return engagement;
   } catch (error) {
