@@ -73,14 +73,6 @@ export const RenderBattleCard = ({
           </span>
         </div>
       </div>
-
-      {battle.status === "ongoing" && (
-        <div className="p-4 bg-gray-50 border-t border-gray-200">
-          <Button className="w-full bg-primary hover:bg-primary/90">
-            Vote for {profile.displayName}
-          </Button>
-        </div>
-      )}
     </CardContent>
   </Card>
 );
