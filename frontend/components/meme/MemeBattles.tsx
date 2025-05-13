@@ -78,6 +78,46 @@ const potentialOpponents = [
     followers: 31250,
     heatScore: 71,
   },
+  {
+    id: "7",
+    name: "Moon",
+    symbol: "MOON",
+    image: "/fallback.png",
+    followers: 42180,
+    heatScore: 85,
+  },
+  {
+    id: "8",
+    name: "Like a Boss",
+    symbol: "BOSS",
+    image: "/fallback.png",
+    followers: 38750,
+    heatScore: 82,
+  },
+  {
+    id: "9",
+    name: "Arthur's Fist",
+    symbol: "FIST",
+    image: "/fallback.png",
+    followers: 29840,
+    heatScore: 73,
+  },
+  {
+    id: "10",
+    name: "Overly Attached Girlfriend",
+    symbol: "OAG",
+    image: "/fallback.png",
+    followers: 52340,
+    heatScore: 74,
+  },
+  {
+    id: "11",
+    name: "Scumbag Steve",
+    symbol: "SCUMBAG",
+    image: "/fallback.png",
+    followers: 31250,
+    heatScore: 86,
+  },
 ];
 
 // Mock data for battles
@@ -192,15 +232,24 @@ const MemeBattles = ({ profile }: { profile: any }) => {
 
       <Tabs defaultValue="ongoing" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="ongoing" className="flex items-center gap-1">
+          <TabsTrigger
+            value="ongoing"
+            className="flex items-center gap-1 cursor-pointer  "
+          >
             <Clock size={16} />
             Ongoing ({ongoingBattles.length})
           </TabsTrigger>
-          <TabsTrigger value="won" className="flex items-center gap-1">
+          <TabsTrigger
+            value="won"
+            className="flex items-center gap-1 cursor-pointer"
+          >
             <CheckCircle size={16} />
             Won ({wonBattles.length})
           </TabsTrigger>
-          <TabsTrigger value="lost" className="flex items-center gap-1">
+          <TabsTrigger
+            value="lost"
+            className="flex items-center gap-1 cursor-pointer"
+          >
             <XCircle size={16} />
             Lost ({lostBattles.length})
           </TabsTrigger>
@@ -272,7 +321,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -283,7 +332,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                 />
               </div>
 
-              <div className="border rounded-md max-h-[300px] overflow-y-auto">
+              <div className="border rounded-md max-h-[30vh] md:max-h-[40vh] overflow-y-auto">
                 {filteredOpponents.length > 0 ? (
                   filteredOpponents.map((opponent) => (
                     <div

@@ -36,6 +36,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import CommentModal from "@/components/meme/CommentModal";
+import MirrorModal from "@/components/meme/MirrorModal";
 
 export default function MemeViewPage() {
   const params = useParams();
@@ -51,6 +52,7 @@ export default function MemeViewPage() {
   const [isStaking, setIsStaking] = useState(false);
   const [engagementReward, setEngagementReward] = useState<number>(5); // Tokens per engagement
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [isMirrorModalOpen, setIsMirrorModalOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
@@ -116,6 +118,11 @@ export default function MemeViewPage() {
     // For comments, open the modal instead of immediately showing success
     if (type === "comment") {
       setIsCommentModalOpen(true);
+      return;
+    }
+    
+    if (type === "mirror") {
+      setIsMirrorModalOpen(true);
       return;
     }
 
@@ -494,6 +501,21 @@ export default function MemeViewPage() {
                       +{engagementReward}
                     </Badge>
                   </Button>
+                  
+                  {/* Mirror Modal */}
+                  <Dialog
+                    open={isMirrorModalOpen}
+                    onOpenChange={setIsMirrorModalOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <span style={{ display: "none" }}></span>
+                    </DialogTrigger>
+                    <MirrorModal
+                      engagementReward={engagementReward}
+                      profile={profile}
+                      onClose={() => setIsMirrorModalOpen(false)}
+                    />
+                  </Dialog>
                 </div>
               </div>
             </div>
