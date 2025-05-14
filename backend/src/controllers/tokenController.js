@@ -41,15 +41,15 @@ exports.getAllTokens = async (req, res, next) => {
 }; 
 
 /**
- * Get token by lens username
- * @route GET /tokens/:handle
- * @param {string} handle - Lens handle
+ * Get token by token address
+ * @route GET /tokens/:tokenAddress
+ * @param {string} tokenAddress - Token address
  * @returns {Object} Token data
  */
-exports.getTokenByHandle = async (req, res, next) => {
+exports.getTokenByAddress = async (req, res, next) => {
   try {
-    const { handle } = req.params;
-    const token = await Token.findOne({ lensUsername: handle });
+    const { tokenAddress } = req.params;
+    const token = await Token.findOne({ tokenAddress });
     if (!token) {
       return res.status(404).json({ success: false, error: 'Token not found' });
     }
