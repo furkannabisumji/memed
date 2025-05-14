@@ -30,6 +30,8 @@ import { useRecordClaim } from "@/hooks/rewards/useRecordClaim";
 import { WalletClient } from "viem";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { chains } from "@lens-chain/sdk/viem";
 
 type RewardToken = {
   id: string;
@@ -296,6 +298,7 @@ export default function RewardsPage() {
   const [claimingToken, setClaimingToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("available");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
+  const { chain, switchToChain } = useChainSwitch()
   type TabType = "available" | "initial" | "engagement";
 
   const [pages, setPages] = useState<Record<TabType, number>>({
@@ -317,6 +320,13 @@ export default function RewardsPage() {
     engagement: null,
   });
 
+  //check chain
+  useEffect(() => {
+    if (chain?.id !== chains.testnet.id) {
+      switchToChain();
+    }
+  }, [chain, switchToChain]);
+  
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
     const activeTabElement = tabRefs.current[activeTab];
@@ -345,6 +355,7 @@ export default function RewardsPage() {
   useEffect(() => {
     updateUnderlinePosition();
   }, [activeTab, updateUnderlinePosition]);
+
 
   // Function to fetch available rewards
   const fetchRewards = async (
