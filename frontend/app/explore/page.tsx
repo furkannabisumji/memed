@@ -2,14 +2,15 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Filter, Search, TrendingUp } from "lucide-react";
+import { Filter, Search, TrendingUp, Loader2 } from "lucide-react";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
 import MemeCard from "@/components/meme/MemeCard";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useMemes } from "@/hooks/useMemes";
 
 export default function ExplorePage() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("tokens");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -17,6 +18,24 @@ export default function ExplorePage() {
     tokens: null,
     creators: null,
   });
+
+  const {
+    memes: tokenMemesData,
+    fetchNextPage: fetchNextTokenMemes,
+    hasNextPage: hasNextTokenMemes,
+    isFetchingNextPage: isFetchingNextTokenMemes,
+    isLoading: isLoadingTokenMemes,
+    isPending: isPendingTokenMemes,
+  } = useMemes({ category: "tokens" });
+
+  const {
+    memes: creatorMemesData,
+    fetchNextPage: fetchNextCreatorMemes,
+    hasNextPage: hasNextCreatorMemes,
+    isFetchingNextPage: isFetchingNextCreatorMemes,
+    isLoading: isLoadingCreatorMemes,
+    isPending: isPendingCreatorMemes,
+  } = useMemes({ category: "creators" });
 
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
@@ -77,14 +96,17 @@ export default function ExplorePage() {
           </div>
 
           <Tabs
-            defaultValue="all"
+            defaultValue="tokens"
             className="mb-8"
             onValueChange={setActiveTab}
             value={activeTab}
           >
             <div className="relative" ref={tabsListRef}>
-              <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
-                {["all", "tokens", "creators"].map((tab) => (
+              <TabsList
+                defaultValue="tokens"
+                className="w-full h-auto p-0 bg-transparent border-b border-gray-200"
+              >
+                {["tokens", "creators"].map((tab) => (
                   <TabsTrigger
                     key={tab}
                     value={tab}
@@ -93,9 +115,7 @@ export default function ExplorePage() {
                       tabRefs.current[tab] = el;
                     }}
                   >
-                    {tab === "all"
-                      ? "All Memes"
-                      : tab === "tokens"
+                    {tab === "tokens"
                       ? "Tokens"
                       : tab === "creators"
                       ? "Creators"
@@ -111,39 +131,83 @@ export default function ExplorePage() {
                 }}
               />
             </div>
-            <TabsContent value="all" className="mt-8">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {allMemes.map((meme) => (
-                  <MemeCard key={meme.id} meme={meme} />
-                  // <RewardCard key={meme.id} reward={meme} />
-                ))}
-              </div>
-            </TabsContent>
 
             <TabsContent value="tokens" className="mt-8">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {tokenMemes.map((meme) => (
-                  <MemeCard key={meme.id} meme={meme} />
-                ))}
-              </div>
+              {isPendingTokenMemes ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-black" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                  {tokenMemesData && tokenMemesData.length > 0 ? (
+                    tokenMemesData.map((meme) => (
+                      <MemeCard key={meme.id} meme={meme} />
+                    ))
+                  ) : (
+                    <div className="col-span-3 text-center py-10">
+                      <p className="text-gray-500">No token memes found</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="creators" className="mt-8">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {creatorMemes.map((meme) => (
-                  <MemeCard key={meme.id} meme={meme} />
-                ))}
-              </div>
+              {isPendingCreatorMemes ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-black" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                  {creatorMemesData && creatorMemesData.length > 0 ? (
+                    creatorMemesData.map((meme) => (
+                      <MemeCard key={meme.id} meme={meme} />
+                    ))
+                  ) : (
+                    <div className="col-span-3 text-center py-10">
+                      <p className="text-gray-500">No creator memes found</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
 
           <div className="flex justify-center mt-12">
-            <Button
-              variant="outline"
-              className="border-2 border-black text-black hover:bg-black hover:text-white"
-            >
-              Load More
-            </Button>
+            {activeTab === "tokens" && hasNextTokenMemes && (
+              <Button
+                variant="outline"
+                className="border-2 border-black text-black hover:bg-black hover:text-white"
+                onClick={() => fetchNextTokenMemes()}
+                disabled={isFetchingNextTokenMemes}
+              >
+                {isFetchingNextTokenMemes ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More"
+                )}
+              </Button>
+            )}
+            {activeTab === "creators" && hasNextCreatorMemes && (
+              <Button
+                variant="outline"
+                className="border-2 border-black text-black hover:bg-black hover:text-white"
+                onClick={() => fetchNextCreatorMemes()}
+                disabled={isFetchingNextCreatorMemes}
+              >
+                {isFetchingNextCreatorMemes ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More"
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -152,54 +216,3 @@ export default function ExplorePage() {
     </>
   );
 }
-
-const allMemes = [
-  {
-    id: 1,
-    title: "Doge to the Moon",
-    creator: "CryptoMemer",
-    image: "/fallback.png",
-    likes: 1452,
-    price: 0.05,
-    tokenSymbol: "DOGE",
-  },
-  {
-    id: 2,
-    title: "Pepe's Adventure",
-    creator: "MemeKing",
-    image: "/fallback.png",
-    likes: 982,
-    price: 0.03,
-    tokenSymbol: "PEPE",
-  },
-  {
-    id: 3,
-    title: "Wojak's Feelings",
-    creator: "EmotionMaster",
-    image: "/fallback.png",
-    likes: 753,
-    price: 0.02,
-    tokenSymbol: "WOJAK",
-  },
-  {
-    id: 4,
-    title: "Stonks Only Go Up",
-    creator: "WallStreetBets",
-    image: "/fallback.png",
-    likes: 2104,
-    price: 0.08,
-    tokenSymbol: "STONK",
-  },
-  {
-    id: 6,
-    title: "This is Fine",
-    creator: "FireMemer",
-    image: "/fallback.png",
-    likes: 1203,
-    price: 0.06,
-    tokenSymbol: "FINE",
-  },
-];
-
-const tokenMemes = allMemes.filter((_, index) => index % 2 === 0);
-const creatorMemes = allMemes.filter((_, index) => index % 3 === 0);
