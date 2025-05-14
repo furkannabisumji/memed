@@ -53,9 +53,10 @@ contract MemedFactory is Ownable {
         uint timestamp
     );
 
-    constructor(address _memedStaking, address _memedBattle) {
+    constructor(address _memedStaking, address _memedBattle, address _memedEngageToEarn) {
         memedStaking = MemedStaking(_memedStaking);
         memedBattle = MemedBattle(_memedBattle);
+        memedEngageToEarn = MemedEngageToEarn(_memedEngageToEarn);
     }
 
     function createMeme(
@@ -67,7 +68,7 @@ contract MemedFactory is Ownable {
         string calldata _image
     ) external onlyOwner {
         //require(tokenData[_lensUsername].token == address(0), "already minted");
-        MemedToken memedToken = new MemedToken(_name, _ticker, address(this), _creator, address(memedStaking), address(memedEngageToEarn));
+        MemedToken memedToken = new MemedToken(_name, _ticker, _creator, address(memedStaking), address(memedEngageToEarn));
         tokenData[_lensUsername] = TokenData({
             token: address(memedToken),
             creator: _creator,
