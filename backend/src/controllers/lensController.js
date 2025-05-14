@@ -376,13 +376,18 @@ const generateClaimData = async (req, res, next) => {
       );
       
       if (proof.length > 0) {
+        // Get the type from the first reward for this token
+        const rewardType = tokenData.rewards[0].type;
+        console.log({tokenData});
+        
         claims.push({
           token: tokenData.tokenAddress,
           handle: tokenData.handle,
           amount: amount,
           proof,
           leaf,
-          index: tokenData.airdropIndex
+          index: tokenData.airdropIndex,
+          type: rewardType
         });
       }
     }
