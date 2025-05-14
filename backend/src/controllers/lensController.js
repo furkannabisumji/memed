@@ -127,7 +127,7 @@ const mintMemeCoins = async (req, res, next) => {
         );
         
         // After successful minting, distribute initial rewards to random followers
-        await distributeInitialRewards(handle, tokenAddress);
+        // await distributeInitialRewards(handle, tokenAddress);
         
         return res.status(200).json({ 
           message: 'Meme created successfully and initial rewards distributed', 

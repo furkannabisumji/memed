@@ -1,6 +1,7 @@
 const express = require('express');
 const lensRoutes = require('./lensRoutes');
 const heatRoutes = require('./heat');
+const tokenRoutes = require('./tokenRoutes');
 
 const router = express.Router();
 
@@ -12,5 +13,6 @@ router.get('/', (req, res) => {
 // Mount routes
 router.use('/api', lensRoutes);
 router.use('/api/heat', heatRoutes);
+router.use('/api', tokenRoutes);
 
 module.exports = router; 
