@@ -120,6 +120,11 @@ const mintMemeCoins = async (req, res, next) => {
           { 
             handle,
             tokenAddress,
+            name,
+            ticker,
+            description,
+            image,
+            creator: handleOwner,
             lastRewardDistribution: Date.now(),
             totalDistributed: "0"
           },
