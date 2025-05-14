@@ -3,6 +3,8 @@ const { evmAddress } = require('@lens-protocol/client');
 const ethers = require('ethers');
 const client = require('../config/lens');
 const { factory_contract } = require("../config/factory");
+const Token = require("../models/Token");
+const Post = require("../models/Post");
 
 /**
  * Get account information and follower statistics for a Lens handle
@@ -89,7 +91,7 @@ return holderWithLens;
 /**
  * Get engagement metrics for a handle
  */
-async function getEngagementMetrics(handle) {
+async function getEngagementMetrics(handle, update) {
   try {
     const { value: account } = await fetchAccount(client, {
       username: {
@@ -106,16 +108,37 @@ async function getEngagementMetrics(handle) {
         authors: [evmAddress(account.address)]
       }
     });
-    let engagement = [];
+    let engagements = [];
     for (const post of engagementMetrics.value.items) {
       if(post.stats){
-        engagement.push({
+        engagements.push({
             postId: post.id,
-            engagement: post.stats
+            stats: post.stats
         })
       }
     }
-    return engagement;
+    const token = await Token.findOne({ handle });
+    let newEngagement = 0;
+    for (const engagement of engagements) {
+      let post = await Post.findOne({ postId: engagement.postId });
+      if (!post) {
+        post = new Post({
+          token: token._id,
+          postId: engagement.postId,
+          engagement: engagement.stats
+        });
+        await post.save();
+      }
+      await Promise.all(Object.keys(engagement.stats).map(async (key)=>{
+        if(post.engagement[key] && engagement.stats[key] && engagement.stats[key] > post.engagement[key]){
+          newEngagement += engagement.stats[key] - post.engagement[key];
+          if(update){
+            await Post.updateOne({ postId: engagement.postId }, { engagement: engagement.stats });
+          }
+        }
+      }));
+    }
+    return newEngagement;
   } catch (error) {
     console.error(`Error fetching engagement metrics for ${handle}:`, error);
     throw error;

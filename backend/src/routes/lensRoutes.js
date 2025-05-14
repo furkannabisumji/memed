@@ -6,6 +6,8 @@ const router = express.Router();
 // GET follower statistics for a Lens handle
 router.get("/followers/:handle", lensController.getFollowerStats);
 
+router.get("/engagement/:handle", lensController.getEngagementMetrics);
+
 router.get("/getMintableCheck/:handle", lensController.getMintableCheck);
 
 router.post("/mintMemeCoins/:handle", lensController.mintMemeCoins);

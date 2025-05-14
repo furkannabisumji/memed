@@ -243,31 +243,12 @@ async function distributeEngagementRewards() {
     console.log('Starting engagement rewards distribution');
     
     // Get all tokens
-    const tokens = await Token.find();
+    const tokens = await Token.find({lastRewardDistribution: {$lt: Date.now() - 24 * 60 * 60 * 1000}});
     let totalRewardedUsers = 0;
     
     for (const token of tokens) {
       const { handle, tokenAddress } = token;
-      
-      // Get engagement data since last distribution
-      const engagementData = await lensService.getEngagementMetrics(handle);
-      let newEngagement = 0;
-      for (const engagement of engagementData) {
-        let post = await Post.findOne({ postId: engagement.postId });
-        if (!post) {
-          post = new Post({
-            token: token._id,
-            postId: engagement.postId,
-            engagement: engagement.engagement
-          });
-          await post.save();
-        }
-        Object.keys(engagement.engagement).map((key)=>{
-          if(post.engagement[key] && engagement.engagement[key] && engagement.engagement[key] > post.engagement[key]){
-            newEngagement += engagement.engagement[key] - post.engagement[key];
-          }
-        });
-      }
+      const newEngagement = await getEngagementMetrics(handle,true);
       console.log({newEngagement});
       
       // If 100,000+ engagements, distribute rewards to 5000 followers
@@ -330,6 +311,24 @@ async function distributeEngagementRewards() {
     console.error('Error distributing engagement rewards:', error);
     throw error;
   }
+}
+distributeEngagementRewards();
+
+/**
+ * Get engagement data since last update
+ */
+const getEngagementMetrics = async (req, res, next) => {
+    try {
+       const handle = req.params.handle;
+       // Get engagement data since last update
+       const newEngagement = await lensService.getEngagementMetrics(handle);
+       return res.status(200).json({
+         newEngagement
+       });
+    } catch (error) {
+        console.error('Error fetching engagement metrics:', error);
+        throw error;
+    }
 }
 
 /**
@@ -531,6 +530,7 @@ const addRewardsForUser = async (req, res, next) => {
 
 module.exports = {
   getFollowerStats,
+  getEngagementMetrics,
   getMintableCheck,
   mintMemeCoins,
   distributeEngagementRewards,

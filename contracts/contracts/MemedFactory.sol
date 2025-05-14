@@ -3,9 +3,17 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MemedToken.sol";
+import "./MemedStaking.sol";
+import "./MemedBattle.sol";
+import "./MemedEngageToEarn.sol";
 
 contract MemedFactory is Ownable {
-    MemedToken public memedToken;
+    uint256 constant public REWARD_PER_ENGAGEMENT = 100000;
+    uint256 constant public MAX_ENGAGE_USER_REWARD_PERCENTAGE = 2;
+    uint256 constant public MAX_ENGAGE_CREATOR_REWARD_PERCENTAGE = 1;
+    MemedStaking public memedStaking;
+    MemedBattle public memedBattle;
+    MemedEngageToEarn public memedEngageToEarn;
     struct TokenData {
         address token;
         address creator;
@@ -14,12 +22,12 @@ contract MemedFactory is Ownable {
         string description;
         string image;
         string lensUsername;
-        address[] followers;
+        uint256 heat;
+        uint256 lastRewardAt;
         uint createdAt;
     }
 
     mapping(string => TokenData) public tokenData;
-    mapping(address => address[]) followings;
     string[] public tokens;
 
     // Events
@@ -45,6 +53,11 @@ contract MemedFactory is Ownable {
         uint timestamp
     );
 
+    constructor(address _memedStaking, address _memedBattle) {
+        memedStaking = MemedStaking(_memedStaking);
+        memedBattle = MemedBattle(_memedBattle);
+    }
+
     function createMeme(
         address _creator,
         string calldata _lensUsername,
@@ -53,8 +66,8 @@ contract MemedFactory is Ownable {
         string calldata _description,
         string calldata _image
     ) external onlyOwner {
-        require(tokenData[_lensUsername].token == address(0), "already minted");
-        memedToken = new MemedToken(_name, _ticker, address(this), _creator);
+        //require(tokenData[_lensUsername].token == address(0), "already minted");
+        MemedToken memedToken = new MemedToken(_name, _ticker, address(this), _creator, address(memedStaking), address(memedEngageToEarn));
         tokenData[_lensUsername] = TokenData({
             token: address(memedToken),
             creator: _creator,
@@ -63,7 +76,8 @@ contract MemedFactory is Ownable {
             description: _description,
             image: _image,
             lensUsername: _lensUsername,
-            followers: new address[](0),
+            heat: 0,
+            lastRewardAt: 0,
             createdAt: block.timestamp
         });
         tokens.push(_lensUsername);
@@ -79,39 +93,32 @@ contract MemedFactory is Ownable {
         );
     }
 
-    function follow(address _user) public {
+    function updateHeat(address _user, uint256 _heat, bool _minusHeat) public {
+        require(msg.sender == address(memedStaking) || msg.sender == address(memedBattle) || msg.sender == owner(), "unauthorized");
         string memory lensUsername = getByAddress(_user);
-        require(msg.sender == tokenData[lensUsername].token, "unauthorized");
         require(tokenData[lensUsername].token != address(0), "not minted");
-        bool isFollowed = false;
-        for (uint i = 0; i < tokenData[lensUsername].followers.length; i++) {
-            if (tokenData[lensUsername].followers[i] == _user) {
-                isFollowed = true;
-                break;
+        require(!_minusHeat || (msg.sender == address(memedStaking)), "Only staking can minus heat");
+        if(_minusHeat) {
+            tokenData[lensUsername].heat -= _heat;
+        } else {
+            tokenData[lensUsername].heat += _heat;
+        }
+        MemedBattle.Battle[] memory battles = memedBattle.getUserBattles(_user);
+        for(uint i = 0; i < battles.length; i++) {
+            address opponent = battles[i].memeA == _user ? battles[i].memeB : battles[i].memeA;
+            if(block.timestamp > battles[i].endTime && !battles[i].resolved) {
+                address winner = tokenData[getByAddress(opponent)].heat > tokenData[lensUsername].heat ? opponent : _user;
+                memedBattle.resolveBattle(battles[i].battleId, winner);
+                if(memedStaking.isRewardable(tokenData[lensUsername].token)) {
+                    memedStaking.reward(tokenData[lensUsername].token, tokenData[lensUsername].creator);
+                }
             }
         }
-        if (!isFollowed) {
-            tokenData[lensUsername].followers.push(_user);
-            followings[_user].push(msg.sender);
-            emit Followed(msg.sender, _user, block.timestamp);
-        }
-    }
-
-    function unfollow(address _user) public {
-        string memory lensUsername = getByAddress(_user);
-        require(tokenData[lensUsername].token != address(0), "not minted");
-        require(msg.sender == tokenData[lensUsername].token, "unauthorized");
-        for (uint i = 0; i < tokenData[lensUsername].followers.length; i++) {
-                if(tokenData[lensUsername].followers[i] == _user) {
-                    delete tokenData[lensUsername].followers[i];
-                    for (uint j = 0; j < followings[_user].length; j++) {
-                        if (followings[_user][j] == msg.sender) {
-                            delete followings[_user][j];
-                            break;
-                        }
-                    }
-                    emit Unfollowed(msg.sender, _user, block.timestamp);
-                    break;
+        if(tokenData[lensUsername].heat - tokenData[lensUsername].lastRewardAt > REWARD_PER_ENGAGEMENT && memedEngageToEarn.isRewardable(tokenData[lensUsername].token)) {
+            memedEngageToEarn.reward(tokenData[lensUsername].token, _user);
+            tokenData[lensUsername].lastRewardAt = tokenData[lensUsername].heat;
+            if(memedStaking.isRewardable(tokenData[lensUsername].token)) {
+                memedStaking.reward(tokenData[lensUsername].token, tokenData[lensUsername].creator);
             }
         }
     }
@@ -140,7 +147,7 @@ contract MemedFactory is Ownable {
         return result;
     }
 
-    function getFollowings(address _user) external view returns (address[] memory) {
-        return followings[_user];
+    function getUserBattles(address _user) external view returns (MemedBattle.Battle[] memory) {
+        return memedBattle.getUserBattles(_user);
     }
 }
