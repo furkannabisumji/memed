@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https", // Assuming the image URL uses HTTPS
+        hostname: "example.com",
+      },
+      {
+        protocol: "https", // Assuming the image URL uses HTTPS
         hostname: "gateway.lighthouse.storage",
       },
       {

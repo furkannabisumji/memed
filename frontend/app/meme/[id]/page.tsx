@@ -20,41 +20,34 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
 import MemeStaking from "@/components/meme/MemeStaking";
 import MemeBattles from "@/components/meme/MemeBattles";
 import MemeSupporters from "@/components/meme/MemeSupporters";
 import MemeDetails from "@/components/meme/MemeDetails";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import CommentModal from "@/components/meme/CommentModal";
 import MirrorModal from "@/components/meme/MirrorModal";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { chains } from "@lens-chain/sdk/viem";
+import { useAccount } from "wagmi";
+import { useMemeToken } from "@/hooks/useMemeToken";
 
 export default function MemeViewPage() {
   const params = useParams();
   const memeId = params.id as string;
-
+  const { chain } = useAccount();
   // State for UI interactions
   const [activeTab, setActiveTab] = useState("Details");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   const [hasEnoughTokens, setHasEnoughTokens] = useState(true); // Set to true for demo
   const [showTokenWarning, setShowTokenWarning] = useState(false);
-  const [stakeAmount, setStakeAmount] = useState<string>("");
-  const [isStaking, setIsStaking] = useState(false);
   const [engagementReward, setEngagementReward] = useState<number>(5); // Tokens per engagement
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isMirrorModalOpen, setIsMirrorModalOpen] = useState(false);
-  const [commentText, setCommentText] = useState("");
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const { data: memeToken, isLoading } = useMemeToken(memeId);
 
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -63,6 +56,10 @@ export default function MemeViewPage() {
     Battles: null,
     Staking: null,
   });
+  // Handle follow button click
+  const toast = useCustomToast();
+
+  const { switchToChain } = useChainSwitch();
 
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
@@ -93,8 +90,12 @@ export default function MemeViewPage() {
     updateUnderlinePosition();
   }, [activeTab, updateUnderlinePosition]);
 
-  // Handle follow button click
-  const toast = useCustomToast();
+  //check chain
+  useEffect(() => {
+    if (chain?.id !== chains.testnet.id) {
+      switchToChain();
+    }
+  }, [chain, switchToChain]);
 
   const handleFollow = () => {
     if (!hasEnoughTokens) {
@@ -120,7 +121,7 @@ export default function MemeViewPage() {
       setIsCommentModalOpen(true);
       return;
     }
-    
+
     if (type === "mirror") {
       setIsMirrorModalOpen(true);
       return;
@@ -133,45 +134,6 @@ export default function MemeViewPage() {
     toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added`, {
       description: `You earned ${engagementReward} ${profile.tokenSymbol} tokens!`,
     });
-  };
-
-  // Handle comment submission
-  const handleSubmitComment = () => {
-    if (!commentText.trim()) {
-      toast.error("Comment required", {
-        description: "Please enter a comment",
-      });
-      return;
-    }
-
-    setIsSubmittingComment(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmittingComment(false);
-      setIsCommentModalOpen(false);
-      setCommentText("");
-
-      // Show success toast
-      toast.success("Comment added", {
-        description: `You earned ${engagementReward} ${profile.tokenSymbol} tokens!`,
-      });
-    }, 1000);
-  };
-
-  // Handle staking
-  const handleStake = () => {
-    if (stakeAmount && Number(stakeAmount) > 0) {
-      setIsStaking(true);
-      // Simulate staking process
-      setTimeout(() => {
-        setIsStaking(false);
-        toast.success("Staking Successful", {
-          description: `You have staked ${stakeAmount} ${profile.tokenSymbol} tokens`,
-        });
-        setStakeAmount("");
-      }, 2000);
-    }
   };
 
   // Mock data for the meme profile
@@ -204,94 +166,17 @@ export default function MemeViewPage() {
     tokenRequirement: 1000,
   };
 
-  // Mock data for supporters
-  const supporters = [
-    {
-      id: "1",
-      handle: "whale1",
-      name: "Crypto Whale",
-      tokens: 5000000,
-      profileImage: "/fallback.png",
-      isVerified: true,
-    },
-    {
-      id: "2",
-      handle: "hodler",
-      name: "Diamond Hands",
-      tokens: 3200000,
-      profileImage: "/fallback.png",
-      isVerified: false,
-    },
-    {
-      id: "3",
-      handle: "memefan",
-      name: "Meme Enthusiast",
-      tokens: 1800000,
-      profileImage: "/fallback.png",
-      isVerified: false,
-    },
-    {
-      id: "4",
-      handle: "tokencollector",
-      name: "Token Collector",
-      tokens: 1500000,
-      profileImage: "/fallback.png",
-      isVerified: true,
-    },
-    {
-      id: "5",
-      handle: "cryptoqueen",
-      name: "Crypto Queen",
-      tokens: 1200000,
-      profileImage: "/fallback.png",
-      isVerified: true,
-    },
-  ];
-
-  // Mock data for battles
-  const battles = [
-    {
-      id: "1",
-      opponent: "Pepe's Adventure",
-      status: "ongoing",
-      votes: 3421,
-      opponentVotes: 2987,
-      endTime: "2025-05-15T00:00:00Z",
-    },
-    {
-      id: "2",
-      opponent: "Wojak Feels",
-      status: "won",
-      votes: 5621,
-      opponentVotes: 4102,
-      endTime: "2025-05-10T00:00:00Z",
-    },
-    {
-      id: "3",
-      opponent: "Stonks Guy",
-      status: "lost",
-      votes: 2341,
-      opponentVotes: 3102,
-      endTime: "2025-05-05T00:00:00Z",
-    },
-  ];
-
-  // Mock data for staking rewards
-  const stakingRewards = [
-    { id: "1", amount: 50000, date: "2025-05-11", reason: "Viral post" },
-    {
-      id: "2",
-      amount: 25000,
-      date: "2025-05-08",
-      reason: "Heat score milestone",
-    },
-    { id: "3", amount: 15000, date: "2025-05-03", reason: "Battle victory" },
-  ];
-
   // Additional profile properties for mint progress
   const mintProgress = profile.engagements;
   const nextMintThreshold = 100000;
 
+  if (isLoading || !memeToken) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
+      </div>
+    );
+  }
   return (
     <>
       <Header />
@@ -501,7 +386,7 @@ export default function MemeViewPage() {
                       +{engagementReward}
                     </Badge>
                   </Button>
-                  
+
                   {/* Mirror Modal */}
                   <Dialog
                     open={isMirrorModalOpen}
@@ -543,33 +428,50 @@ export default function MemeViewPage() {
             </div>
 
             <Tabs
-              defaultValue="Details"
+              value={activeTab}
               onValueChange={setActiveTab}
+              defaultValue="Details"
               className="mt-8"
             >
               <div className="relative" ref={tabsListRef}>
                 <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
                   <TabsTrigger
                     value="Details"
-                    className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                      activeTab === "Details" ? "text-primary" : ""
+                    }`}
                     ref={(el: HTMLButtonElement | null) => {
                       tabRefs.current.Details = el;
                     }}
                   >
-                    Details
+                    <span className="relative z-10">Details</span>
+                    <span
+                      className={`absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all duration-200 ${
+                        activeTab === "Details" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
                   </TabsTrigger>
                   <TabsTrigger
                     value="Supporters"
-                    className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                      activeTab === "Supporters" ? "text-primary" : ""
+                    }`}
                     ref={(el: HTMLButtonElement | null) => {
                       tabRefs.current.Supporters = el;
                     }}
                   >
-                    Supporters
+                    <span className="relative z-10">Supporters</span>
+                    <span
+                      className={`absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all duration-200 ${
+                        activeTab === "Supporters" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
                   </TabsTrigger>
                   <TabsTrigger
                     value="Battles"
-                    className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                      activeTab === "Battles" ? "text-primary" : ""
+                    }`}
                     ref={(el: HTMLButtonElement | null) => {
                       tabRefs.current.Battles = el;
                     }}
@@ -578,12 +480,19 @@ export default function MemeViewPage() {
                   </TabsTrigger>
                   <TabsTrigger
                     value="Staking"
-                    className="px-6 py-3 cursor-pointer hover:bg-secondary data-[state=active]:shadow-none rounded-none bg-transparent data-[state=active]:text-primary transition-colors"
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                      activeTab === "Staking" ? "text-primary" : ""
+                    }`}
                     ref={(el: HTMLButtonElement | null) => {
                       tabRefs.current.Staking = el;
                     }}
                   >
-                    Staking
+                    <span className="relative z-10">Staking</span>
+                    <span
+                      className={`absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all duration-200 ${
+                        activeTab === "Staking" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
                   </TabsTrigger>
                 </TabsList>
                 <div
@@ -597,7 +506,7 @@ export default function MemeViewPage() {
 
               {/* Details Tab */}
               <TabsContent value="Details" className="mt-8">
-                <MemeDetails profile={profile} />
+                <MemeDetails meme={memeToken} />
               </TabsContent>
 
               {/* Supporters Tab */}
@@ -612,13 +521,7 @@ export default function MemeViewPage() {
 
               {/* Staking Tab */}
               <TabsContent value="Staking" className="mt-8">
-                <MemeStaking
-                  profile={profile}
-                  stakeAmount={stakeAmount}
-                  setStakeAmount={setStakeAmount}
-                  isStaking={isStaking}
-                  handleStake={handleStake}
-                />
+                <MemeStaking meme={memeToken} tokenAddress={memeId} />
               </TabsContent>
             </Tabs>
           </div>
@@ -628,78 +531,3 @@ export default function MemeViewPage() {
     </>
   );
 }
-
-const allMemes = [
-  {
-    id: 1,
-    title: "Doge to the Moon",
-    creator: "CryptoMemer",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 1452,
-    price: 0.05,
-    tokenSymbol: "DOGE",
-  },
-  {
-    id: 2,
-    title: "Pepe's Adventure",
-    creator: "MemeKing",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 982,
-    price: 0.03,
-    tokenSymbol: "PEPE",
-  },
-  {
-    id: 3,
-    title: "Wojak's Feelings",
-    creator: "EmotionMaster",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 753,
-    price: 0.02,
-    tokenSymbol: "WOJAK",
-  },
-  {
-    id: 4,
-    title: "Stonks Only Go Up",
-    creator: "WallStreetBets",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 2104,
-    price: 0.08,
-    tokenSymbol: "STONK",
-  },
-  {
-    id: 5,
-    title: "Distracted Boyfriend",
-    creator: "MemeClassics",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 876,
-    price: 0.04,
-    tokenSymbol: "DISTRACT",
-  },
-  {
-    id: 6,
-    title: "This is Fine",
-    creator: "FireMemer",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 1203,
-    price: 0.06,
-    tokenSymbol: "FINE",
-  },
-  {
-    id: 7,
-    title: "Galaxy Brain",
-    creator: "BrainPower",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 654,
-    price: 0.03,
-    tokenSymbol: "BRAIN",
-  },
-  {
-    id: 8,
-    title: "Surprised Pikachu",
-    creator: "PokeMemer",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 1876,
-    price: 0.07,
-    tokenSymbol: "PIKA",
-  },
-];

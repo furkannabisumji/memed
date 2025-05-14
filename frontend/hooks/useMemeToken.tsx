@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { Meme } from "./useMemes";
+import { Meme } from "@/app/types";
 
 interface MemeTokenResponse {
   success: boolean;

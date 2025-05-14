@@ -1,23 +1,167 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Trophy, Info, Loader2 } from "lucide-react";
+import { Zap, Trophy, Info, Loader2, ArrowDownUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useCustomToast } from "@/components/ui/custom-toast";
+import { config } from "@/providers/Web3Provider";
+import { useAccount } from "wagmi";
+import { useHasStaked } from "@/hooks/useHasStaked";
+import { Meme } from "@/app/types";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
+import { useTokenApproval } from "@/hooks/useTokenApproval";
+const { writeContract } = await import("@wagmi/core");
+const { parseUnits, formatUnits } = await import("viem");
+const { waitForTransactionReceipt } = await import("wagmi/actions");
+const CONTRACTS = (await import("@/config/contracts")).default;
+// Import ABI and ensure it's in the correct format
+const memedStakingABI = await import("@/config/memedStakingABI.json").then(
+  (module) => module.default || module
+);
 
 interface MemeStakingProps {
-  profile: any;
-  stakeAmount: string;
-  setStakeAmount: (amount: string) => void;
-  isStaking: boolean;
-  handleStake: () => void;
+  meme: Meme;
+  tokenAddress?: string; // Optional token address from URL
 }
 
-const MemeStaking: React.FC<MemeStakingProps> = ({
-  profile,
-  stakeAmount,
-  setStakeAmount,
-  isStaking,
-  handleStake,
-}) => {
+const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
+  const { address: userAddress } = useAccount();
+  const [stakeAmount, setStakeAmount] = useState<string>("");
+  const [isStaking, setIsStaking] = useState(false);
+  const [isUnstaking, setIsUnstaking] = useState(false);
+  const [stakeAction, setStakeAction] = useState<"stake" | "unstake">("stake");
+  const toast = useCustomToast();
+  const { balance, isLoading: isLoadingBalance } = useTokenBalance({
+    tokenAddress: tokenAddress || "",
+    userAddress,
+    enabled: !!userAddress && !!tokenAddress,
+  });
+
+  const formattedBalance = balance ? formatUnits(balance, 18) : "0";
+
+  // Check if approval is needed
+  const {
+    needsApproval,
+    isCheckingApproval,
+    isApproving,
+    approve,
+    approvalError,
+  } = useTokenApproval({
+    tokenAddress: tokenAddress || "",
+    amount: stakeAmount ? parseUnits(stakeAmount, 18) : 0n,
+    enabled: !!tokenAddress && !!stakeAmount && !!userAddress,
+  });
+  // Check if user has already staked
+  const {
+    hasStaked,
+    stakedAmount,
+    isLoading: isLoadingStakeStatus,
+    refetch: refetchStakeStatus,
+  } = useHasStaked({
+    userAddress,
+    tokenAddress: tokenAddress || "",
+    enabled: !!userAddress && !!tokenAddress,
+  });
+
+  // Update UI based on staking status
+  useEffect(() => {
+    if (hasStaked) {
+      setStakeAction("unstake");
+      setStakeAmount(formatUnits(BigInt(stakedAmount), 18));
+    } else {
+      setStakeAction("stake");
+    }
+  }, [hasStaked, stakedAmount]);
+
+  const handleStakeAction = async () => {
+    if (!userAddress || !tokenAddress) {
+      toast.error("Error", {
+        description: "Please connect your wallet",
+      });
+      return;
+    }
+
+    if (!stakeAmount || Number(stakeAmount) <= 0) {
+      toast.error("Invalid Amount", {
+        description: "Please enter a valid amount to stake",
+      });
+      return;
+    }
+
+    const isStakeAction = stakeAction === "stake";
+
+    if (isStakeAction && Number(stakeAmount) > Number(formattedBalance)) {
+      toast.error("Not enough tokens", {
+        description: "You don't have enough tokens to stake",
+      });
+      return;
+    }
+    try {
+      if (isStakeAction) {
+        setIsStaking(true);
+      } else {
+        setIsUnstaking(true);
+      }
+
+      // Parse the amount to wei (assuming 18 decimals)
+      const amountInWei = parseUnits(stakeAmount, 18);
+
+      // Convert address to proper format
+      const contractAddress = CONTRACTS.memedStaking as `0x${string}`;
+      const formattedTokenAddress = tokenAddress
+        ? ((tokenAddress.startsWith("0x")
+            ? tokenAddress
+            : `0x${tokenAddress}`) as `0x${string}`)
+        : (`0x${"1".padStart(40, "0")}` as `0x${string}`);
+
+      // Determine the function to call based on the action
+      const functionName = isStakeAction ? "stake" : "unstake";
+
+      // Write to the contract
+      const hash = await writeContract(config, {
+        address: contractAddress,
+        abi: memedStakingABI,
+        functionName,
+        args: [formattedTokenAddress, amountInWei],
+      });
+
+      // Wait for transaction to be mined
+      const receipt = await waitForTransactionReceipt(config, { hash });
+      const isSuccess = receipt.status === "success";
+
+      if (isSuccess) {
+        const actionText = isStakeAction ? "Staked" : "Unstaked";
+        toast.success(`${actionText} Successfully`, {
+          description: `You have ${actionText.toLowerCase()} ${stakeAmount} ${
+            meme.ticker
+          } tokens`,
+        });
+
+        // Reset form and refetch staking status
+        setStakeAmount("");
+        refetchStakeStatus();
+      } else {
+        const actionText = isStakeAction ? "Staking" : "Unstaking";
+        toast.error(`${actionText} Failed`, {
+          description: `Transaction failed. Please try again.`,
+        });
+      }
+    } catch (error: any) {
+      const actionText = isStakeAction ? "staking" : "unstaking";
+      console.error(`${actionText} error:`, error);
+      toast.error(
+        `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Failed`,
+        {
+          description:
+            error?.message || `An error occurred while ${actionText}`,
+        }
+      );
+    } finally {
+      setIsStaking(false);
+      setIsUnstaking(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -25,13 +169,13 @@ const MemeStaking: React.FC<MemeStakingProps> = ({
           <CardContent className="p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Zap size={20} className="text-primary" />
-              Stake Your Tokens
+              {hasStaked ? "Your Stake" : "Stake Your Tokens"}
             </h3>
 
             <p className="text-gray-600 mb-4">
-              Stake your {profile.tokenSymbol} tokens to earn rewards when this
-              meme goes viral. Staking represents your belief in this meme's
-              potential.
+              {hasStaked
+                ? `You have staked ${stakedAmount} ${meme.ticker} tokens. Manage your stake below.`
+                : `Stake your ${meme.ticker} tokens to earn rewards when this meme goes viral. Staking represents your belief in this meme's potential.`}
             </p>
 
             <div className="space-y-4">
@@ -40,46 +184,133 @@ const MemeStaking: React.FC<MemeStakingProps> = ({
                   htmlFor="stake-amount"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Stake Amount (${profile.tokenSymbol})
+                  Stake Amount ({meme.ticker})
                 </label>
-                <div className="flex gap-2">
+                <div className="flex justify-between items-center text-sm text-gray-500 mb-1">
+                  <span>Your balance:</span>
+                  <span className="font-medium">
+                    {isLoadingBalance ? (
+                      <span className="inline-block h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                    ) : (
+                      `${Number(formattedBalance).toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })} ${meme.ticker}`
+                    )}
+                  </span>
+                </div>
+                <div className="space-y-2">
                   <input
                     id="stake-amount"
                     type="number"
-                    placeholder="Enter amount"
+                    placeholder={`Enter amount to ${
+                      hasStaked ? "stake/unstake" : "stake"
+                    }`}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={stakeAmount}
                     onChange={(e) => setStakeAmount(e.target.value)}
+                    min="0"
+                    step="0.000000000000000001"
                   />
-                  <Button
-                    className="bg-primary hover:bg-primary/90 hover:shadow-2xl"
-                    onClick={handleStake}
-                    disabled={
-                      isStaking || !stakeAmount || Number(stakeAmount) <= 0
-                    }
-                  >
-                    {isStaking ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Staking...
-                      </>
-                    ) : (
-                      "Stake Now"
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                    <Button
+                      className="bg-primary hover:bg-primary/90 hover:shadow-2xl w-full cursor-pointer"
+                      onClick={async () => {
+                        setStakeAction("stake");
+                        if (needsApproval && !approvalError) {
+                          try {
+                            await approve();
+                          } catch (error) {
+                            console.error('Approval failed:', error);
+                            return;
+                          }
+                        }
+                        await handleStakeAction();
+                      }}
+                      disabled={
+                        isStaking ||
+                        isApproving ||
+                        isCheckingApproval ||
+                        !stakeAmount ||
+                        Number(stakeAmount) <= 0
+                      }
+                    >
+                      {isStaking ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Staking...
+                        </>
+                      ) : isApproving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Approving...
+                        </>
+                      ) : (
+                        "Stake"
+                      )}
+                    </Button>
+                    {hasStaked && (
+                      <Button
+                        variant="outline"
+                        className="w-full cursor-pointer"
+                        onClick={() => {
+                          setStakeAction("unstake");
+                          handleStakeAction();
+                        }}
+                        disabled={
+                          isUnstaking ||
+                          !stakeAmount ||
+                          Number(stakeAmount) <= 0
+                        }
+                      >
+                        {isUnstaking ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Unstaking...
+                          </>
+                        ) : (
+                          "Unstake"
+                        )}
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 </div>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-start gap-2">
-                  <Info size={16} className="text-primary mt-0.5" />
+                  <Info
+                    size={16}
+                    className="text-primary mt-0.5 flex-shrink-0"
+                  />
                   <div className="text-sm text-gray-600">
-                    <p className="mb-1">Staking benefits:</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Earn a share of fees from trading volume</li>
-                      <li>Receive bonus tokens when heat score increases</li>
-                      <li>Priority access to new features and battles</li>
-                    </ul>
+                    {hasStaked ? (
+                      <>
+                        <p className="mb-1">Your staking details:</p>
+                        <ul className="space-y-1">
+                          <li>
+                            • Staked: {stakedAmount} {meme.ticker}
+                          </li>
+                          <li>
+                            • Status:{" "}
+                            <span className="text-green-600 font-medium">
+                              Active
+                            </span>
+                          </li>
+                          <li>• Rewards: Claimable soon</li>
+                        </ul>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mb-1">Staking benefits:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>Earn a share of fees from trading volume</li>
+                          <li>
+                            Receive bonus tokens when heat score increases
+                          </li>
+                          <li>Priority access to new features and battles</li>
+                        </ul>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -130,7 +361,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({
                         <p className="text-sm text-gray-500">{reward.date}</p>
                       </div>
                       <Badge className="bg-primary hover:bg-primary text-white">
-                        +{reward.amount.toLocaleString()} ${profile.tokenSymbol}
+                        +{reward.amount.toLocaleString()} ${meme.ticker}
                       </Badge>
                     </div>
                   ))}
