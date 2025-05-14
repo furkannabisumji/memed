@@ -83,12 +83,15 @@ export interface AccountState {
 
 
 export interface ClaimProof {
+  id:string,
+  tokenTicker:string,
   token: string;
   handle: string;
   amount: string;
   proof: string[];
   leaf: string;
   index: number;
+  type:string;
 }
 
 export interface MemeDetails extends ClaimProof {
