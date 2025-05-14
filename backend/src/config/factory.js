@@ -8,5 +8,6 @@ const airdrop_contract = new ethers.Contract(process.env.AIRDROP_CONTRACT_ADDRES
 
 module.exports = {
   factory_contract,
-  airdrop_contract
+  airdrop_contract,
+  wallet
 };

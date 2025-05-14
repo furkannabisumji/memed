@@ -8,6 +8,7 @@ require('dotenv').config();
 const routes = require('./src/routes');
 const errorHandler = require('./src/middleware/errorHandler');
 const rewardScheduler = require('./src/schedulers/rewardScheduler');
+const heatScheduler = require('./src/schedulers/heatScheduler');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,8 +18,9 @@ mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/memed')
   .then(() => {
     console.log('Connected to MongoDB');
-    // Start reward schedulers after successful connection
-    rewardScheduler.start();
+    // Start schedulers after successful connection
+    // rewardScheduler.start();
+    // heatScheduler.start();
   })
   .catch(err => {
     console.error('MongoDB connection error:', err);

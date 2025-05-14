@@ -1,10 +1,11 @@
 const lensService = require('../services/lensService');
 const merkleService = require('../services/merkleService');
 const ethers = require('ethers');
-const {factory_contract} = require('../config/factory');
+const {factory_contract, wallet, airdrop_contract} = require('../config/factory');
 const Token = require('../models/Token');
 const Post = require('../models/Post');
 const Reward = require('../models/Reward');
+
 /**
  * Get follower statistics for a Lens handle
  * @param {Object} req - Express request object
@@ -126,7 +127,7 @@ const mintMemeCoins = async (req, res, next) => {
         );
         
         // After successful minting, distribute initial rewards to random followers
-        await distributeInitialRewards(handle, tokenAddress);
+        // await distributeInitialRewards(handle, tokenAddress);
         
         return res.status(200).json({ 
           message: 'Meme created successfully and initial rewards distributed', 
