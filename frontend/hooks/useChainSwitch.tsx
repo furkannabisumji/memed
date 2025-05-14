@@ -1,6 +1,17 @@
 import { useAccount, useSwitchChain } from "wagmi";
 
 import { chains } from "@lens-chain/sdk/viem";
+export enum TransactionType {
+  /**
+   * Indicates that the transaction is an account creation transaction.
+   */
+  accountCreation = "ACCOUNT_CREATION",
+
+  /**
+   * Indicates that the transaction is an onchain transaction.
+   */
+  onchainTransaction = "ONCHAIN_TRANSACTION",
+}
 
 /**
  * Hook to easily switch between mainnet and testnet chains.
@@ -16,18 +27,6 @@ import { chains } from "@lens-chain/sdk/viem";
 export const useChainSwitch = () => {
   const { chain } = useAccount();
   const { switchChain } = useSwitchChain();
-
-  enum TransactionType {
-    /**
-     * Indicates that the transaction is an account creation transaction.
-     */
-    accountCreation = "ACCOUNT_CREATION",
-
-    /**
-     * Indicates that the transaction is an onchain transaction.
-     */
-    onchainTransaction = "ONCHAIN_TRANSACTION",
-  }
 
   /**
    * Switches to the other chain based on the current chain and the provided `transactionType`.

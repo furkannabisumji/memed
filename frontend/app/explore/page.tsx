@@ -141,7 +141,7 @@ export default function ExplorePage() {
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                   {tokenMemesData && tokenMemesData.length > 0 ? (
                     tokenMemesData.map((meme) => (
-                      <MemeCard key={meme.id} meme={meme} />
+                      <MemeCard key={meme._id} meme={meme} />
                     ))
                   ) : (
                     <div className="col-span-3 text-center py-10">
@@ -161,7 +161,7 @@ export default function ExplorePage() {
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                   {creatorMemesData && creatorMemesData.length > 0 ? (
                     creatorMemesData.map((meme) => (
-                      <MemeCard key={meme.id} meme={meme} />
+                      <MemeCard key={meme._id} meme={meme} />
                     ))
                   ) : (
                     <div className="col-span-3 text-center py-10">

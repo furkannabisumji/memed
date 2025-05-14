@@ -5,15 +5,7 @@ import axiosInstance from "@/lib/axios";
 import { useState } from "react";
 
 // Define types for our API response
-export interface Meme {
-  id: number;
-  title: string;
-  creator: string;
-  image: string;
-  likes: number;
-  price: number;
-  tokenSymbol: string;
-}
+import { Meme } from "@/app/types";
 
 interface MemesResponse {
   success: boolean;
@@ -95,7 +87,7 @@ export const useMemes = ({
 
   // Flatten the pages array into a single array of memes
   const memes = data?.pages.flatMap((page) => page.tokens) || [];
-
+  console.log(memes);
   return {
     memes,
     fetchNextPage,

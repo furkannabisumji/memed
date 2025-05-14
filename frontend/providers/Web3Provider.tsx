@@ -13,7 +13,7 @@ import { client } from "@/lib/client";
 const walletConnectProjectId = process.env
   .NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as string;
 
-const config = createConfig(
+export const config = createConfig(
   getDefaultConfig({
     chains: [chains.mainnet, chains.testnet],
     transports: {
