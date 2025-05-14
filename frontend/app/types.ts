@@ -79,3 +79,21 @@ export interface AccountState {
   // selectAccount: (account: Account) => void;
   resetStore: () => void;
 }
+
+
+
+export interface ClaimProof {
+  token: string;
+  handle: string;
+  amount: string;
+  proof: string[];
+  leaf: string;
+  index: number;
+}
+
+export interface MemeDetails extends ClaimProof {
+  name: string;
+  description: string;
+  image: string;
+  handle: string;
+}
