@@ -128,7 +128,7 @@ export const uploadToIPFS = async (data: any) => {
     console.error("Error uploading to IPFS:", error);
     throw new Error(
       "Failed to upload to IPFS: " +
-        (error instanceof Error ? error.message : String(error))
+      (error instanceof Error ? error.message : String(error))
     );
   }
 };
@@ -149,9 +149,8 @@ export const createProfileMetadata = ({
     name: localName,
     bio: bio || `${localName}'s profile`,
     picture: image
-      ? `${
-          process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY || "https://ipfs.io/ipfs/"
-        }${image}`
+      ? `${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY || "https://ipfs.io/ipfs/"
+      }${image}`
       : undefined,
     attributes: [
       {
@@ -348,3 +347,45 @@ export const createNewAccount = async ({
 //     throw error;
 //   }
 // }
+
+
+// Get meme info from Lens by handle
+export const getMemeInfoByHandle = async (handle: string) => {
+  if (!handle) return null;
+
+  try {
+    const result = await fetchAccount(client, {
+      username: { localName: handle },
+    });
+
+    if (result.isErr()) {
+      console.warn("No profile found for handle:", handle);
+      return null;
+    }
+
+    const profile = result.value;
+    if (!profile) {
+      console.warn("Profile is null for handle:", handle);
+      return null;
+    }
+    // Handle image URI if it's IPFS
+    let imageUrl: string | undefined;
+    if (profile.metadata?.picture?.uri) {
+      const gateway =
+        process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY || "https://ipfs.io/ipfs/";
+      const cid = profile.metadata.picture.uri.replace("ipfs://", "");
+      imageUrl = `${gateway}${cid}`;
+    }
+
+    return {
+      name: profile.metadata?.name || handle,
+      description: profile.metadata?.bio || "",
+      image: imageUrl || null,
+      handle: profile.username?.localName,
+    };
+  } catch (err) {
+    console.error("Error fetching meme info by handle:", err);
+    return null;
+  }
+};
+
