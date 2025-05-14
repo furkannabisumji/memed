@@ -45,6 +45,10 @@ const TokenSchema = new mongoose.Schema({
   totalDistributed: {
     type: String,
     default: "0"
+  },
+  likesCount: {
+    type: Number,
+    default: 0
   }
 });
 
