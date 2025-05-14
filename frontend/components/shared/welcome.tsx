@@ -51,7 +51,7 @@ export function Welcome() {
 
   //check chain
   useEffect(() => {
-    if (chain?.id !== chains.mainnet.id) {
+    if (chain && chain?.id !== chains.mainnet.id) {
       switchToChain(TransactionType.accountCreation);
     }
   }, [chain, switchToChain]);

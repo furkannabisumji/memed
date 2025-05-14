@@ -1,7 +1,7 @@
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
-import { erc20Abi, type Address } from 'viem';
-import { useCallback, useEffect, useState } from 'react';
-import CONTRACTS from '@/config/contracts';
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { erc20Abi, type Address } from "viem";
+import { useCallback, useEffect, useState } from "react";
+import CONTRACTS from "@/config/contracts";
 
 interface UseTokenApprovalProps {
   tokenAddress: string;
@@ -28,7 +28,7 @@ export function useTokenApproval({
   } = useReadContract({
     address: tokenAddress as Address,
     abi: erc20Abi,
-    functionName: 'allowance',
+    functionName: "allowance",
     args: [address as Address, spenderAddress as Address],
     query: {
       enabled: !!address && !!tokenAddress && !!spenderAddress && enabled,
@@ -62,15 +62,15 @@ export function useTokenApproval({
       const hash = await approveAsync({
         address: tokenAddress as Address,
         abi: erc20Abi,
-        functionName: 'approve',
+        functionName: "approve",
         args: [spenderAddress as Address, amount],
       });
-      
+
       // Wait for the transaction to be mined
       await refetchAllowance();
       return hash;
     } catch (error) {
-      console.error('Approval failed:', error);
+      console.error("Approval failed:", error);
       throw error;
     }
   }, [tokenAddress, spenderAddress, amount, approveAsync, refetchAllowance]);
