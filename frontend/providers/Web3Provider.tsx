@@ -15,10 +15,10 @@ const walletConnectProjectId = process.env
 
 const config = createConfig(
   getDefaultConfig({
-    chains: [chains.mainnet],
+    chains: [chains.mainnet, chains.testnet],
     transports: {
-      // [chains.testnet.id]: http(chains.testnet.rpcUrls.default.http[0]!),
       [chains.mainnet.id]: http(chains.mainnet.rpcUrls.default.http[0]!),
+      [chains.testnet.id]: http(chains.testnet.rpcUrls.default.http[0]!),
     },
     walletConnectProjectId, // Use the explicit value
     appName: "Memed.fun",
