@@ -313,7 +313,6 @@ async function distributeEngagementRewards() {
     throw error;
   }
 }
-distributeEngagementRewards();
 
 /**
  * Get engagement data since last update
