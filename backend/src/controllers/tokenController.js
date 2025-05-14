@@ -58,3 +58,52 @@ exports.getTokenByAddress = async (req, res, next) => {
     next(error);
   }
 };
+
+
+/**
+ * Get all creators with their token information
+ * @route GET /creators
+ * @returns {Object} List of creators and their tokens
+ */
+exports.getAllCreators = async (req, res, next) => {
+  try {
+    // Get all tokens and group them by creator
+    const tokens = await Token.find().sort({ createdAt: -1 });
+    
+    // Group tokens by creator address
+    const creatorsMap = {};
+    
+    for (const token of tokens) {
+      if (!creatorsMap[token.creator]) {
+        creatorsMap[token.creator] = {
+          address: token.creator,
+          handle: token.handle,
+          tokens: []
+        };
+      }
+      
+      creatorsMap[token.creator].tokens.push({
+        tokenAddress: token.tokenAddress,
+        name: token.name,
+        ticker: token.ticker,
+        description: token.description,
+        image: token.image,
+        createdAt: token.createdAt,
+        totalDistributed: token.totalDistributed
+      });
+    }
+    
+    // Convert map to array
+    const creators = Object.values(creatorsMap);
+    
+    res.json({
+      success: true,
+      data: {
+        creators,
+        totalCreators: creators.length
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}; 
