@@ -39,3 +39,22 @@ exports.getAllTokens = async (req, res, next) => {
     next(error);
   }
 }; 
+
+/**
+ * Get token by lens username
+ * @route GET /tokens/:handle
+ * @param {string} handle - Lens handle
+ * @returns {Object} Token data
+ */
+exports.getTokenByHandle = async (req, res, next) => {
+  try {
+    const { handle } = req.params;
+    const token = await Token.findOne({ lensUsername: handle });
+    if (!token) {
+      return res.status(404).json({ success: false, error: 'Token not found' });
+    }
+    res.json({ success: true, data: token });
+  } catch (error) {
+    next(error);
+  }
+};
