@@ -96,6 +96,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
       });
       return;
     }
+
     try {
       if (isStakeAction) {
         setIsStaking(true);
@@ -108,21 +109,27 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
 
       // Convert address to proper format
       const contractAddress = CONTRACTS.memedStaking as `0x${string}`;
-      const formattedTokenAddress = tokenAddress
-        ? ((tokenAddress.startsWith("0x")
-            ? tokenAddress
-            : `0x${tokenAddress}`) as `0x${string}`)
-        : (`0x${"1".padStart(40, "0")}` as `0x${string}`);
+      const formattedTokenAddress = tokenAddress as `0x${string}`;
 
-      // Determine the function to call based on the action
-      const functionName = isStakeAction ? "stake" : "unstake";
+      // Log transaction details for debugging
+      console.log("Transaction Details:", {
+        contractAddress: CONTRACTS.memedStaking,
+        functionName: isStakeAction ? "stake" : "unstake",
+        tokenAddress: formattedTokenAddress,
+        amount: stakeAmount,
+        amountInWei: amountInWei.toString(),
+        isStakeAction,
+        needsApproval,
+      });
 
-      // Write to the contract
+      // Execute the staking/unstaking transaction
       const hash = await writeContract(config, {
         address: contractAddress,
         abi: memedStakingABI,
-        functionName,
-        args: [formattedTokenAddress, amountInWei],
+        functionName: isStakeAction ? "stake" : "unstake",
+        args: isStakeAction
+          ? [formattedTokenAddress, amountInWei]
+          : [formattedTokenAddress],
       });
 
       // Wait for transaction to be mined
@@ -220,7 +227,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                           try {
                             await approve();
                           } catch (error) {
-                            console.error('Approval failed:', error);
+                            console.error("Approval failed:", error);
                             return;
                           }
                         }
