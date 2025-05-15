@@ -183,7 +183,7 @@ export default function MemeViewPage() {
       <main className="min-h-screen mb-20">
         <div className="relative w-full h-64 md:h-80">
           <Image
-            src={"/fallback.png"}
+            src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeToken.image}`}
             alt="Profile banner"
             fill
             className="object-cover"
@@ -196,8 +196,8 @@ export default function MemeViewPage() {
             <div className="flex flex-col items-center gap-6 md:flex-row">
               <div className="relative rounded-full">
                 <Image
-                  src={profile.profileImage || "/placeholder.svg"}
-                  alt={profile.displayName}
+                  src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeToken.image}`}
+                  alt={memeToken.name || ""}
                   width={150}
                   height={150}
                   className="rounded-full border-4 h-32 w-32 border-[#28D358] "
