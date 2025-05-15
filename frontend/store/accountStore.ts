@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import {
   Account,
   AccountManaged,
@@ -8,15 +8,47 @@ import {
 } from "@/app/types";
 import { getAvailableAccounts } from "@/lib/lens";
 
+// Define the store state type
+interface AccountStoreState {
+  // State
+  selectedAccount: Account | null;
+  accounts: (AccountManaged | AccountOwned)[];
+  isLoading: boolean;
+  error: string | null;
+
+  // Actions
+  setSelectedAccount: (account: Account | null) => void;
+  setAccounts: (accounts: (AccountManaged | AccountOwned)[]) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
+
+  // Computed values
+  hasAccounts: () => boolean;
+  getFirstAccount: () => Account | null;
+
+  // Async actions
+  fetchAccounts: (
+    address: string
+  ) => Promise<(AccountManaged | AccountOwned)[]>;
+
+  // Reset store
+  resetStore: () => void;
+}
+
+// Initial state object
+const initialState = {
+  selectedAccount: null,
+  accounts: [],
+  isLoading: false,
+  error: null,
+};
+
 // Create the account store with Zustand and persist middleware for localStorage
-export const useAccountStore = create(
-  persist<AccountState>(
+export const useAccountStore = create<AccountStoreState>()(
+  persist(
     (set, get) => ({
-      // State
-      selectedAccount: null,
-      accounts: [],
-      isLoading: false,
-      error: null,
+      // Initial state
+      ...initialState,
 
       // Actions
       setSelectedAccount: (account: Account | null) =>
@@ -38,6 +70,8 @@ export const useAccountStore = create(
         if (!address) return [];
 
         try {
+          set({ isLoading: true, error: null });
+
           // Add a small delay to ensure the loading state is visible
           await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -52,12 +86,14 @@ export const useAccountStore = create(
           // Update accounts in store
           set({
             accounts: transformedAccounts,
+            isLoading: false,
           });
 
           return transformedAccounts;
         } catch (error) {
           // Make sure to set loading to false in case of error
           set({
+            isLoading: false,
             error:
               error instanceof Error
                 ? error.message
@@ -69,33 +105,30 @@ export const useAccountStore = create(
 
       // Reset store state
       resetStore: () => {
-        set({
+        // Use correct approach for clearing persisted state
+        set((state) => ({
+          ...state,
           selectedAccount: null,
           accounts: [],
           isLoading: false,
           error: null,
-        });
+        }));
+
+        // If needed, manually clear localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("lens-account-storage");
+        }
       },
     }),
     {
       name: "lens-account-storage", // Name for the storage key
-      storage: {
-        getItem: (name) => {
-          if (typeof window === "undefined") return null;
-          const str = localStorage.getItem(name);
-          return str ? JSON.parse(str) : null;
-        },
-        setItem: (name, value) => {
-          if (typeof window !== "undefined") {
-            localStorage.setItem(name, JSON.stringify(value));
-          }
-        },
-        removeItem: (name) => {
-          if (typeof window !== "undefined") {
-            localStorage.removeItem(name);
-          }
-        },
-      },
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        // Only persist these fields
+        selectedAccount: state.selectedAccount,
+        accounts: state.accounts,
+        // Exclude transient state like isLoading and error
+      }),
     }
   )
 );

@@ -20,8 +20,8 @@ export default function ConnectProfile({
     selectedAccount?.username.localName || ""
   );
 
-  console.log(selectedAccount?.username.localName);
-  console.log(tokenData);
+  // console.log(selectedAccount?.username.localName);
+  // console.log(tokenData);
 
   if (isLoadingTokenData) {
     return (
