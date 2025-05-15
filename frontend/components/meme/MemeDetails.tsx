@@ -157,33 +157,50 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
             <BarChart3 size={20} className="text-primary" />
             Token Details
           </h3>
-          <div className="grid gap-4">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Token Symbol:</span>
-              <span className="font-medium">${meme.ticker}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Current Price:</span>
-              <span className="font-medium">{0} ETH</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Total Supply:</span>
-              <span className="font-medium">{0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Circulating Supply:</span>
-              <span className="font-medium">{0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Holders:</span>
-              <span className="font-medium">{0}</span>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Supply Stats Card */}
+            <Card className="border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <h4 className="text-lg font-semibold mb-4">Supply Metrics</h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Total Supply</span>
+                    <span className="font-medium">{0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Circulating Supply</span>
+                    <span className="font-medium">{0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Holders</span>
+                    <span className="font-medium">{0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Token Symbol Card */}
+            <Card className="border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <h4 className="text-lg font-semibold mb-4">Token Information</h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Token Symbol</span>
+                    <span className="font-medium">${meme.ticker}</span>
+                  </div>
+                  {/* <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Current Price</span>
+                    <span className="font-medium">{0} {meme.ticker}</span>
+                  </div> */}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">
-            <Button className="bg-primary hover:bg-primary/90 hover:shadow-2xl cursor-pointer">
+            {/* <Button className="bg-primary hover:bg-primary/90 hover:shadow-2xl cursor-pointer">
               Buy Tokens
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               className="border-2 border-black hover:bg-black hover:text-white cursor-pointer"
@@ -216,7 +233,9 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                       {priceChange.percentage.toFixed(2)}%
                     </Badge>
                   </DialogTitle>
-                  <DialogDescription>Current price: {0} ETH</DialogDescription>
+                  <DialogDescription>
+                    Current price: {0} {meme.ticker}
+                  </DialogDescription>
                 </DialogHeader>
 
                 <div className="mt-4">
@@ -229,7 +248,9 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                     <TabsContent value="chart" className="space-y-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <h3 className="text-2xl font-bold">{0} ETH</h3>
+                          <h3 className="text-2xl font-bold">
+                            {0} {meme.ticker}
+                          </h3>
                           <div className="flex items-center gap-1 text-sm">
                             <span
                               className={
@@ -239,7 +260,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                               }
                             >
                               {priceChange.isPositive ? "+" : "-"}
-                              {priceChange.value.toFixed(5)} ETH (
+                              {priceChange.value.toFixed(5)} {meme.ticker} (
                               {priceChange.percentage.toFixed(2)}%)
                             </span>
                             <span className="text-gray-500">

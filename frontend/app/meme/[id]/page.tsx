@@ -14,6 +14,11 @@ import {
   Zap,
   Lock,
   Loader2,
+  Bookmark,
+  Quote,
+  Clock,
+  ExternalLink,
+  BarChart3,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -35,7 +40,8 @@ import { useAccount } from "wagmi";
 import { useMemeToken } from "@/hooks/useMemeToken";
 import { truncateAddress } from "@/lib/helpers";
 import { useTokenData } from "@/hooks/useTokenData";
-import { TokenData } from "@/app/types";
+import { TokenData, TokenStats } from "@/app/types";
+import { useTokenStats } from "@/hooks/useTokenStats";
 
 export default function MemeViewPage() {
   const params = useParams();
@@ -54,8 +60,14 @@ export default function MemeViewPage() {
   const { data: tokenData }: { data: TokenData | null } = useTokenData(
     memeToken?.handle
   );
+  const {
+    stats,
+    loading: statsLoading,
+  }: { stats: TokenStats | null; loading: boolean } = useTokenStats(
+    memeToken?.handle || ""
+  );
 
-  console.log(tokenData);
+  console.log(stats);
 
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -140,11 +152,19 @@ export default function MemeViewPage() {
 
     // Show toast with token reward
     toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added`, {
-      description: `You earned ${engagementReward} ${profile.tokenSymbol} tokens!`,
+      description: `You earned ${engagementReward} ${tokenData?.ticker} tokens!`,
     });
   };
 
-  // Mock data for the meme profile
+  if (isLoading || !memeToken) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
+      </div>
+    );
+  }
+
+  //mock data
   const profile = {
     id: memeId,
     username: "DogeToTheMoon",
@@ -174,18 +194,6 @@ export default function MemeViewPage() {
     tokenRequirement: 1000,
   };
 
-  // Additional profile properties for mint progress
-  const mintProgress = profile.engagements;
-  const nextMintThreshold = 100000;
-
-  if (isLoading || !memeToken) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-black" />
-      </div>
-    );
-  }
-
   return (
     <>
       <Header />
@@ -202,99 +210,44 @@ export default function MemeViewPage() {
 
         <div className="container px-4 mx-auto -mt-20">
           <div className="relative z-10 p-6 bg-white rounded-xl dark:bg-gray-800 shadow-xl">
-            <div className="flex flex-col items-center gap-6 md:flex-row">
-              <div className="relative rounded-full">
-                <Image
-                  src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeToken.image}`}
-                  alt={memeToken.name || ""}
-                  width={150}
-                  height={150}
-                  className="rounded-full border-4 h-32 w-32 border-[#28D358] "
-                />
-                {profile.isVerified && (
-                  <div className="absolute bottom-2 right-3 bg-primary text-white p-1 rounded-full">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="lucide lucide-badge-check"
-                    >
-                      <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
-                      <path d="m9 12 2 2 4-4" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h1 className="text-3xl font-bold">{memeToken.name}</h1>
-                      <Badge className="bg-primary hover:bg-primary text-white">
-                        ${memeToken.ticker}
-                      </Badge>
-                    </div>
-                    <Link
-                      href={`https://testnet.lenscan.io/address/${memeToken.tokenAddress}`}
-                      target="_blank"
-                      className="text-gray-500 dark:text-gray-400"
-                    >
-                      @{truncateAddress(memeToken.tokenAddress)}
-                    </Link>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-500">
-                      <span>Created by</span>
-                      <Link
-                        href={`/profile/${memeToken.handle}`}
-                        className="font-medium text-primary hover:underline"
+            {/* here */}
+            <div className="container mx-auto px-4 py-6">
+              <div className="flex flex-col items-start gap-8 md:flex-row">
+                {/* Profile Image Section - Improved positioning and visual appeal */}
+                <div className="relative flex-shrink-0 mx-auto md:mx-0">
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/30 to-primary/20 rounded-full blur-md group-hover:blur-lg transition-all duration-300"></div>
+                    <Image
+                      src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeToken.image}`}
+                      alt={memeToken.name || "Meme Token"}
+                      width={180}
+                      height={180}
+                      className="relative rounded-full border-4 h-40 w-40 md:h-44 md:w-44 border-primary object-cover shadow-lg"
+                    />
+                    <div className="absolute bottom-2 right-2 bg-primary text-white p-1.5 rounded-full shadow-md">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-badge-check"
                       >
-                        @{memeToken.handle}
-                      </Link>
-                      <span>
-                        on {new Date(memeToken.createdAt).toLocaleDateString()}
-                      </span>
+                        <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 mt-4 md:mt-0">
-                    {/* {profile.isOwner ? (
-                      <Button
-                        variant="outline"
-                        className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
-                      >
-                        <Edit size={16} />
-                        Edit Profile
-                      </Button>
-                    ) : profile.isFollowing ? (
-                      <Button
-                        variant="outline"
-                        className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
-                        onClick={handleFollow}
-                      >
-                        Following
-                      </Button>
-                    ) : (
-                      <Button
-                        className="gap-2 bg-primary hover:bg-primary/90 hover:shadow-2xl"
-                        onClick={handleFollow}
-                      >
-                        <UserPlus size={16} />
-                        Follow
-                        {!hasEnoughTokens && (
-                          <Lock size={14} className="ml-1" />
-                        )}
-                      </Button>
-                    )} */}
-
+                  {/* Add share button below image on mobile */}
+                  <div className="mt-4 flex justify-center md:hidden">
                     <Button
                       variant="outline"
-                      className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
+                      className="gap-2 border-2 border-primary hover:bg-primary hover:text-white transition-colors duration-300"
                     >
                       <Share size={16} />
                       Share
@@ -302,135 +255,166 @@ export default function MemeViewPage() {
                   </div>
                 </div>
 
-                <p className="mt-4 text-gray-700 dark:text-gray-300">
-                  {memeToken.description}
-                </p>
+                {/* Token Info & Stats Section */}
+                <div className="flex-1 w-full">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-2">
+                      {/* Name & Ticker with enhanced styling */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+                          {memeToken.name}
+                        </h1>
+                        <Badge className="bg-primary hover:bg-primary/90 text-white font-semibold px-2.5">
+                          ${memeToken.ticker}
+                        </Badge>
+                      </div>
 
-                <div className="flex flex-wrap justify-center gap-6 mt-4 md:justify-start">
-                  <div className="text-center">
-                    <span className="text-xl font-bold">
-                      {profile.followers.toLocaleString()}
-                    </span>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Followers
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-xl font-bold">
-                      {profile.holders.toLocaleString()}
-                    </span>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Token Holders
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-xl font-bold">
-                      {profile.engagements.toLocaleString()}
-                    </span>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Engagements
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center gap-1">
-                      <Flame size={16} className="text-amber-500" />
-                      <span className="text-xl font-bold">
-                        {tokenData?.heat}
-                      </span>
+                      {/* Address with improved styling */}
+                      <Link
+                        href={`https://testnet.lenscan.io/address/${memeToken.tokenAddress}`}
+                        target="_blank"
+                        className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-1"
+                      >
+                        <span>@{truncateAddress(memeToken.tokenAddress)}</span>
+                        <ExternalLink size={14} />
+                      </Link>
+
+                      {/* Creator info with improved styling */}
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                        <span>Created by</span>
+                        <span className="font-medium text-primary hover:underline">
+                          @{memeToken.handle}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={14} />
+                          {new Date(memeToken.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Heat Score
-                    </p>
-                  </div>
-                </div>
 
-                {/* Engagement Actions */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
-                  <div
-                    className="gap-2 flex items-center"
-                    onClick={() => handleEngagement("like")}
-                  >
-                    <ThumbsUp size={16} />
-                    Like
-                    <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
-                      +{memeToken.likesCount}
-                    </Badge>
+                    {/* Share button - Hidden on mobile, shown on desktop */}
+                    <div className="hidden md:block">
+                      <Button
+                        variant="outline"
+                        className="gap-2 border-2 border-primary hover:bg-primary hover:text-white transition-colors duration-300"
+                      >
+                        <Share size={16} />
+                        Share
+                      </Button>
+                    </div>
                   </div>
 
-                  <div
-                    className="gap-2 flex items-center"
-                    // onClick={() => handleEngagement("comment")}
-                  >
-                    <MessageCircle size={16} />
-                    Comment
-                    <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
-                      +{engagementReward}
-                    </Badge>
+                  {/* Main stats card - Improved layout with shadow and hover effects */}
+                  <div className="mt-6 p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm border">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                      <BarChart3 size={18} className="text-primary" />
+                      Engagement Statistics
+                    </h3>
+
+                    {/* Total Engagement highlight card */}
+                    <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Flame size={20} className="text-primary" />
+                          <span className="font-medium">Total Engagement</span>
+                        </div>
+                        <span className="text-2xl font-bold text-primary">
+                          {stats?.totalEngagements?.toLocaleString() || 0}
+                        </span>
+                      </div>
+                      <Progress
+                        value={stats?.engagementRate || 0}
+                        className="h-2 w-full bg-gray-200"
+                      />
+                      <div className="flex justify-end mt-1">
+                        <span className="text-sm font-medium">
+                          {stats?.engagementRate
+                            ? `${Math.round(stats?.engagementRate)}%`
+                            : "0%"}{" "}
+                          Engagement Rate
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stats grid with improved design */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                      {/* Upvotes */}
+                      <StatCard
+                        icon={<ThumbsUp size={18} className="text-primary" />}
+                        title="Upvotes"
+                        value={stats?.upvotes || 0}
+                        percentage={Math.round(
+                          ((stats?.upvotes || 0) /
+                            (stats?.totalEngagements || 1)) *
+                            100
+                        )}
+                      />
+
+                      {/* Reposts */}
+                      <StatCard
+                        icon={<Repeat size={18} className="text-primary" />}
+                        title="Reposts"
+                        value={stats?.reposts || 0}
+                        percentage={Math.round(
+                          ((stats?.reposts || 0) /
+                            (stats?.totalEngagements || 1)) *
+                            100
+                        )}
+                      />
+
+                      {/* Comments */}
+                      <StatCard
+                        icon={
+                          <MessageCircle size={18} className="text-primary" />
+                        }
+                        title="Comments"
+                        value={stats?.comments || 0}
+                        percentage={Math.round(
+                          ((stats?.comments || 0) /
+                            (stats?.totalEngagements || 1)) *
+                            100
+                        )}
+                      />
+
+                      {/* Bookmarks */}
+                      <StatCard
+                        icon={<Bookmark size={18} className="text-primary" />}
+                        title="Bookmarks"
+                        value={stats?.bookmarks || 0}
+                        percentage={Math.round(
+                          ((stats?.bookmarks || 0) /
+                            (stats?.totalEngagements || 1)) *
+                            100
+                        )}
+                      />
+
+                      {/* Collects */}
+                      <StatCard
+                        icon={<Zap size={18} className="text-primary" />}
+                        title="Collects"
+                        value={stats?.collects || 0}
+                        percentage={Math.round(
+                          ((stats?.collects || 0) /
+                            (stats?.totalEngagements || 1)) *
+                            100
+                        )}
+                      />
+
+                      {/* Quotes */}
+                      <StatCard
+                        icon={<Quote size={18} className="text-primary" />}
+                        title="Quotes"
+                        value={stats?.quotes || 0}
+                        percentage={Math.round(
+                          ((stats?.quotes || 0) /
+                            (stats?.totalEngagements || 1)) *
+                            100
+                        )}
+                      />
+                    </div>
                   </div>
-
-                  {/* Comment Modal */}
-                  <Dialog
-                    open={isCommentModalOpen}
-                    onOpenChange={setIsCommentModalOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <span style={{ display: "none" }}></span>
-                    </DialogTrigger>
-                    <CommentModal
-                      engagementReward={engagementReward}
-                      profile={profile}
-                    />
-                  </Dialog>
-                  <Button
-                    variant="outline"
-                    className="gap-2 flex items-center "
-                    // onClick={() => handleEngagement("mirror")}
-                  >
-                    <Repeat size={16} />
-                    Mirror
-                    <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
-                      +{engagementReward}
-                    </Badge>
-                  </Button>
-
-                  {/* Mirror Modal */}
-                  <Dialog
-                    open={isMirrorModalOpen}
-                    onOpenChange={setIsMirrorModalOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <span style={{ display: "none" }}></span>
-                    </DialogTrigger>
-                    <MirrorModal
-                      engagementReward={engagementReward}
-                      profile={profile}
-                      onClose={() => setIsMirrorModalOpen(false)}
-                    />
-                  </Dialog>
                 </div>
               </div>
-            </div>
-
-            {/* Mint Progress Bar */}
-            <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <Zap size={16} className="text-primary" />
-                  <span className="font-medium">Next Token Mint Progress</span>
-                </div>
-                <span className="text-sm">
-                  {mintProgress.toLocaleString()} /{" "}
-                  {nextMintThreshold.toLocaleString()} engagements
-                </span>
-              </div>
-              <Progress
-                value={(mintProgress / nextMintThreshold) * 100}
-                className="h-2"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                At 100,000 engagements, 1% of tokens will be minted for the
-                creator and 1% for random supporters.
-              </p>
             </div>
 
             <Tabs
@@ -452,12 +436,12 @@ export default function MemeViewPage() {
                   >
                     <span className="relative z-10">Details</span>
                     <span
-                      className={`absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all duration-200 ${
+                      className={`absolute bottom-0 left-0 right-0 h-0.5  transition-all duration-200 ${
                         activeTab === "Details" ? "opacity-100" : "opacity-0"
                       }`}
                     />
                   </TabsTrigger>
-                  <TabsTrigger
+                  {/* <TabsTrigger
                     value="Supporters"
                     className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
                       activeTab === "Supporters" ? "text-primary" : ""
@@ -472,7 +456,7 @@ export default function MemeViewPage() {
                         activeTab === "Supporters" ? "opacity-100" : "opacity-0"
                       }`}
                     />
-                  </TabsTrigger>
+                  </TabsTrigger> */}
                   <TabsTrigger
                     value="Battles"
                     className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
@@ -516,9 +500,9 @@ export default function MemeViewPage() {
               </TabsContent>
 
               {/* Supporters Tab */}
-              <TabsContent value="Supporters" className="mt-8">
+              {/* <TabsContent value="Supporters" className="mt-8">
                 <MemeSupporters profile={profile} />
-              </TabsContent>
+              </TabsContent> */}
 
               {/* Battles Tab */}
               <TabsContent value="Battles" className="mt-8">
@@ -537,3 +521,30 @@ export default function MemeViewPage() {
     </>
   );
 }
+
+{
+  /* Reusable stat card component */
+}
+const StatCard = ({
+  icon,
+  title,
+  value,
+  percentage,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: number;
+  percentage: number;
+}) => (
+  <div className="flex flex-col items-center p-3 border rounded-lg hover:border-primary hover:shadow-md transition-all">
+    <div className="flex items-center gap-1.5 mb-1">
+      {icon}
+      <span className="font-medium text-sm">{title}</span>
+    </div>
+    <span className="text-xl font-bold">{value.toLocaleString()}</span>
+    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+      <span className="font-semibold">{percentage}%</span>
+      <span>of total</span>
+    </div>
+  </div>
+);

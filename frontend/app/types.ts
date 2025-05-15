@@ -134,3 +134,14 @@ export type TokenData = {
   lastRewardAt: bigint;
   createdAt: bigint;
 };
+
+export interface TokenStats {
+  upvotes: number;
+  reposts: number;
+  bookmarks: number;
+  collects: number;
+  comments: number;
+  quotes: number;
+  totalEngagements: number;
+  engagementRate: number;
+}

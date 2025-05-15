@@ -159,11 +159,13 @@ export function AccountButton({ className }: AccountButtonProps) {
 
   // Handle disconnect
   const handleDisconnect = () => {
+    // Reset the store and clear localStorage
+    const store = useAccountStore.getState();
+    store.resetStore();
+
+    // Disconnect wallet
     disconnect();
     setIsModalOpen(false);
-
-    // Reset the entire account store instead of just the selected account
-    useAccountStore.getState().resetStore();
 
     // Force a refresh of the page to ensure all components update correctly
     setTimeout(() => {
