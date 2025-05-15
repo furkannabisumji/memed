@@ -2,6 +2,8 @@ import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { erc20Abi, type Address } from "viem";
 import { useCallback, useEffect, useState } from "react";
 import CONTRACTS from "@/config/contracts";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { config } from "@/providers/Web3Provider";
 
 interface UseTokenApprovalProps {
   tokenAddress: string;
@@ -56,9 +58,12 @@ export function useTokenApproval({
   } = useWriteContract();
 
   const approve = useCallback(async () => {
-    if (!tokenAddress || !spenderAddress) return;
+    if (!tokenAddress || !spenderAddress) {
+      throw new Error("Token or spender address not provided");
+    }
 
     try {
+      // Send the approval transaction
       const hash = await approveAsync({
         address: tokenAddress as Address,
         abi: erc20Abi,
@@ -67,7 +72,15 @@ export function useTokenApproval({
       });
 
       // Wait for the transaction to be mined
+      const receipt = await waitForTransactionReceipt(config, { hash });
+      
+      if (receipt.status !== 'success') {
+        throw new Error("Approval transaction failed");
+      }
+
+      // Update the allowance after successful approval
       await refetchAllowance();
+      
       return hash;
     } catch (error) {
       console.error("Approval failed:", error);

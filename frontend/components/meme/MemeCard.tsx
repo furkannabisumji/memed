@@ -10,7 +10,7 @@ export default function MemeCard({ meme }: { meme: Meme }) {
       <div className="relative overflow-hidden rounded-md transition-all duration-300 bg-white border-2 border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px]">
         <div className="relative aspect-square">
           <Image
-            src={meme.image || "/fallback.png"}
+            src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${meme.image}`}
             alt={meme.name || "meme token"}
             fill
             className="object-cover transition-transform hover:scale-105"
