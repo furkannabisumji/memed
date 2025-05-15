@@ -56,7 +56,7 @@ async function updateAllHeatScores() {
  */
 function start() {
   // Run every 3 minutes
-  cron.schedule('* * * * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     console.log('Running heat score update scheduler...');
     await updateAllHeatScores();
   });

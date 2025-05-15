@@ -111,47 +111,6 @@ async function getEngagementMetrics(handle, update) {
     });
     console.log("engagementMetrics : ", engagementMetrics.value.items);
 
-    
-          // Initialize aggregated metrics
-          const newMetrics = {
-            upvotes: 0,
-            reposts: 0,
-            bookmarks: 0,
-            collects: 0,
-            comments: 0,
-            quotes: 0
-          };
-
-          // Sum up all metrics from all posts
-          for (const post of engagementMetrics.value.items) {
-            if (post.stats) {
-              for (const metric in newMetrics) {
-                newMetrics[metric] += post.stats[metric] || 0;
-              }
-            }
-          }
-
-          // Update metrics document
-          const existingMetrics = await EngagementMetrics.findOne({ handle: handle });
-          
-          if (existingMetrics) {
-            // Add new metrics to existing ones
-            for (const metric in newMetrics) {
-              newMetrics[metric] += existingMetrics.metrics[metric] || 0;
-            }
-          }
-
-          await EngagementMetrics.findOneAndUpdate(
-            { handle: handle },
-            {
-              $set: {
-                metrics: newMetrics,
-                lastUpdated: new Date()
-              }
-            },
-            { upsert: true, new: true }
-          );
-
     let engagements = [];
     for (const post of engagementMetrics.value.items) {
       if(post.stats){
@@ -164,6 +123,7 @@ async function getEngagementMetrics(handle, update) {
 
     const token = await Token.findOne({ handle });
     let newEngagement = 0;
+    let hasNewEngagement = false;
 
     // Define which metrics to count
     const engagementMetricsToCount = [
@@ -175,6 +135,16 @@ async function getEngagementMetrics(handle, update) {
       'quotes'
     ];
 
+    // Initialize aggregated metrics
+    const newMetrics = {
+      upvotes: 0,
+      reposts: 0,
+      bookmarks: 0,
+      collects: 0,
+      comments: 0,
+      quotes: 0
+    };
+
     for (const engagement of engagements) {
       let post = await Post.findOne({ postId: engagement.postId });
       
@@ -185,6 +155,7 @@ async function getEngagementMetrics(handle, update) {
           initialEngagement += engagement.stats[metric] || 0;
         }
         newEngagement += initialEngagement;
+        hasNewEngagement = true;
 
         // Store the post
         post = new Post({
@@ -201,6 +172,7 @@ async function getEngagementMetrics(handle, update) {
           
           if (currentValue > storedValue) {
             newEngagement += currentValue - storedValue;
+            hasNewEngagement = true;
           }
         }
 
@@ -212,6 +184,37 @@ async function getEngagementMetrics(handle, update) {
           );
         }
       }
+    }
+
+    // Only update metrics if there is new engagement
+    if (hasNewEngagement) {
+      // Get existing metrics
+      const existingMetrics = await EngagementMetrics.findOne({ handle: handle });
+      const currentMetrics = existingMetrics ? existingMetrics.metrics : newMetrics;
+
+      // Update only the metrics that have changed
+      for (const post of engagementMetrics.value.items) {
+        if (post.stats) {
+          for (const metric in newMetrics) {
+            const newValue = post.stats[metric] || 0;
+            const oldValue = currentMetrics[metric] || 0;
+            if (newValue > oldValue) {
+              currentMetrics[metric] = oldValue + (newValue - oldValue);
+            }
+          }
+        }
+      }
+
+      await EngagementMetrics.findOneAndUpdate(
+        { handle: handle },
+        {
+          $set: {
+            metrics: currentMetrics,
+            lastUpdated: new Date()
+          }
+        },
+        { upsert: true, new: true }
+      );
     }
 
     console.log("Total new engagement calculated:", newEngagement);
