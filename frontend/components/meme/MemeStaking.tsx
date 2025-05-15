@@ -1,23 +1,28 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Trophy, Info, Loader2, ArrowDownUp } from "lucide-react";
+import { Zap, Trophy, Info, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import { config } from "@/providers/Web3Provider";
 import { useAccount } from "wagmi";
 import { useHasStaked } from "@/hooks/useHasStaked";
-import { Meme } from "@/app/types";
+import type { Meme } from "@/app/types";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
 import { useTokenApproval } from "@/hooks/useTokenApproval";
-const { writeContract } = await import("@wagmi/core");
-const { parseUnits, formatUnits } = await import("viem");
-const { waitForTransactionReceipt } = await import("wagmi/actions");
-const CONTRACTS = (await import("@/config/contracts")).default;
-// Import ABI and ensure it's in the correct format
-const memedStakingABI = await import("@/config/memedStakingABI.json").then(
-  (module) => module.default || module
-);
+import { writeContract, simulateContract } from "@wagmi/core";
+import { parseUnits, formatUnits } from "viem";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import CONTRACTS from "@/config/contracts";
+import type { Abi } from "viem";
+
+// Import ABI
+import memedStakingABI from "@/config/memedStakingABI.json";
+
+// Ensure we have a valid ABI
+if (!Array.isArray(memedStakingABI)) {
+  throw new Error("Invalid ABI format");
+}
 
 interface MemeStakingProps {
   meme: Meme;
@@ -31,7 +36,12 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
   const [isUnstaking, setIsUnstaking] = useState(false);
   const [stakeAction, setStakeAction] = useState<"stake" | "unstake">("stake");
   const toast = useCustomToast();
-  const { balance, isLoading: isLoadingBalance } = useTokenBalance({
+  const [jobStarted, setJobStarted] = useState(false);
+  const {
+    balance,
+    isLoading: isLoadingBalance,
+    refetch: refetchBalance,
+  } = useTokenBalance({
     tokenAddress: tokenAddress || "",
     userAddress,
     enabled: !!userAddress && !!tokenAddress,
@@ -63,16 +73,6 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
     enabled: !!userAddress && !!tokenAddress,
   });
 
-  // Update UI based on staking status
-  useEffect(() => {
-    if (hasStaked) {
-      setStakeAction("unstake");
-      setStakeAmount(formatUnits(BigInt(stakedAmount), 18));
-    } else {
-      setStakeAction("stake");
-    }
-  }, [hasStaked, stakedAmount]);
-
   const handleStakeAction = async () => {
     if (!userAddress || !tokenAddress) {
       toast.error("Error", {
@@ -88,9 +88,9 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
       return;
     }
 
-    const isStakeAction = stakeAction === "stake";
+    const isStake = stakeAction === "stake";
 
-    if (isStakeAction && Number(stakeAmount) > Number(formattedBalance)) {
+    if (isStake && Number(stakeAmount) > Number(formattedBalance)) {
       toast.error("Not enough tokens", {
         description: "You don't have enough tokens to stake",
       });
@@ -98,7 +98,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
     }
 
     try {
-      if (isStakeAction) {
+      if (isStake) {
         setIsStaking(true);
       } else {
         setIsUnstaking(true);
@@ -111,50 +111,44 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
       const contractAddress = CONTRACTS.memedStaking as `0x${string}`;
       const formattedTokenAddress = tokenAddress as `0x${string}`;
 
-      // Log transaction details for debugging
-      console.log("Transaction Details:", {
-        contractAddress: CONTRACTS.memedStaking,
-        functionName: isStakeAction ? "stake" : "unstake",
-        tokenAddress: formattedTokenAddress,
-        amount: stakeAmount,
-        amountInWei: amountInWei.toString(),
-        isStakeAction,
-        needsApproval,
-      });
-
-      // Execute the staking/unstaking transaction
-      const hash = await writeContract(config, {
-        address: contractAddress,
-        abi: memedStakingABI,
-        functionName: isStakeAction ? "stake" : "unstake",
-        args: isStakeAction
-          ? [formattedTokenAddress, amountInWei]
-          : [formattedTokenAddress],
-      });
-
-      // Wait for transaction to be mined
-      const receipt = await waitForTransactionReceipt(config, { hash });
-      const isSuccess = receipt.status === "success";
-
-      if (isSuccess) {
-        const actionText = isStakeAction ? "Staked" : "Unstaked";
-        toast.success(`${actionText} Successfully`, {
-          description: `You have ${actionText.toLowerCase()} ${stakeAmount} ${
-            meme.ticker
-          } tokens`,
+      try {
+        // First simulate the transaction to catch any potential errors
+        const { request } = await simulateContract(config, {
+          address: contractAddress,
+          abi: memedStakingABI as Abi,
+          functionName: isStake ? "stake" : "unstake",
+          args: isStake
+            ? [formattedTokenAddress, amountInWei]
+            : [formattedTokenAddress],
+          account: userAddress as `0x${string}`,
         });
 
-        // Reset form and refetch staking status
-        setStakeAmount("");
-        refetchStakeStatus();
-      } else {
-        const actionText = isStakeAction ? "Staking" : "Unstaking";
-        toast.error(`${actionText} Failed`, {
-          description: `Transaction failed. Please try again.`,
-        });
+        // If simulation is successful, proceed with the actual transaction
+        const hash = await writeContract(config, request);
+
+        // Wait for transaction to be mined
+        const receipt = await waitForTransactionReceipt(config, { hash });
+        const isSuccess = receipt.status === "success";
+
+        if (isSuccess) {
+          const actionText = isStake ? "Staked" : "Unstaked";
+          toast.success(`${actionText} Successfully`, {
+            description: `You have ${actionText.toLowerCase()} ${stakeAmount} ${
+              meme.ticker
+            } tokens`,
+          });
+          setStakeAmount("");
+          refetchStakeStatus();
+          refetchBalance();
+        } else {
+          throw new Error("Transaction failed");
+        }
+      } catch (error) {
+        console.error("Transaction simulation failed:", error);
+        throw error; // Re-throw to be caught by the outer catch block
       }
     } catch (error: any) {
-      const actionText = isStakeAction ? "staking" : "unstaking";
+      const actionText = isStake ? "staking" : "unstaking";
       console.error(`${actionText} error:`, error);
       toast.error(
         `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Failed`,
@@ -181,7 +175,9 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
 
             <p className="text-gray-600 mb-4">
               {hasStaked
-                ? `You have staked ${stakedAmount} ${meme.ticker} tokens. Manage your stake below.`
+                ? `You have staked ${formatUnits(BigInt(stakedAmount), 18)} ${
+                    meme.ticker
+                  } tokens. Manage your stake below.`
                 : `Stake your ${meme.ticker} tokens to earn rewards when this meme goes viral. Staking represents your belief in this meme's potential.`}
             </p>
 
@@ -223,11 +219,13 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                       className="bg-primary hover:bg-primary/90 hover:shadow-2xl w-full cursor-pointer"
                       onClick={async () => {
                         setStakeAction("stake");
+                        setJobStarted(true); //this helps keep the button disabled in between approval and staking
                         if (needsApproval && !approvalError) {
                           try {
                             await approve();
                           } catch (error) {
                             console.error("Approval failed:", error);
+                            setJobStarted(false);
                             return;
                           }
                         }
@@ -237,6 +235,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                         isStaking ||
                         isApproving ||
                         isCheckingApproval ||
+                        jobStarted ||
                         !stakeAmount ||
                         Number(stakeAmount) <= 0
                       }
@@ -295,7 +294,8 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                         <p className="mb-1">Your staking details:</p>
                         <ul className="space-y-1">
                           <li>
-                            • Staked: {stakedAmount} {meme.ticker}
+                            • Staked: {formatUnits(BigInt(stakedAmount), 18)}{" "}
+                            {meme.ticker}
                           </li>
                           <li>
                             • Status:{" "}
