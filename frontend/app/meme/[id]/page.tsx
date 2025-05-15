@@ -33,6 +33,9 @@ import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import { useAccount } from "wagmi";
 import { useMemeToken } from "@/hooks/useMemeToken";
+import { truncateAddress } from "@/lib/helpers";
+import { useTokenData } from "@/hooks/useTokenData";
+import { TokenData } from "@/app/types";
 
 export default function MemeViewPage() {
   const params = useParams();
@@ -48,6 +51,11 @@ export default function MemeViewPage() {
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isMirrorModalOpen, setIsMirrorModalOpen] = useState(false);
   const { data: memeToken, isLoading } = useMemeToken(memeId);
+  const { data: tokenData }: { data: TokenData | null } = useTokenData(
+    memeToken?.handle
+  );
+
+  console.log(tokenData);
 
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -177,6 +185,7 @@ export default function MemeViewPage() {
       </div>
     );
   }
+
   return (
     <>
       <Header />
@@ -227,32 +236,34 @@ export default function MemeViewPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h1 className="text-3xl font-bold">
-                        {profile.displayName}
-                      </h1>
+                      <h1 className="text-3xl font-bold">{memeToken.name}</h1>
                       <Badge className="bg-primary hover:bg-primary text-white">
-                        ${profile.tokenSymbol}
+                        ${memeToken.ticker}
                       </Badge>
                     </div>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      @{profile.username}
-                    </p>
+                    <Link
+                      href={`https://testnet.lenscan.io/address/${memeToken.tokenAddress}`}
+                      target="_blank"
+                      className="text-gray-500 dark:text-gray-400"
+                    >
+                      @{truncateAddress(memeToken.tokenAddress)}
+                    </Link>
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-500">
                       <span>Created by</span>
                       <Link
-                        href={`/profile/${profile.creatorHandle}`}
+                        href={`/profile/${memeToken.handle}`}
                         className="font-medium text-primary hover:underline"
                       >
-                        @{profile.creatorHandle}
+                        @{memeToken.handle}
                       </Link>
                       <span>
-                        on {new Date(profile.createdAt).toLocaleDateString()}
+                        on {new Date(memeToken.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex gap-2 mt-4 md:mt-0">
-                    {profile.isOwner ? (
+                    {/* {profile.isOwner ? (
                       <Button
                         variant="outline"
                         className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
@@ -279,7 +290,7 @@ export default function MemeViewPage() {
                           <Lock size={14} className="ml-1" />
                         )}
                       </Button>
-                    )}
+                    )} */}
 
                     <Button
                       variant="outline"
@@ -292,7 +303,7 @@ export default function MemeViewPage() {
                 </div>
 
                 <p className="mt-4 text-gray-700 dark:text-gray-300">
-                  {profile.bio}
+                  {memeToken.description}
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-6 mt-4 md:justify-start">
@@ -324,7 +335,7 @@ export default function MemeViewPage() {
                     <div className="flex items-center gap-1">
                       <Flame size={16} className="text-amber-500" />
                       <span className="text-xl font-bold">
-                        {profile.heatScore}
+                        {tokenData?.heat}
                       </span>
                     </div>
                     <p className="text-gray-500 dark:text-gray-400">
@@ -335,31 +346,27 @@ export default function MemeViewPage() {
 
                 {/* Engagement Actions */}
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
+                  <div
+                    className="gap-2 flex items-center"
                     onClick={() => handleEngagement("like")}
                   >
                     <ThumbsUp size={16} />
                     Like
                     <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
-                      +{engagementReward}
+                      +{memeToken.likesCount}
                     </Badge>
-                  </Button>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
-                    onClick={() => handleEngagement("comment")}
+                  <div
+                    className="gap-2 flex items-center"
+                    // onClick={() => handleEngagement("comment")}
                   >
                     <MessageCircle size={16} />
                     Comment
                     <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
                       +{engagementReward}
                     </Badge>
-                  </Button>
+                  </div>
 
                   {/* Comment Modal */}
                   <Dialog
@@ -376,9 +383,8 @@ export default function MemeViewPage() {
                   </Dialog>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
-                    onClick={() => handleEngagement("mirror")}
+                    className="gap-2 flex items-center "
+                    // onClick={() => handleEngagement("mirror")}
                   >
                     <Repeat size={16} />
                     Mirror

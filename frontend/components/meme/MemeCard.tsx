@@ -1,4 +1,5 @@
 import { Meme } from "@/app/types";
+import { truncateAddress } from "@/lib/helpers";
 import { Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,7 +21,9 @@ export default function MemeCard({ meme }: { meme: Meme }) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-lg font-bold text-black">{meme.name}</h3>
-              <p className="text-sm text-gray-600">@{meme.creator}</p>
+              <p className="text-sm text-gray-600">
+                @{truncateAddress(meme.creator || "")}
+              </p>
             </div>
             <div className="flex items-center gap-2 px-3 py-1 text-white bg-primary rounded-full">
               <Zap size={14} />
