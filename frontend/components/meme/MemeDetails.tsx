@@ -27,9 +27,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
+import { Meme } from "@/app/types";
 
 interface MemeDetailsProps {
-  profile: any;
+  meme: Meme;
 }
 
 // Mock price history data
@@ -101,7 +102,7 @@ const recentTrades = [
   },
 ];
 
-const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
+const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [priceData, setPriceData] = useState<any[]>([]);
   const [chartTimeframe, setChartTimeframe] = useState("7d");
@@ -159,29 +160,23 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
           <div className="grid gap-4">
             <div className="flex justify-between">
               <span className="text-gray-500">Token Symbol:</span>
-              <span className="font-medium">${profile.tokenSymbol}</span>
+              <span className="font-medium">${meme.ticker}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Current Price:</span>
-              <span className="font-medium">{profile.tokenPrice} ETH</span>
+              <span className="font-medium">{0} ETH</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Total Supply:</span>
-              <span className="font-medium">
-                {profile.totalSupply.toLocaleString()}
-              </span>
+              <span className="font-medium">{0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Circulating Supply:</span>
-              <span className="font-medium">
-                {profile.circulatingSupply.toLocaleString()}
-              </span>
+              <span className="font-medium">{0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Holders:</span>
-              <span className="font-medium">
-                {profile.holders.toLocaleString()}
-              </span>
+              <span className="font-medium">{0}</span>
             </div>
           </div>
 
@@ -204,7 +199,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <span className="font-bold text-xl">
-                      ${profile.tokenSymbol} Price Chart
+                      ${meme.ticker} Price Chart
                     </span>
                     <Badge
                       className={`${
@@ -221,9 +216,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
                       {priceChange.percentage.toFixed(2)}%
                     </Badge>
                   </DialogTitle>
-                  <DialogDescription>
-                    Current price: {profile.tokenPrice} ETH
-                  </DialogDescription>
+                  <DialogDescription>Current price: {0} ETH</DialogDescription>
                 </DialogHeader>
 
                 <div className="mt-4">
@@ -236,9 +229,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
                     <TabsContent value="chart" className="space-y-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <h3 className="text-2xl font-bold">
-                            {profile.tokenPrice} ETH
-                          </h3>
+                          <h3 className="text-2xl font-bold">{0} ETH</h3>
                           <div className="flex items-center gap-1 text-sm">
                             <span
                               className={
@@ -295,8 +286,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
                               >
                                 <path
                                   d={`M0,${
-                                    100 -
-                                    parseFloat(filteredData[0]?.price) * 1000
+                                    100 - parseFloat("0") * 1000
                                   } ${filteredData
                                     .map(
                                       (point, i) =>
@@ -365,11 +355,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
                               </span>
                             </div>
                             <p className="font-bold">
-                              {(
-                                profile.circulatingSupply *
-                                parseFloat(profile.tokenPrice)
-                              ).toLocaleString()}{" "}
-                              ETH
+                              {(0 * parseFloat("0")).toLocaleString()} ETH
                             </p>
                           </CardContent>
                         </Card>
@@ -434,8 +420,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
                               </Badge>
                             </div>
                             <div>
-                              {trade.amount.toLocaleString()} $
-                              {profile.tokenSymbol}
+                              {trade.amount.toLocaleString()} ${meme.ticker}
                             </div>
                             <div>{trade.price} ETH</div>
                             <div>{trade.time}</div>
@@ -471,9 +456,9 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ profile }) => {
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-500">Current Heat Score:</span>
-              <span className="font-bold text-xl">{profile.heatScore}/100</span>
+              <span className="font-bold text-xl">{0}/100</span>
             </div>
-            <Progress value={profile.heatScore} className="h-3" />
+            <Progress value={0} className="h-3" />
           </div>
 
           <div className="space-y-3">

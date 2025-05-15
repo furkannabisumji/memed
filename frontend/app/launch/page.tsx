@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 import { Sparkles, LinkIcon } from "lucide-react";
@@ -17,11 +17,14 @@ import { useAccountStore } from "@/store/accountStore";
 import { useAccount } from "wagmi";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import { useConnectKitSign } from "@/hooks/useConnectKitSign";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { TransactionType } from "@/hooks/useChainSwitch";
+import { chains } from "@lens-chain/sdk/viem";
 
 export default function LaunchPage() {
   const { selectedAccount, accounts } = useAccountStore();
   const { signWithConnectKit } = useConnectKitSign();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const toast = useCustomToast();
   const [memeImage, setMemeImage] = useState<string | null>(
     "bafkreibh4leq5nkyviyxhurdztupcl44l47i2zvbhtxlxrruutk6je7g7m"
@@ -35,6 +38,7 @@ export default function LaunchPage() {
     "A brief journey through time"
   );
   const [memeSymbol, setMemeSymbol] = useState<string>("TIM");
+  const { switchToChain } = useChainSwitch();
 
   // console.log({
   //   memeTitle,
@@ -147,6 +151,13 @@ export default function LaunchPage() {
       setIsMinting(false);
     }
   };
+
+  //check chain and ensure we are in mainnet
+  useEffect(() => {
+    if (chain && chain?.id !== chains.mainnet.id) {
+      switchToChain(TransactionType.accountCreation);
+    }
+  }, [chain, switchToChain]);
 
   if (showSuccess) {
     return (

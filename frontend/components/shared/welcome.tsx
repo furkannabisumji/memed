@@ -16,12 +16,15 @@ import ImageUploader from "./ImageUploader";
 import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
 import { AccountButton } from "./AccountButton";
 import { useAccountStore } from "@/store/accountStore";
+import { chains } from "@lens-chain/sdk/viem";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { TransactionType } from "@/hooks/useChainSwitch";
 
 export function Welcome() {
   // Add client-side only rendering to prevent hydration errors
   const [isClient, setIsClient] = useState(false);
   const toast = useCustomToast();
-  const { isConnected, address, isConnecting } = useAccount();
+  const { isConnected, address, chain } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { signWithConnectKit } = useConnectKitSign();
   const [image, setImage] = useState<string | null>("");
@@ -29,6 +32,7 @@ export function Welcome() {
   const [localName, setLocalName] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
   const [autoRefreshing, setAutoRefreshing] = useState(false);
+  const { switchToChain } = useChainSwitch();
 
   // Use the account store for all account-related state
   const {
@@ -44,6 +48,13 @@ export function Welcome() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  //check chain
+  useEffect(() => {
+    if (chain && chain?.id !== chains.mainnet.id) {
+      switchToChain(TransactionType.accountCreation);
+    }
+  }, [chain, switchToChain]);
 
   useEffect(() => {
     // Only provide a cleanup function for unmount

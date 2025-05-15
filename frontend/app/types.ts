@@ -16,16 +16,20 @@ export type Account = {
     id?: string;
     bio?: string;
     name?: string;
-    picture: string | {
-      original?: { url: string };
-      optimized?: { url: string };
-      uri?: string;
-    };
-    coverPicture?: string | {
-      original?: { url: string };
-      optimized?: { url: string };
-      uri?: string;
-    };
+    picture:
+      | string
+      | {
+          original?: { url: string };
+          optimized?: { url: string };
+          uri?: string;
+        };
+    coverPicture?:
+      | string
+      | {
+          original?: { url: string };
+          optimized?: { url: string };
+          uri?: string;
+        };
     attributes?: Array<{
       type?: string;
       key?: string;
@@ -80,15 +84,16 @@ export interface AccountState {
   resetStore: () => void;
 }
 
-
-
 export interface ClaimProof {
+  id:string,
+  tokenTicker:string,
   token: string;
   handle: string;
   amount: string;
   proof: string[];
   leaf: string;
   index: number;
+  type:string;
 }
 
 export interface MemeDetails extends ClaimProof {
@@ -96,4 +101,20 @@ export interface MemeDetails extends ClaimProof {
   description: string;
   image: string;
   handle: string;
+}
+
+export interface Meme {
+  _id: string;
+  handle: string;
+  tokenAddress: string;
+  name?: string;
+  ticker?: string;
+  description?: string;
+  image?: string;
+  creator?: string;
+  followers?: string[];
+  lastRewardDistribution: string;
+  totalDistributed: string;
+  createdAt: string;
+  __v?: number;
 }

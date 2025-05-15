@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useWalletClient } from "wagmi";
 import { useAccountStore } from "@/store/accountStore";
 import { useConnectKitSign } from "@/hooks/useConnectKitSign";
 import { useCustomToast } from "@/components/ui/custom-toast";
@@ -23,6 +23,15 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import RewardHistory from "@/components/rewards/RewardHistory";
+import { claimReward } from "@/utils/blockchainServices";
+import { useClaimData } from "@/hooks/rewards/useClaimData";
+import { ClaimProof, MemeDetails } from "../types";
+import { useRecordClaim } from "@/hooks/rewards/useRecordClaim";
+import { WalletClient } from "viem";
+import axiosInstance from "@/lib/axios";
+import { AxiosError } from "axios";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { chains } from "@lens-chain/sdk/viem";
 
 type RewardToken = {
   id: string;
@@ -38,7 +47,7 @@ type RewardToken = {
 };
 
 // Dummy data for available rewards
-const dummyAvailableRewards: RewardToken[] = [
+const dummyAvailableReward = [
   {
     id: "1",
     tokenAddress: "0x1234567890123456789012345678901234567890",
@@ -245,17 +254,51 @@ const dummyAvailableRewards: RewardToken[] = [
   },
 ];
 
+const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; }> => {
+  return axiosInstance.get(`/tokens/${tokenAddress}`)
+    .then((res) => res.data)
+    .catch((error) => {
+      const axiosErr = error as AxiosError<{ message?: string }>;
+      const message =
+        axiosErr.response?.data?.message || axiosErr.message || "Failed to fetch Claims";
+
+      throw new Error(message);
+    })
+}
 export default function RewardsPage() {
   const { address } = useAccount();
   const { selectedAccount } = useAccountStore();
   const { signWithConnectKit } = useConnectKitSign();
   const toast = useCustomToast();
+  const { data } = useWalletClient()
+
+  const walletClient = data as WalletClient;
+  // Fetch Rewards
+  const {
+    data: fetchedrewards,
+    isLoading: REWARDS_LOADING,
+  } = useClaimData(address);
+
+  // Fetch Meme Detail
+
+  // Record Claim
+  const {
+    mutate: recordClaim
+  } = useRecordClaim()
+
+
+  useEffect(() => {
+    if (fetchedrewards) {
+      console.log("Fetched Rewards: ", fetchedrewards)
+    }
+  }, [fetchedrewards])
 
   const [isLoading, setIsLoading] = useState(true);
-  const [rewards, setRewards] = useState<RewardToken[]>([]);
+  const [rewards, setRewards] = useState<MemeDetails[]>([]);
   const [claimingToken, setClaimingToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("available");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
+  const { chain, switchToChain } = useChainSwitch()
   type TabType = "available" | "initial" | "engagement";
 
   const [pages, setPages] = useState<Record<TabType, number>>({
@@ -277,6 +320,13 @@ export default function RewardsPage() {
     engagement: null,
   });
 
+  //check chain
+  useEffect(() => {
+    if (chain?.id !== chains.testnet.id) {
+      switchToChain();
+    }
+  }, [chain, switchToChain]);
+  
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
     const activeTabElement = tabRefs.current[activeTab];
@@ -306,6 +356,7 @@ export default function RewardsPage() {
     updateUnderlinePosition();
   }, [activeTab, updateUnderlinePosition]);
 
+
   // Function to fetch available rewards
   const fetchRewards = async (
     pageNum: number,
@@ -317,24 +368,36 @@ export default function RewardsPage() {
     }
 
     // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Get the appropriate data based on tab
-    let sourceData = dummyAvailableRewards;
+    if (fetchedrewards == null) {
+      setIsLoading(false)
+      return;
+    }
+    let sourceData = fetchedrewards;
     if (tabType === "initial") {
-      sourceData = dummyAvailableRewards.filter(
-        (reward) => reward.type === "initial"
-      );
+      sourceData = fetchedrewards.filter((reward) => reward.type === "initial");
     } else if (tabType === "engagement") {
-      sourceData = dummyAvailableRewards.filter(
-        (reward) => reward.type === "engagement"
-      );
+      sourceData = fetchedrewards.filter((reward) => reward.type === "engagement");
     }
 
     // Simulate paginated data fetch
     const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const paginatedRewards = sourceData.slice(startIndex, endIndex);
+
+    // Fetch meme info for each reward handle concurrently
+    const rewardsWithDetails = await Promise.all(
+      paginatedRewards.map(async (reward: ClaimProof) => {
+        // Fetch meme info for the handle
+        const memeInfo = await getMemeInfo(reward.token); // Assuming `getMemeInfoByHandle` is a function that fetches meme info by handle
+        return {
+          ...reward, // Retain all the reward properties
+          ...memeInfo,  // Add fetched meme info
+        };
+      })
+    );
 
     // Check if there are more items to load
     setHasMore((prev) => ({
@@ -343,14 +406,22 @@ export default function RewardsPage() {
     }));
 
     if (reset) {
-      setRewards(
-        tabType === "available"
-          ? paginatedRewards
-          : sourceData.slice(0, endIndex)
-      );
+      if (tabType === "available") {
+        setRewards(rewardsWithDetails);
+      } else {
+        const sliced = sourceData.slice(0, endIndex);
+        const detailedSliced = await Promise.all(
+          sliced.map(async (reward: ClaimProof) => {
+            const memeInfo = await getMemeInfo(reward.token);
+            return { ...reward, ...memeInfo };
+          })
+        );
+        setRewards(detailedSliced);
+      }
     } else {
-      setRewards((prev) => [...prev, ...paginatedRewards]);
+      setRewards((prev) => [...prev, ...rewardsWithDetails]);
     }
+
 
     setPages((prev) => ({
       ...prev,
@@ -375,31 +446,54 @@ export default function RewardsPage() {
       fetchRewards(1, activeTab as TabType, true);
     }
   }, [activeTab, address]);
+  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string
+  const handleClaim = async ({ tokenAddress, amount, index, proof }: {
+    tokenAddress: string, amount: string, index: number, proof: string[]
+  }) => {
 
-  const handleClaim = async (tokenAddress: string) => {
     if (!address) {
       toast.error("Wallet not connected");
       return;
     }
 
     setClaimingToken(tokenAddress);
+
     try {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      const claimRewardArgs = {
+        walletClient,
+        userAddress: address,
+        contractAddress,
+        tokenAddress,
+        amount,
+        index,
+        proof
+      }
+      // On chain transaction
+      const tx = await claimReward(claimRewardArgs)
+
+      await recordClaim({
+        amount: claimRewardArgs.amount,
+        tokenAddress: claimRewardArgs.tokenAddress,
+        transactionHash: tx,
+        userAddress: claimRewardArgs.userAddress
+      })
+
       // Find the token data
-      const tokenData = rewards.find((r) => r.tokenAddress === tokenAddress);
+      const tokenData = rewards.find((r) => r.token === tokenAddress);
       if (!tokenData) {
         throw new Error("Token data not found");
       }
 
       // Success - update UI
       toast.success(
-        `Successfully claimed ${tokenData.formattedAmount} ${tokenData.tokenTicker}`
+        `Successfully claimed ${tokenData.amount} ${tokenData.tokenTicker}`
       );
 
       // Remove the claimed token from the list
-      setRewards(rewards.filter((r) => r.tokenAddress !== tokenAddress));
+      setRewards(rewards.filter((r) => r.token !== tokenAddress));
     } catch (error) {
       console.error("Claim error:", error);
       toast.error(
@@ -471,8 +565,8 @@ export default function RewardsPage() {
                     {tab === "available"
                       ? "All Rewards"
                       : tab === "initial"
-                      ? "Initial Rewards"
-                      : "Engagement Rewards"}
+                        ? "Initial Rewards"
+                        : "Engagement Rewards"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -520,7 +614,7 @@ export default function RewardsPage() {
                         key={reward.id}
                         reward={reward}
                         onClaim={handleClaim}
-                        isClaiming={claimingToken === reward.tokenAddress}
+                        isClaiming={claimingToken === reward.token}
                       />
                     ))}
                   </div>
@@ -534,7 +628,7 @@ export default function RewardsPage() {
                           key={reward.id}
                           reward={reward}
                           onClaim={handleClaim}
-                          isClaiming={claimingToken === reward.tokenAddress}
+                          isClaiming={claimingToken === reward.token}
                         />
                       ))
                     ) : (
@@ -555,7 +649,7 @@ export default function RewardsPage() {
                           key={reward.id}
                           reward={reward}
                           onClaim={handleClaim}
-                          isClaiming={claimingToken === reward.tokenAddress}
+                          isClaiming={claimingToken === reward.token}
                         />
                       ))
                     ) : (
@@ -585,18 +679,16 @@ export default function RewardsPage() {
                     Loading...
                   </>
                 ) : !hasMore[activeTab as TabType] ? (
-                  `No More ${
-                    activeTab === "initial"
-                      ? "Initial"
-                      : activeTab === "engagement"
+                  `No More ${activeTab === "initial"
+                    ? "Initial"
+                    : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
                 ) : (
-                  `Load More ${
-                    activeTab === "initial"
-                      ? "Initial"
-                      : activeTab === "engagement"
+                  `Load More ${activeTab === "initial"
+                    ? "Initial"
+                    : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
@@ -624,8 +716,10 @@ function RewardCard({
   onClaim,
   isClaiming,
 }: {
-  reward: RewardToken;
-  onClaim: (tokenAddress: string) => void;
+  reward: MemeDetails;
+  onClaim: ({ tokenAddress, amount, index, proof }: {
+    tokenAddress: string, amount: string, index: number, proof: string[]
+  }) => void;
   isClaiming: boolean;
 }) {
   return (
@@ -634,8 +728,8 @@ function RewardCard({
         {/* Left side - Image */}
         <div className="w-20 h- flex-shrink-0 border-r-2 b">
           <Image
-            src={reward.tokenImage || "/fallback.png"}
-            alt={reward.tokenName}
+            src={reward.image || "/fallback.png"}
+            alt={reward.name}
             width={80}
             height={80}
             className="object-cover w-full h-full"
@@ -647,7 +741,7 @@ function RewardCard({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-md font-bold text-black">
-                {reward.tokenName}
+                {reward.name}
               </h3>
               <p className="text-xs text-gray-600">@{reward.handle}</p>
               <div className="flex items-center gap-2 mt-1">
@@ -655,7 +749,7 @@ function RewardCard({
                   {reward.type === "initial" ? "Initial" : "Engagement"}
                 </p>
                 <p className="text-sm font-bold text-primary">
-                  {reward.formattedAmount} {reward.tokenTicker}
+                  {reward.amount} {reward.tokenTicker}
                 </p>
               </div>
             </div>
@@ -667,7 +761,7 @@ function RewardCard({
               </div>
 
               <Button
-                onClick={() => onClaim(reward.tokenAddress)}
+                onClick={() => onClaim({ amount: reward.amount, index: reward.index, proof: reward.proof, tokenAddress: reward.token, })}
                 className="gap-1 bg-primary hover:bg-primary/90 h-8 px-3 py-1 text-xs"
                 disabled={isClaiming}
               >
