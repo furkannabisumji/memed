@@ -1,3 +1,5 @@
+import { Address } from "viem";
+
 export type Account = {
   address: string;
   owner: string;
@@ -85,15 +87,15 @@ export interface AccountState {
 }
 
 export interface ClaimProof {
-  id:string,
-  tokenTicker:string,
+  id: string;
+  tokenTicker: string;
   token: string;
   handle: string;
   amount: string;
   proof: string[];
   leaf: string;
   index: number;
-  type:string;
+  type: string;
 }
 
 export interface MemeDetails extends ClaimProof {
@@ -116,5 +118,19 @@ export interface Meme {
   lastRewardDistribution: string;
   totalDistributed: string;
   createdAt: string;
+  likesCount: number;
   __v?: number;
 }
+
+export type TokenData = {
+  token: Address;
+  creator: Address;
+  name: string;
+  ticker: string;
+  description: string;
+  image: string;
+  lensUsername: string;
+  heat: bigint;
+  lastRewardAt: bigint;
+  createdAt: bigint;
+};
