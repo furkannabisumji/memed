@@ -5,6 +5,7 @@ const client = require('../config/lens');
 const { factory_contract } = require("../config/factory");
 const Token = require("../models/Token");
 const Post = require("../models/Post");
+const EngagementMetrics = require('../models/EngagementMetrics');
 
 /**
  * Get account information and follower statistics for a Lens handle
@@ -122,6 +123,7 @@ async function getEngagementMetrics(handle, update) {
 
     const token = await Token.findOne({ handle });
     let newEngagement = 0;
+    let hasNewEngagement = false;
 
     // Define which metrics to count
     const engagementMetricsToCount = [
@@ -133,6 +135,16 @@ async function getEngagementMetrics(handle, update) {
       'quotes'
     ];
 
+    // Initialize aggregated metrics
+    const newMetrics = {
+      upvotes: 0,
+      reposts: 0,
+      bookmarks: 0,
+      collects: 0,
+      comments: 0,
+      quotes: 0
+    };
+
     for (const engagement of engagements) {
       let post = await Post.findOne({ postId: engagement.postId });
       
@@ -143,6 +155,7 @@ async function getEngagementMetrics(handle, update) {
           initialEngagement += engagement.stats[metric] || 0;
         }
         newEngagement += initialEngagement;
+        hasNewEngagement = true;
 
         // Store the post
         post = new Post({
@@ -159,6 +172,7 @@ async function getEngagementMetrics(handle, update) {
           
           if (currentValue > storedValue) {
             newEngagement += currentValue - storedValue;
+            hasNewEngagement = true;
           }
         }
 
@@ -172,10 +186,55 @@ async function getEngagementMetrics(handle, update) {
       }
     }
 
+    // Only update metrics if there is new engagement
+    if (hasNewEngagement) {
+      // Get existing metrics
+      const existingMetrics = await EngagementMetrics.findOne({ handle: handle });
+      const currentMetrics = existingMetrics ? existingMetrics.metrics : newMetrics;
+
+      // Update only the metrics that have changed
+      for (const post of engagementMetrics.value.items) {
+        if (post.stats) {
+          for (const metric in newMetrics) {
+            const newValue = post.stats[metric] || 0;
+            const oldValue = currentMetrics[metric] || 0;
+            if (newValue > oldValue) {
+              currentMetrics[metric] = oldValue + (newValue - oldValue);
+            }
+          }
+        }
+      }
+
+      await EngagementMetrics.findOneAndUpdate(
+        { handle: handle },
+        {
+          $set: {
+            metrics: currentMetrics,
+            lastUpdated: new Date()
+          }
+        },
+        { upsert: true, new: true }
+      );
+    }
+
     console.log("Total new engagement calculated:", newEngagement);
     return newEngagement;
   } catch (error) {
     console.error(`Error fetching engagement metrics for ${handle}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get aggregated engagement metrics for a handle
+ */
+async function getAggregatedEngagementMetrics(handle) {
+  try {
+    const metrics = await EngagementMetrics.findOne({ handle });
+    console.log({metrics});
+    return metrics;
+  } catch (error) {
+    console.error(`Error fetching aggregated engagement metrics for ${handle}:`, error);
     throw error;
   }
 }
@@ -185,5 +244,6 @@ module.exports = {
   getHandleOwner,
   getFollowers,
   getEngagementMetrics,
-  getFollowerWithTokenHoldings
+  getFollowerWithTokenHoldings,
+  getAggregatedEngagementMetrics
 }; 
