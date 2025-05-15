@@ -31,9 +31,6 @@ const TokenSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  followers: [{
-    type: String
-  }],
   createdAt: {
     type: Date,
     default: Date.now
