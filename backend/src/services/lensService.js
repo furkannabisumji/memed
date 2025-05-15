@@ -5,6 +5,7 @@ const client = require('../config/lens');
 const { factory_contract } = require("../config/factory");
 const Token = require("../models/Token");
 const Post = require("../models/Post");
+const EngagementMetrics = require('../models/EngagementMetrics');
 
 /**
  * Get account information and follower statistics for a Lens handle
@@ -110,6 +111,47 @@ async function getEngagementMetrics(handle, update) {
     });
     console.log("engagementMetrics : ", engagementMetrics.value.items);
 
+    
+          // Initialize aggregated metrics
+          const newMetrics = {
+            upvotes: 0,
+            reposts: 0,
+            bookmarks: 0,
+            collects: 0,
+            comments: 0,
+            quotes: 0
+          };
+
+          // Sum up all metrics from all posts
+          for (const post of engagementMetrics.value.items) {
+            if (post.stats) {
+              for (const metric in newMetrics) {
+                newMetrics[metric] += post.stats[metric] || 0;
+              }
+            }
+          }
+
+          // Update metrics document
+          const existingMetrics = await EngagementMetrics.findOne({ handle: handle });
+          
+          if (existingMetrics) {
+            // Add new metrics to existing ones
+            for (const metric in newMetrics) {
+              newMetrics[metric] += existingMetrics.metrics[metric] || 0;
+            }
+          }
+
+          await EngagementMetrics.findOneAndUpdate(
+            { handle: handle },
+            {
+              $set: {
+                metrics: newMetrics,
+                lastUpdated: new Date()
+              }
+            },
+            { upsert: true, new: true }
+          );
+
     let engagements = [];
     for (const post of engagementMetrics.value.items) {
       if(post.stats){
@@ -180,10 +222,25 @@ async function getEngagementMetrics(handle, update) {
   }
 }
 
+/**
+ * Get aggregated engagement metrics for a handle
+ */
+async function getAggregatedEngagementMetrics(handle) {
+  try {
+    const metrics = await EngagementMetrics.findOne({ handle });
+    console.log({metrics});
+    return metrics;
+  } catch (error) {
+    console.error(`Error fetching aggregated engagement metrics for ${handle}:`, error);
+    throw error;
+  }
+}
+
 module.exports = {
   getFollowerStats,
   getHandleOwner,
   getFollowers,
   getEngagementMetrics,
-  getFollowerWithTokenHoldings
+  getFollowerWithTokenHoldings,
+  getAggregatedEngagementMetrics
 }; 
