@@ -20,22 +20,23 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     wallet,
     verify: true,
   });
-  let config = {
-    factory: "",
-    memedStaking: await memedStaking.getAddress(),
-    memedBattle: await memedBattle.getAddress(),
-    memedEngageToEarn: await memedEngageToEarn.getAddress(),
-  };
-
-  const factory = await deployContract("MemedFactory", [config.memedStaking, config.memedBattle, config.memedEngageToEarn], {
+  const memedStakingAddress = await memedStaking.getAddress();
+  const memedBattleAddress = await memedBattle.getAddress();
+  const memedEngageToEarnAddress = await memedEngageToEarn.getAddress();
+  const factory = await deployContract("MemedFactory", [memedStakingAddress, memedBattleAddress, memedEngageToEarnAddress], {
     hre,
     wallet,
     verify: true,
   });
-  config.factory = await factory.getAddress();
+  const config = {
+    factory: await factory.getAddress(),
+    memedStaking: memedStakingAddress,
+    memedBattle: memedBattleAddress,
+    memedEngageToEarn: memedEngageToEarnAddress,
+  };
 
 
-  writeFileSync(path.resolve("config.json"), JSON.stringify(config));
+  writeFileSync(path.resolve("../backend/src/config/config.json"), JSON.stringify(config, null, 2));
 
   // Set factory address in the previously deployed contracts
   console.log("Setting factory address in MemedStaking...");

@@ -36,10 +36,10 @@ contract MemedStaking is Ownable {
         emit Staked(msg.sender, meme, amount);
     }
 
-    function unstake(address meme) external {
-        uint256 amount = stakes[meme][msg.sender].amount;
+    function unstake(address meme, uint256 amount) external {
         require(amount > 0, "Nothing to unstake");
-        stakes[meme][msg.sender].amount = 0;
+        require(stakes[meme][msg.sender].amount >= amount, "Not enough staked");
+        stakes[meme][msg.sender].amount -= amount;
         totalStakedPerMeme[meme] -= amount;
         if(stakes[meme][msg.sender].amount == 0) {
             for(uint i = 0; i < stakers.length; i++) {

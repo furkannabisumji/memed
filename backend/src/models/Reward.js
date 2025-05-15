@@ -20,23 +20,10 @@ const RewardSchema = new mongoose.Schema({
     type: String, // Store as string to handle large numbers
     required: true
   },
-  type: {
-    type: String,
-    enum: ['initial', 'engagement'],
+  airdrop: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Airdrop',
     required: true
-  },
-  airdropIndex: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  claimed: {
-    type: Boolean,
-    default: false
-  },
-  claimTransactionHash: {
-    type: String,
-    default: null
   },
   createdAt: {
     type: Date,
@@ -45,6 +32,6 @@ const RewardSchema = new mongoose.Schema({
 });
 
 // Compound index to ensure unique claims per user per airdrop round
-RewardSchema.index({ tokenAddress: 1, userAddress: 1, airdropIndex: 1 }, { unique: true });
+RewardSchema.index({ tokenAddress: 1, userAddress: 1, airdrop3e: 1 }, { unique: true });
 
 module.exports = mongoose.model('Reward', RewardSchema); 

@@ -5,6 +5,7 @@ const {factory_contract, wallet, airdrop_contract} = require('../config/factory'
 const Token = require('../models/Token');
 const Post = require('../models/Post');
 const Reward = require('../models/Reward');
+const Airdrop = require('../models/Airdrop');
 
 /**
  * Get follower statistics for a Lens handle
@@ -130,9 +131,22 @@ const mintMemeCoins = async (req, res, next) => {
           },
           { upsert: true }
         );
+        const lastAirdrop = await Airdrop.findOne().sort({ index: -1 }).limit(1);
+        const index = lastAirdrop ? lastAirdrop.index + 1 : 0;
         
         // After successful minting, distribute initial rewards to random followers
-        // await distributeInitialRewards(handle, tokenAddress);
+        const distributed = new Airdrop({
+          tokenAddress,
+          handle,
+          index,
+          merkleRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          limit: 5,
+          type: 'initial',
+          maxAmount: '100',
+          processed: false,
+          timestamp: Date.now()
+        });
+        await distributed.save();
         
         return res.status(200).json({ 
           message: 'Meme created successfully and initial rewards distributed', 
@@ -156,20 +170,25 @@ const mintMemeCoins = async (req, res, next) => {
 };
 
 /**
- * Distribute initial rewards to random followers after token minting
- * @param {string} handle - Lens handle
+ * Distribute rewards to random followers after token minting or engagement
+ * @param {string} airdropId - ID of the airdrop
  * @param {string} tokenAddress - Address of the token
  */
-async function distributeInitialRewards(handle, tokenAddress) {
+async function distributeRewards(airdropId) {
   try {
-    console.log(`Distributing initial rewards for ${handle} with token ${tokenAddress}`);
+    const airdrop = await Airdrop.findById(airdropId, { processed: false });
+    if (!airdrop) {
+      return res.status(404).json({ error: 'Airdrop not found' });
+    }
+    const { handle, tokenAddress, limit, index, maxAmount } = airdrop;
+    console.log(`Distributing rewards for ${handle} with token ${tokenAddress}`);
     
     // 1. Get followers of the handle
     const followers = await lensService.getFollowers(handle);
     console.log({followers});
     
-    // 2. Select 5000 random followers (or all if less than 5000)
-    const followerCount = Math.min(followers.length, 5000);
+    // 2. Select random followers (or all if less than limit)
+    const followerCount = Math.min(followers.length, limit);
     console.log({followerCount});
 
     if(followerCount >= process.env.MIN_FOLLOWERS_REQUIRED) {
@@ -179,36 +198,32 @@ async function distributeInitialRewards(handle, tokenAddress) {
       console.log({selectedFollowers});
 
       // 3. Calculate token amount per follower (100 tokens each)
-      const tokensPerFollower = ethers.parseUnits("100", 18).toString();
+      const airdropPerFollower = Number(maxAmount) / followerCount;
+      const tokensPerFollower = ethers.parseUnits(airdropPerFollower, 18).toString();
       console.log({tokensPerFollower});
-
-      // 4. Get the latest airdrop index
-      const airdropIndex = await merkleService.getLatestAirdropIndex(tokenAddress) + 1;
-      console.log({airdropIndex});
-
-      // 5. Create reward records in database
-      const rewardPromises = selectedFollowers.map(followerAddress => 
-        Reward.create({
-          handle,
-          tokenAddress,
-          userAddress: followerAddress, // Now using the extracted address
-          amount: tokensPerFollower,
-          type: 'initial',
-          airdropIndex,
-          claimed: false
-        })
-      );
-      
-      await Promise.all(rewardPromises);
       
       // 6. Generate new Merkle tree and root
-      const { root } = await merkleService.generateMerkleTree(tokenAddress, airdropIndex);
+      const { root } = await merkleService.generateMerkleTree(tokenAddress, index);
       
       // 7. Set the Merkle root on the contract
       try {
-        const tx = await airdrop_contract.setMerkleRoot(tokenAddress, airdropIndex, root);
+        const tx = await airdrop_contract.setMerkleRoot(tokenAddress, index, root);
         await tx.wait();
-        console.log(`Merkle root set for token ${tokenAddress} at index ${airdropIndex}`);
+        for (const follower of selectedFollowers) {
+          const reward = new Reward({
+            handle,
+            tokenAddress,
+            userAddress: follower,
+            amount: tokensPerFollower,
+            airdrop: airdropId
+          });
+          await reward.save();
+          await Airdrop.findByIdAndUpdate(
+            airdropId,
+            { processed: true }
+          );
+        }
+        console.log(`Merkle root set for token ${tokenAddress} at index ${index}`);
       } catch (error) {
         console.error('Error setting Merkle root on contract:', error);
         if (error.message.includes('Too soon to set')) {
@@ -218,17 +233,6 @@ async function distributeInitialRewards(handle, tokenAddress) {
         }
       }
       
-      // 8. Update total distributed
-      const totalDistributed = ethers.parseUnits(
-        (selectedFollowers.length * 100).toString(), 
-        18
-      ).toString();
-      
-      await Token.findOneAndUpdate(
-        { handle },
-        { $set: { totalDistributed } }
-      );
-      
       console.log(`Initial rewards distributed to ${selectedFollowers.length} followers of ${handle}`);
       return selectedFollowers.length;
     } else {
@@ -237,84 +241,6 @@ async function distributeInitialRewards(handle, tokenAddress) {
     }
   } catch (error) {
     console.error('Error distributing initial rewards:', error);
-    throw error;
-  }
-}
-/**
- * Distribute tokens based on engagement metrics
- * Called by scheduler or admin
- */
-async function distributeEngagementRewards() {
-  try {
-    console.log('Starting engagement rewards distribution');
-    
-    // Get all tokens
-    const tokens = await Token.find({lastRewardDistribution: {$lt: Date.now() - 24 * 60 * 60 * 1000}});
-    let totalRewardedUsers = 0;
-    
-    for (const token of tokens) {
-      const { handle, tokenAddress } = token;
-      const newEngagement = await getEngagementMetrics(handle,true);
-      console.log({newEngagement});
-      
-      // If 100,000+ engagements, distribute rewards to 5000 followers
-      if (newEngagement >= 100000) {
-        console.log(`${handle} has ${newEngagement} engagements - distributing rewards`);
-        
-        // Get followers
-        const followers = await lensService.getFollowerWithTokenHoldings(tokenAddress);
-        
-        // Select up to 5000 followers
-        const followerCount = Math.min(followers.length, 5000);
-        const selectedFollowers = selectRandomFollowers(followers, followerCount);
-        
-        // Calculate tokens per follower (100 tokens each)
-        const tokensPerFollower = ethers.parseUnits("100", 18).toString();
-        
-        // Create reward records
-        const rewardPromises = selectedFollowers.map(follower => 
-          Reward.create({
-            handle: follower.handle ?? 'null',
-            tokenAddress,
-            userAddress: follower.address,
-            amount: tokensPerFollower,
-            type: 'engagement',
-            claimed: false
-          })
-        );
-        
-        await Promise.all(rewardPromises);
-        
-        // Update token distribution info
-        const newDistributed = ethers.parseUnits(
-          (selectedFollowers.length * 100).toString(), 
-          18
-        );
-        
-        const currentDistributed = ethers.parseUnits(token.totalDistributed || "0", 0);
-        const totalDistributed = (currentDistributed + newDistributed).toString();
-        
-        await Token.findByIdAndUpdate(token._id, {
-          lastRewardDistribution: Date.now(),
-          totalDistributed
-        });
-        
-        totalRewardedUsers += selectedFollowers.length;
-        console.log(`Distributed engagement rewards for ${handle}: ${selectedFollowers.length} followers rewarded`);
-      } else {
-        console.log(`${handle} has only ${newEngagement == 0 ? "no" : newEngagement} new engagements - no rewards`);
-      }
-    }
-    
-    // Update Merkle root after all distributions
-    if (totalRewardedUsers > 0) {
-      await merkleService.mockUpdateMerkleRoot();
-    }
-    
-    console.log(`Engagement rewards distribution completed: ${totalRewardedUsers} total users rewarded`);
-    return totalRewardedUsers;
-  } catch (error) {
-    console.error('Error distributing engagement rewards:', error);
     throw error;
   }
 }
@@ -543,7 +469,7 @@ module.exports = {
   getEngagementMetrics,
   getMintableCheck,
   mintMemeCoins,
-  distributeEngagementRewards,
+  distributeRewards,
   generateClaimData,
   recordClaim,
   addRewardsForUser
