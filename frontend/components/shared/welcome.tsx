@@ -33,6 +33,7 @@ export function Welcome() {
   const [txHash, setTxHash] = useState<string>("");
   const [autoRefreshing, setAutoRefreshing] = useState(false);
   const { switchToChain } = useChainSwitch();
+  const [imageProcessing, setImageProcessing] = useState(false);
 
   // Use the account store for all account-related state
   const {
@@ -405,7 +406,11 @@ export function Welcome() {
     <div className="flex flex-col items-center justify-center h-screen px-3">
       {isConnected ? (
         <>
-          <ImageUploader image={image} setImage={handleImageChange} />
+          <ImageUploader
+            image={image}
+            setImage={handleImageChange}
+            setImageProcessing={setImageProcessing}
+          />
           <div className="w-full max-w-sm flex flex-col gap-4 py-5">
             {/* Create Profile Section */}
             <div className="border border-gray-200 min-h-[200px] rounded-lg p-4 mb-2">
@@ -423,10 +428,14 @@ export function Welcome() {
               </div>
               <Button
                 onClick={createAccount}
-                disabled={isGenerating}
+                disabled={isGenerating || imageProcessing}
                 className="w-full h-12 font-semibold cursor-pointer"
               >
-                {isGenerating ? "Generating..." : "Get a profile"}
+                {isGenerating
+                  ? "Generating..."
+                  : imageProcessing
+                  ? "Uploading..."
+                  : "Get a profile"}
               </Button>
             </div>
 
