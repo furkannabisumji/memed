@@ -73,7 +73,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
     enabled: !!userAddress && !!tokenAddress,
   });
 
-  const handleStakeAction = async () => {
+  const handleStakeAction = async (action: "stake" | "unstake") => {
     if (!userAddress || !tokenAddress) {
       toast.error("Error", {
         description: "Please connect your wallet",
@@ -83,16 +83,26 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
 
     if (!stakeAmount || Number(stakeAmount) <= 0) {
       toast.error("Invalid Amount", {
-        description: "Please enter a valid amount to stake",
+        description: `Please enter a valid amount to ${action}`,
       });
       return;
     }
 
-    const isStake = stakeAction === "stake";
+    const isStake = action === "stake";
 
     if (isStake && Number(stakeAmount) > Number(formattedBalance)) {
       toast.error("Not enough tokens", {
-        description: "You don't have enough tokens to stake",
+        description: `You don't have enough tokens to ${action}`,
+      });
+      return;
+    }
+
+    if (
+      !isStake &&
+      Number(stakeAmount) > Number(formatUnits(BigInt(stakedAmount), 18))
+    ) {
+      toast.error("Not enough tokens", {
+        description: `You don't have enough tokens to ${action}`,
       });
       return;
     }
@@ -117,9 +127,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
           address: contractAddress,
           abi: memedStakingABI as Abi,
           functionName: isStake ? "stake" : "unstake",
-          args: isStake
-            ? [formattedTokenAddress, amountInWei]
-            : [formattedTokenAddress],
+          args: [formattedTokenAddress, amountInWei],
           account: userAddress as `0x${string}`,
         });
 
@@ -218,18 +226,21 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                     <Button
                       className="bg-primary hover:bg-primary/90 hover:shadow-2xl w-full cursor-pointer"
                       onClick={async () => {
-                        setStakeAction("stake");
-                        setJobStarted(true); //this helps keep the button disabled in between approval and staking
+                        const action = "stake";
+                        setStakeAction(action);
                         if (needsApproval && !approvalError) {
                           try {
+                            setJobStarted(true); //this helps keep the button disabled in between approval and staking
                             await approve();
                           } catch (error) {
                             console.error("Approval failed:", error);
                             setJobStarted(false);
                             return;
+                          } finally {
+                            setJobStarted(false);
                           }
                         }
-                        await handleStakeAction();
+                        await handleStakeAction(action);
                       }}
                       disabled={
                         isStaking ||
@@ -258,9 +269,10 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                       <Button
                         variant="outline"
                         className="w-full cursor-pointer"
-                        onClick={() => {
-                          setStakeAction("unstake");
-                          handleStakeAction();
+                        onClick={async () => {
+                          const action = "unstake";
+                          setStakeAction(action);
+                          await handleStakeAction(action);
                         }}
                         disabled={
                           isUnstaking ||
