@@ -159,7 +159,7 @@ export default function MemeViewPage() {
     isOwner: false,
     createdAt: "2025-01-15T00:00:00Z",
     creatorName: "Crypto Memer",
-    creatorHandle: "cryptomemer",
+    creatorHandle: "apurva_borhade_",
     creatorProfileImage: "/fallback.png",
     tokenSymbol: "DOGE",
     tokenPrice: "0.01",

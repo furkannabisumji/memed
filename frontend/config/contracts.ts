@@ -1,8 +1,9 @@
 const CONTRACTS = {
   factory: "0x3CC8E8233b103b9D8f5F2d7B3D5A730fA2F38DaA",
-  memedBattle: "0x4c91bD57Fa750f66d9D0d48F9E9caE7FfD0FAFA6",
-  memedEngageToEarn: "0xf1AfB8500ED93e49d0806cfd0bb9D55E51FF005A",
   memedStaking: "0xa2849Ad2b082AED94d7Ac0d0E744E0dE4CC7eb71",
+  memedBattle: "0x4c91bD57Fa750f66d9D0d48F9E9caE7FfD0FAFA6",
+  memedEngageToEarn: "0xf1AfB8500ED93e49d0806cfd0bb9D55E51FF005A"
+
 };
 
 export default CONTRACTS;

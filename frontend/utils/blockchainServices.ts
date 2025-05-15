@@ -1,49 +1,94 @@
 
 import EngageToEarn from '@/config/memedEngageToEarnABI.json'; // your claim contract ABI
+import MemedBattleABI from '@/config/memedBattleABI.json'; // your claim contract ABI
 import { chains } from '@lens-chain/sdk/viem';
-import { WalletClient } from 'viem';
-import { writeContract } from 'viem/actions';
+import { parseAbi, WalletClient } from 'viem';
+import { simulateContract, writeContract } from '@wagmi/core'
+import { config } from '@/providers/Web3Provider';
 
 
 type ClaimParams = {
-    walletClient: WalletClient;
-    userAddress: string;           // The address of the user (signer)
-    contractAddress: string;       // Address of the airdrop contract
-    tokenAddress: string;               // ERC20 token being claimed
-    amount: string | number | bigint;     // Amount to claim
-    index: number;                        // Merkle index
-    proof: string[];
-}
+    userAddress: `0x${string}`;
+    contractAddress: `0x${string}`;
+    tokenAddress: `0x${string}`;
+    amount: number | string | bigint;
+    index: number;
+    proof: `0x${string}`[]; // Merkle proof
+};
 
+type StartBattleParams = {
+    userAddress: `0x${string}`;             // Address of the caller (msg.sender)
+    contractAddress: string;         // Address of MemedBattle contract
+    memeBAddress: string;            // Address of opponent meme (creator)
+};
 
-export const claimReward = async ({ walletClient, userAddress, contractAddress, tokenAddress, amount, index, proof }: ClaimParams) => {
+export const claimReward = async ({
+    userAddress,
+    contractAddress,
+    tokenAddress,
+    amount,
+    index,
+    proof,
+}: ClaimParams) => {
     try {
+        console.log("🚀 Claiming reward...");
 
-        if (!walletClient) throw new Error('Wallet client not found');
-        const chain = await walletClient.getChainId()
-        const currentChain = chains.mainnet.id === chain ? chains.mainnet : chains.testnet;
-
-        console.log("Claiming Reward.....")
-
-        const txHash = await writeContract(walletClient, {
-            account: userAddress as `0x${string}`, // REQUIRED
-            address: contractAddress as `0x${string}`,
-            chain: currentChain,
+        const { request } = await simulateContract(config, {
             abi: EngageToEarn,
+            address: contractAddress,
             functionName: 'claim',
             args: [
-                tokenAddress as `0x${string}`,   // address
-                BigInt(amount),                  // uint256
-                index,                           // uint256
-                proof as `0x${string}`[]         // `0x${string}[]   
+                tokenAddress,
+                BigInt(amount),
+                BigInt(index),
+                proof,
             ],
+            account: userAddress,
         });
 
-        console.log('✅ Transaction sent:', txHash);
+        const txHash = await writeContract(config, request);
+        console.log('✅ Claim transaction sent:', txHash);
         return txHash;
-    } catch (err) {
-        console.error('❌ Error sending transaction:', err);
+
+    } catch (err: any) {
+        console.error('❌ Error sending claim transaction:', err);
+        const message =
+            err?.shortMessage ||
+            err?.message ||
+            "Something went wrong while claiming the reward";
+        throw new Error(message);
+    }
+};
+
+export const startBattle = async ({
+    userAddress,
+    contractAddress,
+    memeBAddress,
+}: StartBattleParams) => {
+    try {
+        console.log("🚀 Starting battle...");
+
+        
+        const { request } = await simulateContract(config, {
+            abi: MemedBattleABI,
+            address: contractAddress as `0x${string}`,
+            functionName: 'startBattle',
+            args: [
+                memeBAddress as `0x${string}`
+            ],
+            account: userAddress
+        })
+
+        const txHash = await writeContract(config, request)
+        console.log("✅ Battle transaction sent:", txHash);
+        return txHash;
+    } catch (err: any) {
         console.log(err)
-        throw err;
+        const message =
+            err?.shortMessage ||
+            err?.message ||
+            "Something went wrong while starting the battle";
+
+        throw new Error(message);
     }
 };

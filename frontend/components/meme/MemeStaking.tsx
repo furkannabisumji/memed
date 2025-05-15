@@ -73,7 +73,9 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
     enabled: !!userAddress && !!tokenAddress,
   });
 
+
   const handleStakeAction = async (action: "stake" | "unstake") => {
+
     if (!userAddress || !tokenAddress) {
       toast.error("Error", {
         description: "Please connect your wallet",
@@ -88,7 +90,9 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
       return;
     }
 
+
     const isStake = action === "stake";
+
 
     if (isStake && Number(stakeAmount) > Number(formattedBalance)) {
       toast.error("Not enough tokens", {
@@ -127,6 +131,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
           address: contractAddress,
           abi: memedStakingABI as Abi,
           functionName: isStake ? "stake" : "unstake",
+
           args: [formattedTokenAddress, amountInWei],
           account: userAddress as `0x${string}`,
         });
@@ -137,7 +142,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
         // Wait for transaction to be mined
         const receipt = await waitForTransactionReceipt(config, { hash });
         const isSuccess = receipt.status === "success";
-
+        
         if (isSuccess) {
           const actionText = isStake ? "Staked" : "Unstaked";
           toast.success(`${actionText} Successfully`, {
@@ -226,8 +231,13 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
                     <Button
                       className="bg-primary hover:bg-primary/90 hover:shadow-2xl w-full cursor-pointer"
                       onClick={async () => {
+
+                        setStakeAction("stake");
+                        setJobStarted(true); //this helps keep the button disabled in between approval and staking
+
                         const action = "stake";
                         setStakeAction(action);
+
                         if (needsApproval && !approvalError) {
                           try {
                             setJobStarted(true); //this helps keep the button disabled in between approval and staking
