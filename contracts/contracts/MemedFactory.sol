@@ -67,7 +67,7 @@ contract MemedFactory is Ownable {
         string calldata _description,
         string calldata _image
     ) external onlyOwner {
-        //require(tokenData[_lensUsername].token == address(0), "already minted");
+        require(tokenData[_lensUsername].token == address(0), "already minted");
         MemedToken memedToken = new MemedToken(_name, _ticker, _creator, address(memedStaking), address(memedEngageToEarn));
         tokenData[_lensUsername] = TokenData({
             token: address(memedToken),
@@ -94,9 +94,10 @@ contract MemedFactory is Ownable {
         );
     }
 
-    function updateHeat(address _user, uint256 _heat, bool _minusHeat) public {
+    function updateHeat(address _token, uint256 _heat, bool _minusHeat) public {
         require(msg.sender == address(memedStaking) || msg.sender == address(memedBattle) || msg.sender == owner(), "unauthorized");
-        string memory lensUsername = getByAddress(_user);
+        string memory lensUsername = getByAddress(_token);
+        address creator = tokenData[lensUsername].creator;
         require(tokenData[lensUsername].token != address(0), "not minted");
         require(!_minusHeat || (msg.sender == address(memedStaking)), "Only staking can minus heat");
         if(_minusHeat) {
@@ -104,30 +105,30 @@ contract MemedFactory is Ownable {
         } else {
             tokenData[lensUsername].heat += _heat;
         }
-        MemedBattle.Battle[] memory battles = memedBattle.getUserBattles(_user);
+        MemedBattle.Battle[] memory battles = memedBattle.getUserBattles(_token);
         for(uint i = 0; i < battles.length; i++) {
-            address opponent = battles[i].memeA == _user ? battles[i].memeB : battles[i].memeA;
+            address opponent = battles[i].memeA == _token ? battles[i].memeB : battles[i].memeA;
             if(block.timestamp > battles[i].endTime && !battles[i].resolved) {
-                address winner = tokenData[getByAddress(opponent)].heat > tokenData[lensUsername].heat ? opponent : _user;
+                address winner = tokenData[getByAddress(opponent)].heat > tokenData[lensUsername].heat ? opponent : _token;
                 memedBattle.resolveBattle(battles[i].battleId, winner);
-                if(memedStaking.isRewardable(tokenData[lensUsername].token)) {
-                    memedStaking.reward(tokenData[lensUsername].token, tokenData[lensUsername].creator);
+                if(memedStaking.isRewardable(_token)) {
+                    memedStaking.reward(_token, creator);
                 }
             }
         }
-        if(tokenData[lensUsername].heat - tokenData[lensUsername].lastRewardAt > REWARD_PER_ENGAGEMENT && memedEngageToEarn.isRewardable(tokenData[lensUsername].token)) {
-            memedEngageToEarn.reward(tokenData[lensUsername].token, _user);
+        if ((tokenData[lensUsername].heat - tokenData[lensUsername].lastRewardAt) >= REWARD_PER_ENGAGEMENT &&memedEngageToEarn.isRewardable(_token)) {
+            memedEngageToEarn.reward(_token, creator);
             tokenData[lensUsername].lastRewardAt = tokenData[lensUsername].heat;
-            if(memedStaking.isRewardable(tokenData[lensUsername].token)) {
-                memedStaking.reward(tokenData[lensUsername].token, tokenData[lensUsername].creator);
+            if(memedStaking.isRewardable(_token)) {
+                memedStaking.reward(_token, creator);
             }
         }
     }
 
-    function getByAddress(address _user) internal view returns (string memory) {
+    function getByAddress(address _token) internal view returns (string memory) {
         string memory lensUsername;
         for (uint i = 0; i < tokens.length; i++) {
-            if (tokenData[tokens[i]].token == _user) {
+            if (tokenData[tokens[i]].token == _token) {
                 lensUsername = tokens[i];
                 break;
             }
@@ -135,20 +136,16 @@ contract MemedFactory is Ownable {
         return lensUsername;
     }
 
-    function getTokens(address _user) external view returns (TokenData[] memory) {
-        uint length = address(0) == _user ? tokens.length : 1;
+    function getTokens(address _token) external view returns (TokenData[] memory) {
+        uint length = address(0) == _token ? tokens.length : 1;
         TokenData[] memory result = new TokenData[](length);
-        if(address(0) == _user) {
+        if(address(0) == _token) {
             for (uint i = 0; i < length; i++) {
                 result[i] = tokenData[tokens[i]];
             }
         } else {
-            result[0] = tokenData[getByAddress(_user)];
+            result[0] = tokenData[getByAddress(_token)];
         }
         return result;
-    }
-
-    function getUserBattles(address _user) external view returns (MemedBattle.Battle[] memory) {
-        return memedBattle.getUserBattles(_user);
     }
 }

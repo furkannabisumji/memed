@@ -9,8 +9,7 @@ contract MemedStaking is Ownable {
     uint256 public constant MAX_REWARD = 580_000_000 * 1e18;
 
     MemedFactory public factory;
-    uint256 public constant HEAT_PER_TOKEN = 1e16;
-
+  uint256 public constant TOKENS_PER_HEAT = 100 * 10**18;
     struct Stake {
         uint256 amount;
         uint256 reward;
@@ -26,13 +25,14 @@ contract MemedStaking is Ownable {
 
     function stake(address meme, uint256 amount) external {
         require(amount > 0, "Stake more than zero");
+        require(IERC20(meme).balanceOf(msg.sender) >= amount, "Not enough tokens");
         IERC20(meme).transferFrom(msg.sender, address(this), amount);
         if(stakes[meme][msg.sender].amount == 0) {
             stakers.push(msg.sender);
         }
         stakes[meme][msg.sender].amount += amount;
         totalStakedPerMeme[meme] += amount;
-        factory.updateHeat(meme, amount * HEAT_PER_TOKEN, false);
+        factory.updateHeat(meme, amount / TOKENS_PER_HEAT, false);
         emit Staked(msg.sender, meme, amount);
     }
 
@@ -50,7 +50,7 @@ contract MemedStaking is Ownable {
                 }
             }
         }
-        factory.updateHeat(meme, amount * HEAT_PER_TOKEN, true);
+        factory.updateHeat(meme, amount / TOKENS_PER_HEAT, true);
         IERC20(meme).transfer(msg.sender, amount);
         emit Unstaked(msg.sender, meme, amount);
     }
@@ -64,7 +64,7 @@ contract MemedStaking is Ownable {
     }
 
     function reward(address meme, address _creator) external {
-        require(IERC20(meme).balanceOf(msg.sender) >= MAX_REWARD, "Not enough tokens");
+        require(IERC20(meme).balanceOf(msg.sender) >= (MAX_REWARD * 3) / 100, "Not enough tokens");
         require(msg.sender == address(factory), "unauthorized");
         for(uint i = 0; i < stakers.length; i++) {
             address user = stakers[i];
@@ -74,7 +74,7 @@ contract MemedStaking is Ownable {
             stakes[meme][user].reward += userAmount;
         }
         IERC20(meme).transfer(_creator, MAX_REWARD * 1 / 100);
-        emit Reward(meme, MAX_REWARD * 4 / 100);
+        emit Reward(meme, MAX_REWARD * 3 / 100);
     }
 
     function setFactory(address _factory) external onlyOwner {
@@ -83,6 +83,6 @@ contract MemedStaking is Ownable {
     }
 
     function isRewardable(address meme) external view returns (bool) {
-        return IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 4 / 100);
+        return IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100;
     }
 }
