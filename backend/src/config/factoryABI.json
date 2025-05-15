@@ -225,7 +225,31 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_user",
+        "name": "_token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      }
+    ],
+    "name": "getByAddress",
+    "outputs": [
+      {
+        "internalType": "address[2]",
+        "name": "",
+        "type": "address[2]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_token",
         "type": "address"
       }
     ],
@@ -285,62 +309,6 @@
           }
         ],
         "internalType": "struct MemedFactory.TokenData[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_user",
-        "type": "address"
-      }
-    ],
-    "name": "getUserBattles",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "battleId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "memeA",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "memeB",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "startTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "endTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "resolved",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "winner",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct MemedBattle.Battle[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -507,7 +475,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_user",
+        "name": "_token",
         "type": "address"
       },
       {

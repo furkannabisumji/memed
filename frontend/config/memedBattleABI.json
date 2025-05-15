@@ -318,7 +318,7 @@
     "name": "startBattle",
     "outputs": [
       {
-        "internalType": "uint256", 
+        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
