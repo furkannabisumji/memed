@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const heatService = require('../services/heatService');
 const Token = require('../models/Token');
 
+
 /**
  * Update heat scores for all tokens
  */
@@ -17,6 +18,7 @@ async function updateAllHeatScores() {
       try {
         // Update heat from engagement
         await heatService.updateHeatFromEngagement(token.handle, true);
+        
         updatedCount++;
       } catch (error) {
         console.error(`Error updating heat for ${token.handle}:`, error);
@@ -26,6 +28,7 @@ async function updateAllHeatScores() {
     }
     
     console.log(`Heat score update completed. Updated ${updatedCount} tokens.`);
+    console.log(`Now sleeping for 3 minutes...`);
   } catch (error) {
     console.error('Error in heat score update:', error);
   }
@@ -35,8 +38,8 @@ async function updateAllHeatScores() {
  * Start the heat scheduler
  */
 function start() {
-  // Run every 5 minutes
-  cron.schedule('*/5 * * * *', async () => {
+  // Run every 3 minutes
+  cron.schedule('*/3 * * * *', async () => {
     console.log('Running heat score update scheduler...');
     await updateAllHeatScores();
   });
@@ -46,5 +49,5 @@ function start() {
 
 module.exports = {
   start,
-  updateAllHeatScores // Exported for testing purposes
+  updateAllHeatScores
 }; 

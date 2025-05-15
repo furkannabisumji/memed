@@ -1,5 +1,26 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_memedStaking",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_memedBattle",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_memedEngageToEarn",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -124,6 +145,45 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "MAX_ENGAGE_CREATOR_REWARD_PERCENTAGE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_ENGAGE_USER_REWARD_PERCENTAGE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REWARD_PER_ENGAGEMENT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -169,13 +229,6 @@
         "type": "address"
       }
     ],
-    "name": "follow",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "getTokens",
     "outputs": [
       {
@@ -216,9 +269,14 @@
             "type": "string"
           },
           {
-            "internalType": "address[]",
-            "name": "followers",
-            "type": "address[]"
+            "internalType": "uint256",
+            "name": "heat",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "lastRewardAt",
+            "type": "uint256"
           },
           {
             "internalType": "uint256",
@@ -235,11 +293,93 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "memedToken",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      }
+    ],
+    "name": "getUserBattles",
     "outputs": [
       {
-        "internalType": "contract MemedToken",
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "battleId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "memeA",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "memeB",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "startTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "endTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "resolved",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "winner",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct MemedBattle.Battle[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "memedBattle",
+    "outputs": [
+      {
+        "internalType": "contract MemedBattle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "memedEngageToEarn",
+    "outputs": [
+      {
+        "internalType": "contract MemedEngageToEarn",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "memedStaking",
+    "outputs": [
+      {
+        "internalType": "contract MemedStaking",
         "name": "",
         "type": "address"
       }
@@ -314,6 +454,16 @@
       },
       {
         "internalType": "uint256",
+        "name": "heat",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastRewardAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "createdAt",
         "type": "uint256"
       }
@@ -359,9 +509,19 @@
         "internalType": "address",
         "name": "_user",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_heat",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_minusHeat",
+        "type": "bool"
       }
     ],
-    "name": "unfollow",
+    "name": "updateHeat",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

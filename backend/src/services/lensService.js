@@ -108,6 +108,8 @@ async function getEngagementMetrics(handle, update) {
         authors: [evmAddress(account.address)]
       }
     });
+    console.log("engagementMetrics : ", engagementMetrics.value.items);
+
     let engagements = [];
     for (const post of engagementMetrics.value.items) {
       if(post.stats){
@@ -117,27 +119,60 @@ async function getEngagementMetrics(handle, update) {
         })
       }
     }
+
     const token = await Token.findOne({ handle });
     let newEngagement = 0;
+
+    // Define which metrics to count
+    const engagementMetricsToCount = [
+      'upvotes',
+      'reposts',
+      'bookmarks',
+      'collects',
+      'comments',
+      'quotes'
+    ];
+
     for (const engagement of engagements) {
       let post = await Post.findOne({ postId: engagement.postId });
+      
       if (!post) {
+        // For new posts, count the initial engagement
+        let initialEngagement = 0;
+        for (const metric of engagementMetricsToCount) {
+          initialEngagement += engagement.stats[metric] || 0;
+        }
+        newEngagement += initialEngagement;
+
+        // Store the post
         post = new Post({
           token: token._id,
           postId: engagement.postId,
           engagement: engagement.stats
         });
         await post.save();
-      }
-      await Promise.all(Object.keys(engagement.stats).map(async (key)=>{
-        if(post.engagement[key] && engagement.stats[key] && engagement.stats[key] > post.engagement[key]){
-          newEngagement += engagement.stats[key] - post.engagement[key];
-          if(update){
-            await Post.updateOne({ postId: engagement.postId }, { engagement: engagement.stats });
+      } else {
+        // Calculate engagement difference for existing posts
+        for (const metric of engagementMetricsToCount) {
+          const currentValue = engagement.stats[metric] || 0;
+          const storedValue = post.engagement[metric] || 0;
+          
+          if (currentValue > storedValue) {
+            newEngagement += currentValue - storedValue;
           }
         }
-      }));
+
+        // Update stored engagement if requested
+        if (update) {
+          await Post.updateOne(
+            { postId: engagement.postId },
+            { $set: { engagement: engagement.stats } }
+          );
+        }
+      }
     }
+
+    console.log("Total new engagement calculated:", newEngagement);
     return newEngagement;
   } catch (error) {
     console.error(`Error fetching engagement metrics for ${handle}:`, error);
