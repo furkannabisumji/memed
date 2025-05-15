@@ -24,17 +24,19 @@ contract MemedBattle is Ownable {
     event BattleResolved(uint256 battleId, address winner);
 
     function startBattle(address _memeB) external returns (uint256) {
-        MemedFactory.TokenData[] memory tokenDataA = MemedFactory(factory).getTokens(msg.sender);
-        address creatorA = tokenDataA[0].creator;
+        address[2] memory addresses = MemedFactory(factory).getByAddress(address(0),msg.sender);
+        address memeA = addresses[0];
+        address creatorA = addresses[1];
+        require(memeA != address(0), "MemeA is not minted");
         require(creatorA == msg.sender, "You are not the creator");
-        MemedFactory.TokenData[] memory tokenDataB = MemedFactory(factory).getTokens(_memeB);
-        address creatorB = tokenDataB[0].creator;
-        require(creatorB == _memeB, "MemeB is not the creator");
-        require(_memeB != msg.sender, "Cannot battle yourself");
+        address[2] memory addressesB = MemedFactory(factory).getByAddress(_memeB, address(0));
+        address memeB = addressesB[0];
+        require(memeB != address(0), "MemeB is not minted");
+        require(memeB != memeA, "Cannot battle yourself");
         Battle storage b = battles[battleCount];
         b.battleId = battleCount;
-        b.memeA = msg.sender;
-        b.memeB = _memeB;
+        b.memeA = memeA;
+        b.memeB = memeB;
         b.startTime = block.timestamp;
         b.endTime = block.timestamp + battleDuration;
         b.resolved = false;
