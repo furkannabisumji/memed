@@ -32,6 +32,7 @@ import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
+import CONTRACTS from "@/config/contracts";
 
 type RewardToken = {
   id: string;
@@ -446,7 +447,7 @@ export default function RewardsPage() {
       fetchRewards(1, activeTab as TabType, true);
     }
   }, [activeTab, address]);
-  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string
+
   const handleClaim = async ({ tokenAddress, amount, index, proof }: {
     tokenAddress: string, amount: string, index: number, proof: string[]
   }) => {
@@ -465,7 +466,7 @@ export default function RewardsPage() {
       const claimRewardArgs = {
         walletClient,
         userAddress: address,
-        contractAddress,
+        contractAddress:CONTRACTS.memedEngageToEarn,
         tokenAddress,
         amount,
         index,

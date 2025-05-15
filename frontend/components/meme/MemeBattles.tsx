@@ -7,6 +7,7 @@ import {
   XCircle,
   Filter,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,11 @@ import { useState } from "react";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import { Flame } from "lucide-react";
 import { RenderBattleCard } from "./RenderBattleCard";
+import { useMemes } from "@/hooks/useMemes";
+import { startBattle } from "@/utils/blockchainServices";
+import { useAccount, useWalletClient } from "wagmi";
+import { WalletClient } from "viem";
+import CONTRACTS from "@/config/contracts";
 
 // Mock data for potential opponents
 const potentialOpponents = [
@@ -178,13 +184,28 @@ const mockBattles = [
   },
 ];
 
+
 const MemeBattles = ({ profile }: { profile: any }) => {
+  const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
+  const [challengingMeme, setChallengingMeme] = useState<boolean>(false)
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
+  const {
+    memes,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useMemes({ initialLimit: 10, category: 'tokens' });
 
+  console.log("Profile Handle:", profile.creatorHandle)
+  const { data } = useWalletClient()
+
+  const walletClient = data as WalletClient;
   // Filter battles by status
   const ongoingBattles = mockBattles.filter(
     (battle) => battle.status === "ongoing"
@@ -192,29 +213,44 @@ const MemeBattles = ({ profile }: { profile: any }) => {
   const wonBattles = mockBattles.filter((battle) => battle.status === "won");
   const lostBattles = mockBattles.filter((battle) => battle.status === "lost");
 
+
   // Filter opponents based on search query
-  const filteredOpponents = potentialOpponents.filter(
-    (opponent) =>
-      opponent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      opponent.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredOpponents = memes.filter(
+    (meme) =>
+      meme.handle?.toLowerCase() === profile.creatorHandle
+  )
 
-  const handleChallenge = () => {
-    if (!selectedOpponent) {
-      toast.error("Select an opponent", {
-        description: "Please select a meme to challenge",
+  console.log("Filtered Opponenets: ", filteredOpponents)
+
+  const handleChallenge = async (memeBAddress: string) => {
+    try {
+      if (!selectedOpponent) {
+        toast.error("Select an opponent", {
+          description: "Please select a meme to challenge",
+        });
+        return;
+      }
+      setChallengingMeme(true)
+      // Challenge Meme
+      await startBattle({ walletClient, userAddress: address as `0x${string}`, contractAddress: CONTRACTS.memedBattle, memeBAddress })
+
+      toast.success("Challenge sent!", {
+        description: `You've challenged ${selectedOpponent.name} to a ${battleDuration}-hour battle`,
       });
-      return;
+
+      setIsModalOpen(false);
+      setSelectedOpponent(null);
+      setBattleDuration("24");
+      setSearchQuery("");
+    } catch (error: any) {
+      setChallengingMeme(false)
+      toast.error("Battle failed", {
+        description: error?.message || "Something went wrong",
+      });
+      console.log(error)
+    } finally {
+      setChallengingMeme(false)
     }
-
-    toast.success("Challenge sent!", {
-      description: `You've challenged ${selectedOpponent.name} to a ${battleDuration}-hour battle`,
-    });
-
-    setIsModalOpen(false);
-    setSelectedOpponent(null);
-    setBattleDuration("24");
-    setSearchQuery("");
   };
 
   return (
@@ -336,10 +372,9 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                 {filteredOpponents.length > 0 ? (
                   filteredOpponents.map((opponent) => (
                     <div
-                      key={opponent.id}
-                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
-                        selectedOpponent?.id === opponent.id ? "bg-gray-50" : ""
-                      }`}
+                      key={opponent._id}
+                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?.id === opponent._id ? "bg-gray-50" : ""
+                        }`}
                       onClick={() => setSelectedOpponent(opponent)}
                     >
                       <div className="flex items-center gap-3">
@@ -349,22 +384,22 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                             alt={opponent.name}
                           />
                           <AvatarFallback>
-                            {opponent.name.substring(0, 2)}
+                            {opponent.name?.substring(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">{opponent.name}</p>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Badge variant="outline">${opponent.symbol}</Badge>
+                            <Badge variant="outline">${opponent.ticker}</Badge>
                             <span>
-                              {opponent.followers.toLocaleString()} followers
+                              {opponent.followers?.toLocaleString()} followers
                             </span>
                           </div>
                         </div>
                       </div>
                       <Badge className="bg-amber-500 hover:bg-amber-500 flex items-center gap-1">
                         <Flame size={12} />
-                        {opponent.heatScore}
+                        100 {/* HeatScore Update */}
                       </Badge>
                     </div>
                   ))
@@ -402,19 +437,6 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                     <div className="flex items-center gap-2">
                       <Avatar>
                         <AvatarImage
-                          src={profile.profileImage}
-                          alt={profile.displayName}
-                        />
-                        <AvatarFallback>
-                          {profile.displayName.substring(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{profile.displayName}</span>
-                    </div>
-                    <ArrowRight size={16} className="text-gray-500" />
-                    <div className="flex items-center gap-2">
-                      <Avatar>
-                        <AvatarImage
                           src={selectedOpponent.image}
                           alt={selectedOpponent.name}
                         />
@@ -423,6 +445,22 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                         </AvatarFallback>
                       </Avatar>
                       <span>{selectedOpponent.name}</span>
+                    </div>
+                    
+
+                    <ArrowRight size={16} className="text-gray-500" />
+
+                    <div className="flex items-center gap-2">
+                      <Avatar>
+                        <AvatarImage
+                          src={profile.profileImage}
+                          alt={profile.displayName}
+                        />
+                        <AvatarFallback>
+                          {profile.displayName.substring(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{profile.displayName}</span>
                     </div>
                   </div>
                 </div>
@@ -435,10 +473,10 @@ const MemeBattles = ({ profile }: { profile: any }) => {
               </Button>
               <Button
                 className="bg-primary hover:bg-primary/90"
-                onClick={handleChallenge}
+                onClick={() => handleChallenge(profile.id)}
                 disabled={!selectedOpponent}
               >
-                Start Battle
+                {challengingMeme ? <Loader2 className="animate-spin" /> : 'Start Battle'}
               </Button>
             </DialogFooter>
           </DialogContent>
