@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCustomToast } from "@/components/ui/custom-toast";
 import { Flame } from "lucide-react";
 import { RenderBattleCard } from "./RenderBattleCard";
@@ -33,6 +33,8 @@ import { startBattle } from "@/utils/blockchainServices";
 import { useAccount, useWalletClient } from "wagmi";
 import { WalletClient } from "viem";
 import CONTRACTS from "@/config/contracts";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { chains } from "@lens-chain/sdk/viem";
 
 // Mock data for potential opponents
 const potentialOpponents = [
@@ -193,6 +195,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false)
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
+  const { chain, switchToChain } = useChainSwitch()
   const {
     memes,
     fetchNextPage,
@@ -201,6 +204,13 @@ const MemeBattles = ({ profile }: { profile: any }) => {
     isLoading,
     error,
   } = useMemes({ initialLimit: 10, category: 'tokens' });
+
+  //check chain
+  useEffect(() => {
+    if (chain?.id !== chains.testnet.id) {
+      switchToChain();
+    }
+  }, [chain, switchToChain]);
 
   console.log("Profile Handle:", profile.creatorHandle)
   const { data } = useWalletClient()
@@ -231,8 +241,9 @@ const MemeBattles = ({ profile }: { profile: any }) => {
         return;
       }
       setChallengingMeme(true)
+  
       // Challenge Meme
-      await startBattle({ walletClient, userAddress: address as `0x${string}`, contractAddress: CONTRACTS.memedBattle, memeBAddress })
+      await startBattle({ userAddress: address as `0x${string}`, contractAddress: CONTRACTS.memedBattle, memeBAddress })
 
       toast.success("Challenge sent!", {
         description: `You've challenged ${selectedOpponent.name} to a ${battleDuration}-hour battle`,
@@ -446,7 +457,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                       </Avatar>
                       <span>{selectedOpponent.name}</span>
                     </div>
-                    
+
 
                     <ArrowRight size={16} className="text-gray-500" />
 

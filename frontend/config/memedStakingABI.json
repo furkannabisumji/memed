@@ -114,7 +114,7 @@
   },
   {
     "inputs": [],
-    "name": "HEAT_PER_TOKEN",
+    "name": "MAX_REWARD",
     "outputs": [
       {
         "internalType": "uint256",
@@ -127,7 +127,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_REWARD",
+    "name": "TOKENS_PER_HEAT",
     "outputs": [
       {
         "internalType": "uint256",
@@ -338,6 +338,11 @@
         "internalType": "address",
         "name": "meme",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
     "name": "unstake",

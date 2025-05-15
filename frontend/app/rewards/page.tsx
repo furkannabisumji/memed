@@ -464,13 +464,12 @@ export default function RewardsPage() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const claimRewardArgs = {
-        walletClient,
-        userAddress: address,
-        contractAddress:CONTRACTS.memedEngageToEarn,
-        tokenAddress,
+        userAddress: address as `0x${string}`,
+        contractAddress:CONTRACTS.memedEngageToEarn as `0x${string}`,
+        tokenAddress:tokenAddress as `0x${string}`,
         amount,
         index,
-        proof
+        proof:proof as `0x${string}`[]
       }
       // On chain transaction
       const tx = await claimReward(claimRewardArgs)
