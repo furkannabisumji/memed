@@ -2,10 +2,11 @@
 import { ClaimProof } from '@/app/types';
 import axiosInstance from '@/lib/axios';
 import { useQuery } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 
 
 export function useClaimData(userAddress: string | undefined) {
-    return useQuery<ClaimProof[] | null, Error>({
+    return useQuery<ClaimProof[] | null, AxiosError>({
         queryKey: ['claim-data', userAddress],
         queryFn: async () => {
             if (!userAddress) return null;
@@ -14,16 +15,15 @@ export function useClaimData(userAddress: string | undefined) {
                 const res = await axiosInstance.get(`/api/claims/${userAddress}`);
                 return res.data.proofs;
             } catch (error: any) {
-                // Optional: You can log or transform the error before throwing
+                const axiosErr = error as AxiosError<{ error?: string }>;
                 const message =
-                    error.response?.data?.error ||
-                    error.message ||
-                    'Failed to fetch claim data';
+                    axiosErr?.response?.data?.error || axiosErr?.message || "Failed to fetch Claims";
 
-                console.log("Error:", message)
+                
                 throw new Error(message);
             }
         },
         enabled: !!userAddress,
     });
 }
+

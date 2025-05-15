@@ -37,7 +37,7 @@ export const useMemes = ({
       // Log the full URL being requested for debugging
       const url = new URL(
         "/api/tokens",
-        process.env.NEXT_PUBLIC_BASE_URL || window.location.origin
+        process.env.NEXT_PUBLIC_BACKEND_URL || window.location.origin
       );
       url.searchParams.append("page", pageParam.toString());
       url.searchParams.append("limit", limit.toString());

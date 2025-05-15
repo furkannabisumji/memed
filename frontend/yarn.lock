@@ -1761,17 +1761,29 @@
     postcss "^8.4.41"
     tailwindcss "4.1.5"
 
-"@tanstack/query-core@5.75.5":
-  version "5.75.5"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.75.5.tgz#198c27c21b5d15aad09167af8a021f214e194d4b"
-  integrity sha512-kPDOxtoMn2Ycycb76Givx2fi+2pzo98F9ifHL/NFiahEDpDwSVW6o12PRuQ0lQnBOunhRG5etatAhQij91M3MQ==
+"@tanstack/query-core@5.76.0":
+  version "5.76.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.76.0.tgz#3b4d5d34ce307ba0cf7d1a3e90d7adcdc6c46be0"
+  integrity sha512-FN375hb8ctzfNAlex5gHI6+WDXTNpe0nbxp/d2YJtnP+IBM6OUm7zcaoCW6T63BawGOYZBbKC0iPvr41TteNVg==
 
-"@tanstack/react-query@^5.75.4":
-  version "5.75.5"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.75.5.tgz#650a6b58c7bcd4c33062426e05c4467571148a4f"
-  integrity sha512-QrLCJe40BgBVlWdAdf2ZEVJ0cISOuEy/HKupId1aTKU6gPJZVhSvZpH+Si7csRflCJphzlQ77Yx6gUxGW9o0XQ==
+"@tanstack/query-devtools@5.76.0":
+  version "5.76.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.76.0.tgz#ba43754ed8d23a265ed72f17de618fa9f9c7649d"
+  integrity sha512-1p92nqOBPYVqVDU0Ua5nzHenC6EGZNrLnB2OZphYw8CNA1exuvI97FVgIKON7Uug3uQqvH/QY8suUKpQo8qHNQ==
+
+"@tanstack/react-query-devtools@^5.76.1":
+  version "5.76.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.76.1.tgz#20157a5880df5fd4d4fe8fd4fca2c8663d8dfa3e"
+  integrity sha512-LFVWgk/VtXPkerNLfYIeuGHh0Aim/k9PFGA+JxLdRaUiroQ4j4eoEqBrUpQ1Pd/KXoG4AB9vVE/M6PUQ9vwxBQ==
   dependencies:
-    "@tanstack/query-core" "5.75.5"
+    "@tanstack/query-devtools" "5.76.0"
+
+"@tanstack/react-query@^5.75.6":
+  version "5.76.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.76.1.tgz#ac8a19f99dfec1452a44fe22d46680c396c21152"
+  integrity sha512-YxdLZVGN4QkT5YT1HKZQWiIlcgauIXEIsMOTSjvyD5wLYK8YVvKZUPAysMqossFJJfDpJW3pFn7WNZuPOqq+fw==
+  dependencies:
+    "@tanstack/query-core" "5.76.0"
 
 "@tybys/wasm-util@^0.9.0":
   version "0.9.0"
