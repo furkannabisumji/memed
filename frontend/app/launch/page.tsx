@@ -252,7 +252,12 @@ export default function LaunchPage() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {step === 1 && <ConnectProfile setStep={setStep} />}
+              {step === 1 && (
+                <ConnectProfile
+                  setStep={setStep}
+                  selectedAccount={selectedAccount}
+                />
+              )}
               {step === 2 && (
                 <CreateMemeForm
                   memeImage={memeImage}

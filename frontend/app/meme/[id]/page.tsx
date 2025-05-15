@@ -263,7 +263,7 @@ export default function MemeViewPage() {
                   </div>
 
                   <div className="flex gap-2 mt-4 md:mt-0">
-                    {profile.isOwner ? (
+                    {/* {profile.isOwner ? (
                       <Button
                         variant="outline"
                         className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
@@ -290,7 +290,7 @@ export default function MemeViewPage() {
                           <Lock size={14} className="ml-1" />
                         )}
                       </Button>
-                    )}
+                    )} */}
 
                     <Button
                       variant="outline"
@@ -346,10 +346,8 @@ export default function MemeViewPage() {
 
                 {/* Engagement Actions */}
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
+                  <div
+                    className="gap-2 flex items-center"
                     onClick={() => handleEngagement("like")}
                   >
                     <ThumbsUp size={16} />
@@ -357,20 +355,18 @@ export default function MemeViewPage() {
                     <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
                       +{memeToken.likesCount}
                     </Badge>
-                  </Button>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
-                    onClick={() => handleEngagement("comment")}
+                  <div
+                    className="gap-2 flex items-center"
+                    // onClick={() => handleEngagement("comment")}
                   >
                     <MessageCircle size={16} />
                     Comment
                     <Badge className="ml-1 bg-primary hover:bg-primary text-white text-xs">
                       +{engagementReward}
                     </Badge>
-                  </Button>
+                  </div>
 
                   {/* Comment Modal */}
                   <Dialog
@@ -387,9 +383,8 @@ export default function MemeViewPage() {
                   </Dialog>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="gap-2 border-2 border-black hover:bg-black hover:text-white cursor-pointer"
-                    onClick={() => handleEngagement("mirror")}
+                    className="gap-2 flex items-center "
+                    // onClick={() => handleEngagement("mirror")}
                   >
                     <Repeat size={16} />
                     Mirror

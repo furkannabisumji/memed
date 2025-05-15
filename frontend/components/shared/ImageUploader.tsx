@@ -8,9 +8,14 @@ import { useCustomToast } from "../ui/custom-toast";
 interface ImageUploaderProps {
   image: string | null;
   setImage: (image: string | null) => void;
+  setImageProcessing?: (processing: boolean) => void;
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({
+  image,
+  setImage,
+  setImageProcessing,
+}) => {
   const [loading, setLoading] = useState(false);
   const toast = useCustomToast();
   const [dragActive, setDragActive] = useState(false);
@@ -18,6 +23,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
   const uploadToLighthouse = async (file: File) => {
     // Reset any previous state
     setLoading(true);
+    setImageProcessing?.(true);
 
     // Dismiss any existing toasts first
     toast.dismissAll();
@@ -58,6 +64,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
       });
     } finally {
       setLoading(false);
+      setImageProcessing?.(false);
     }
   };
 
