@@ -96,7 +96,7 @@ contract MemedFactory is Ownable {
 
     function updateHeat(address _token, uint256 _heat, bool _minusHeat) public {
         require(msg.sender == address(memedStaking) || msg.sender == address(memedBattle) || msg.sender == owner(), "unauthorized");
-        string memory lensUsername = getByAddress(_token);
+        string memory lensUsername = getByToken(_token);
         address creator = tokenData[lensUsername].creator;
         require(tokenData[lensUsername].token != address(0), "not minted");
         require(!_minusHeat || (msg.sender == address(memedStaking)), "Only staking can minus heat");
@@ -109,7 +109,7 @@ contract MemedFactory is Ownable {
         for(uint i = 0; i < battles.length; i++) {
             address opponent = battles[i].memeA == _token ? battles[i].memeB : battles[i].memeA;
             if(block.timestamp > battles[i].endTime && !battles[i].resolved) {
-                address winner = tokenData[getByAddress(opponent)].heat > tokenData[lensUsername].heat ? opponent : _token;
+                address winner = tokenData[getByToken(opponent)].heat > tokenData[lensUsername].heat ? opponent : _token;
                 memedBattle.resolveBattle(battles[i].battleId, winner);
                 if(memedStaking.isRewardable(_token)) {
                     memedStaking.reward(_token, creator);
@@ -125,7 +125,7 @@ contract MemedFactory is Ownable {
         }
     }
 
-    function getByAddress(address _token) internal view returns (string memory) {
+    function getByToken(address _token) internal view returns (string memory) {
         string memory lensUsername;
         for (uint i = 0; i < tokens.length; i++) {
             if (tokenData[tokens[i]].token == _token) {
@@ -136,6 +136,27 @@ contract MemedFactory is Ownable {
         return lensUsername;
     }
 
+    function getByAddress(address _token, address _creator) public view returns (address[2] memory) {
+        address token;
+        address creator;
+        if(_token == address(0)) {
+            for (uint i = 0; i < tokens.length; i++) {
+                if (tokenData[tokens[i]].creator == _creator) {
+                    token = tokenData[tokens[i]].token;
+                    creator = _creator;
+                }
+            }
+        } else {
+            for (uint i = 0; i < tokens.length; i++) {
+                if (tokenData[tokens[i]].token == _token) {
+                    token = tokenData[tokens[i]].token;
+                    creator = _token;
+                }
+            }
+        }
+        return [token, creator];
+    }
+
     function getTokens(address _token) external view returns (TokenData[] memory) {
         uint length = address(0) == _token ? tokens.length : 1;
         TokenData[] memory result = new TokenData[](length);
@@ -144,7 +165,7 @@ contract MemedFactory is Ownable {
                 result[i] = tokenData[tokens[i]];
             }
         } else {
-            result[0] = tokenData[getByAddress(_token)];
+            result[0] = tokenData[getByToken(_token)];
         }
         return result;
     }
