@@ -63,11 +63,6 @@ export function AccountButton({ className }: AccountButtonProps) {
       // Get the accounts from the store
       const storeAccounts = accountsStore;
 
-          // Only redirect to accounts page if user has no accounts and we're not already on the accounts page
-      if (storeAccounts.length === 0 && !window.location.pathname.startsWith('/accounts')) {
-        router.push("/accounts");
-      }
-
       // Create a format compatible with the existing component
       const accountsFormat = {
         items: storeAccounts.map((acc) => ({ account: acc.account })),
@@ -75,6 +70,14 @@ export function AccountButton({ className }: AccountButtonProps) {
 
       // Only update local state if needed for UI purposes
       setAccountsAvailable({ accountsAvailable: accountsFormat });
+
+      // Only redirect to accounts page if user has no accounts, we're not already on the accounts page,
+      // and we're not in a loading state
+      // if (storeAccounts.length === 0 &&
+      //     !window.location.pathname.startsWith('/accounts') &&
+      //     !isLoadingStore) {
+      //   router.push("/accounts");
+      // }
     } catch (error) {
       console.error("Error fetching accounts:", error);
       if (!accountsAvailable) {
@@ -108,10 +111,6 @@ export function AccountButton({ className }: AccountButtonProps) {
 
   useEffect(() => {
     if (!initialSelectionMadeRef.current && !selectedAccount && firstAccount) {
-      console.log(
-        "AccountButton making initial account selection:",
-        firstAccount
-      );
       setSelectedAccount(firstAccount);
       initialSelectionMadeRef.current = true;
     }
