@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const heatService = require('../services/heatService');
 const Token = require('../models/Token');
 
+
 /**
  * Update heat scores for all tokens
  */
@@ -17,6 +18,7 @@ async function updateAllHeatScores() {
       try {
         // Update heat from engagement
         await heatService.updateHeatFromEngagement(token.handle, true);
+        
         updatedCount++;
       } catch (error) {
         console.error(`Error updating heat for ${token.handle}:`, error);
