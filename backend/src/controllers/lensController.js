@@ -464,6 +464,36 @@ const addRewardsForUser = async (req, res, next) => {
   }
 };
 
+/**
+ * Get aggregated engagement metrics for a handle
+ */
+const getAggregatedEngagementMetrics = async (req, res, next) => {
+  try {
+    const { handle } = req.params;
+    const metrics = await lensService.getAggregatedEngagementMetrics(handle);
+    console.log({metrics});
+
+    if (!metrics) {
+      return res.status(200).json({
+        upvotes: 0,
+        reposts: 0,
+        bookmarks: 0,
+        collects: 0,
+        comments: 0,
+        quotes: 0
+      });
+    }
+    
+    res.json(metrics.metrics);
+  } catch (error) {
+    console.error('Error fetching aggregated engagement metrics:', error);
+    if (error.message === 'No engagement metrics found for this handle') {
+      return res.status(404).json({ error: 'No engagement metrics found for this handle' });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   getFollowerStats,
   getEngagementMetrics,
@@ -472,5 +502,6 @@ module.exports = {
   distributeRewards,
   generateClaimData,
   recordClaim,
-  addRewardsForUser
+  addRewardsForUser,
+  getAggregatedEngagementMetrics
 }; 

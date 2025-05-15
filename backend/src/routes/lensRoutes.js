@@ -6,7 +6,11 @@ const router = express.Router();
 // GET follower statistics for a Lens handle
 router.get("/followers/:handle", lensController.getFollowerStats);
 
+// GET engagement metrics for a handle
 router.get("/engagement/:handle", lensController.getEngagementMetrics);
+
+// GET aggregated engagement metrics for a handle
+router.get("/engagement/aggregated/:handle", lensController.getAggregatedEngagementMetrics);
 
 router.get("/getMintableCheck/:handle", lensController.getMintableCheck);
 
