@@ -10,9 +10,26 @@ const AirdropSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['initial', 'engagement'],
+    required: true
+  },
   merkleRoot: {
     type: String,
+    required: false
+  },
+  limit: {
+    type: Number,
     required: true
+  },
+  maxAmount: {
+    type: String,
+    required: true
+  },
+  processed: {
+    type: Boolean,
+    default: false
   },
   timestamp: {
     type: Date,
