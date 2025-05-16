@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const { distributeEngagementRewards } = require('../controllers/lensController');
 
 // Run every day at midnight
-const dailyJob = cron.schedule('0 0 * * *', async () => {
+const dailyJob = cron.schedule('0 * * * *', async () => {
   console.log('Running engagement rewards distribution...');
   try {
     await distributeEngagementRewards();

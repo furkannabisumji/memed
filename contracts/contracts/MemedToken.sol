@@ -15,6 +15,6 @@ contract MemedToken is ERC20, Ownable {
     ) ERC20(_name, _ticker) Ownable() {
         _mint(staking, (MAX_SUPPLY * 58) / 100);
         _mint(engageToEarn, (MAX_SUPPLY * 40) / 100);
-        _mint(_creator, (MAX_SUPPLY * 2) / 100);
+        _mint(_creator, 12_000_000 * 1e18);
     }
 }

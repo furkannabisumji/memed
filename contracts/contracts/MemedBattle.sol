@@ -47,6 +47,7 @@ contract MemedBattle is Ownable {
 
     function resolveBattle(uint256 _battleId, address _winner) external {
         Battle storage b = battles[_battleId];
+        require(b.memeA != address(0) && b.memeB != address(0), "Invalid battle");
         require(block.timestamp >= b.endTime, "Battle not ended");
         require(!b.resolved, "Already resolved");
         require(msg.sender == factory, "Unauthorized");
@@ -70,11 +71,11 @@ contract MemedBattle is Ownable {
         return battlesArray;
     }
 
-    function getUserBattles(address _user) external view returns (Battle[] memory) {
+    function getUserBattles(address _token) external view returns (Battle[] memory) {
         Battle[] memory battlesArray = new Battle[](battleCount);
         uint256 count = 0;
         for (uint256 i = 0; i < battleCount; i++) {
-            if(battles[i].memeA == _user || battles[i].memeB == _user) {
+            if(battles[i].memeA == _token || battles[i].memeB == _token) {
                 battlesArray[count] = battles[i];
                 count++;
             }

@@ -11,8 +11,8 @@ contract MemedEngageToEarn is Ownable {
         uint256 timestamp;
     }
     uint256 public constant MAX_REWARD = 400_000_000 * 1e18;
-    uint256 public constant MAX_ENGAGE_USER_REWARD_PERCENTAGE = 2;
-    uint256 public constant MAX_ENGAGE_CREATOR_REWARD_PERCENTAGE = 1;   
+    uint256 public constant MAX_ENGAGE_USER_REWARD = (MAX_REWARD * 2) / 100;
+    uint256 public constant MAX_ENGAGE_CREATOR_REWARD = (MAX_REWARD * 1) / 100;
     address public factory;
 
     mapping(address => mapping(uint256 => Engagement)) public engagements;
@@ -53,17 +53,15 @@ contract MemedEngageToEarn is Ownable {
 }
 
 function reward(address token, address _creator) external {
-    require(IERC20(token).balanceOf(msg.sender) >= unlokedAmount[token], "Not enough tokens");
     require(msg.sender == factory, "unauthorized");
-    uint256 userAmount = MAX_REWARD * MAX_ENGAGE_USER_REWARD_PERCENTAGE / 100;
-    uint256 creatorAmount = MAX_REWARD * MAX_ENGAGE_CREATOR_REWARD_PERCENTAGE / 100;
-    IERC20(token).transfer(_creator, creatorAmount);
-    unlokedAmount[token] += userAmount;
-    emit Reward(token, userAmount, creatorAmount);
+    require(IERC20(token).balanceOf(address(this)) >= (MAX_ENGAGE_USER_REWARD + MAX_ENGAGE_CREATOR_REWARD), "Not enough tokens");
+    IERC20(token).transfer(_creator, MAX_ENGAGE_CREATOR_REWARD);
+    unlokedAmount[token] += MAX_ENGAGE_USER_REWARD;
+    emit Reward(token, MAX_ENGAGE_USER_REWARD, MAX_ENGAGE_CREATOR_REWARD);
 }   
 
 function isRewardable(address token) external view returns (bool) {
-    return IERC20(token).balanceOf(address(this)) >= (MAX_REWARD * 3 / 100);
+    return IERC20(token).balanceOf(address(this)) >= (MAX_ENGAGE_USER_REWARD + MAX_ENGAGE_CREATOR_REWARD);
 }
 
 function setFactory(address _factory) external onlyOwner {

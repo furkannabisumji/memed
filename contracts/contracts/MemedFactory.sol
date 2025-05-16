@@ -82,6 +82,7 @@ contract MemedFactory is Ownable {
             createdAt: block.timestamp
         });
         tokens.push(_lensUsername);
+        memedEngageToEarn.reward(address(memedToken), _creator);
         emit TokenCreated(
             address(memedToken),
             _creator,
@@ -107,6 +108,9 @@ contract MemedFactory is Ownable {
         }
         MemedBattle.Battle[] memory battles = memedBattle.getUserBattles(_token);
         for(uint i = 0; i < battles.length; i++) {
+            if(battles[i].memeA == address(0) || battles[i].memeB == address(0)) {
+                continue;
+            }
             address opponent = battles[i].memeA == _token ? battles[i].memeB : battles[i].memeA;
             if(block.timestamp > battles[i].endTime && !battles[i].resolved) {
                 address winner = tokenData[getByToken(opponent)].heat > tokenData[lensUsername].heat ? opponent : _token;
@@ -150,7 +154,7 @@ contract MemedFactory is Ownable {
             for (uint i = 0; i < tokens.length; i++) {
                 if (tokenData[tokens[i]].token == _token) {
                     token = tokenData[tokens[i]].token;
-                    creator = _token;
+                    creator = _creator;
                 }
             }
         }

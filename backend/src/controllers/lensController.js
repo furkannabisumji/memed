@@ -131,25 +131,8 @@ const mintMemeCoins = async (req, res, next) => {
           },
           { upsert: true }
         );
-        const lastAirdrop = await Airdrop.findOne().sort({ index: -1 }).limit(1);
-        const index = lastAirdrop ? lastAirdrop.index + 1 : 0;
-        
-        // After successful minting, distribute initial rewards to random followers
-        const distributed = new Airdrop({
-          tokenAddress,
-          handle,
-          index,
-          merkleRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
-          limit: 5,
-          type: 'initial',
-          maxAmount: '100',
-          processed: false,
-          timestamp: Date.now()
-        });
-        await distributed.save();
-        
         return res.status(200).json({ 
-          message: 'Meme created successfully and initial rewards distributed', 
+          message: 'Meme created successfully', 
           tx: tx.hash,
           tokenAddress
         });
@@ -171,15 +154,16 @@ const mintMemeCoins = async (req, res, next) => {
 
 /**
  * Distribute rewards to random followers after token minting or engagement
- * @param {string} airdropId - ID of the airdrop
- * @param {string} tokenAddress - Address of the token
  */
-async function distributeRewards(airdropId) {
+async function distributeRewards() {
   try {
-    const airdrop = await Airdrop.findById(airdropId, { processed: false });
-    if (!airdrop) {
-      return res.status(404).json({ error: 'Airdrop not found' });
+    const airdrops = await Airdrop.find({ processed: false });
+    if (airdrop.length === 0) {
+      console.log('No unprocessed airdrops found');
+      return;
     }
+    console.log(`Processing ${airdrops.length} unprocessed airdrops`);
+    for (const airdrop of airdrops) {
     const { handle, tokenAddress, limit, index, maxAmount } = airdrop;
     console.log(`Distributing rewards for ${handle} with token ${tokenAddress}`);
     
@@ -233,11 +217,12 @@ async function distributeRewards(airdropId) {
         }
       }
       
-      console.log(`Initial rewards distributed to ${selectedFollowers.length} followers of ${handle}`);
+      console.log(`Rewards distributed to ${selectedFollowers.length} followers of ${handle}`);
       return selectedFollowers.length;
     } else {
       console.log(`Not enough followers for ${handle}, skipping initial rewards distribution`);
       return 0;
+    }
     }
   } catch (error) {
     console.error('Error distributing initial rewards:', error);
