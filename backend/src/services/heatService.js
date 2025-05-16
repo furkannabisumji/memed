@@ -20,8 +20,7 @@ async function updateHeatFromEngagement(handle, update = false) {
 
     // Get new engagement metrics
     const newEngagement = await lensService.getEngagementMetrics(handle, update);
-
-    console.log({newEngagement});
+    console.log({newEngagement,handle});
     
     // Calculate heat from engagement
     const heatFromEngagement = newEngagement * HEAT_PER_ENGAGEMENT;
@@ -29,7 +28,7 @@ async function updateHeatFromEngagement(handle, update = false) {
     // Update heat on contract
     if(heatFromEngagement > 0){
       await factory_contract.updateHeat(token.tokenAddress, heatFromEngagement, false);
-      console.log("Updated heat on contract:", process.env.FACTORY_CONTRACT_ADDRESS);
+      console.log("Updated heat on contract");
     }
     
     return heatFromEngagement;

@@ -60,7 +60,6 @@ async function getFollowers(handle) {
     const followers = await fetchFollowers(client, {
       account: evmAddress(account.address),
     });
-    console.log(followers.value.items[0]);
     return followers.value.items;
     // For now, let's return 100 mock addresses for testing
     // return Array.from({ length: 100 }, () => {
@@ -90,10 +89,28 @@ for (const address of holder) {
 return holderWithLens;
 }
 /**
+ * mock stats
+ */
+function mockStats() {
+  function randomInt() {
+    return Math.floor(Math.random() * (100000 - 75000 + 1)) + 75000;
+    
+  }
+    return {
+        upvotes: randomInt(),
+        reposts: randomInt(),
+        bookmarks: randomInt(),
+        collects: randomInt(),
+        comments: randomInt(),
+        quotes: randomInt()
+      };
+}
+/**
  * Get engagement metrics for a handle
  */
 async function getEngagementMetrics(handle, update) {
   try {
+    const mock = false;
     const { value: account } = await fetchAccount(client, {
       username: {
         localName: handle,
@@ -109,14 +126,13 @@ async function getEngagementMetrics(handle, update) {
         authors: [evmAddress(account.address)]
       }
     });
-    console.log("engagementMetrics : ", engagementMetrics.value.items);
 
     let engagements = [];
     for (const post of engagementMetrics.value.items) {
       if(post.stats){
         engagements.push({
             postId: post.id,
-            stats: post.stats
+            stats: mock ? mockStats() : post.stats
         })
       }
     }
@@ -231,7 +247,6 @@ async function getEngagementMetrics(handle, update) {
 async function getAggregatedEngagementMetrics(handle) {
   try {
     const metrics = await EngagementMetrics.findOne({ handle });
-    console.log({metrics});
     return metrics;
   } catch (error) {
     console.error(`Error fetching aggregated engagement metrics for ${handle}:`, error);

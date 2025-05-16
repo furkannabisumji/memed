@@ -95,7 +95,7 @@
     },
     {
       "inputs": [],
-      "name": "MAX_ENGAGE_CREATOR_REWARD_PERCENTAGE",
+      "name": "MAX_ENGAGE_CREATOR_REWARD",
       "outputs": [
         {
           "internalType": "uint256",
@@ -108,7 +108,7 @@
     },
     {
       "inputs": [],
-      "name": "MAX_ENGAGE_USER_REWARD_PERCENTAGE",
+      "name": "MAX_ENGAGE_USER_REWARD",
       "outputs": [
         {
           "internalType": "uint256",

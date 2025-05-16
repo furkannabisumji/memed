@@ -64,7 +64,7 @@ contract MemedStaking is Ownable {
     }
 
     function reward(address meme, address _creator) external {
-        require(IERC20(meme).balanceOf(msg.sender) >= (MAX_REWARD * 3) / 100, "Not enough tokens");
+        require(IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100, "Not enough tokens");
         require(msg.sender == address(factory), "unauthorized");
         for(uint i = 0; i < stakers.length; i++) {
             address user = stakers[i];

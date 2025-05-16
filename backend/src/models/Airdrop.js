@@ -24,7 +24,7 @@ const AirdropSchema = new mongoose.Schema({
     required: true
   },
   maxAmount: {
-    type: String,
+    type: Number,
     required: true
   },
   processed: {
