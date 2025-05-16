@@ -31,7 +31,6 @@ const tenderlyWebhook = async (req, res) => {
             // Process logs if available
             if (transaction.logs && transaction.logs.length > 0) {
                 const contractInterface = ethers.Interface.from(airdropABI);
-                console.log({logs: transaction.logs.length});
                 let airdrop;
                 for (let i = 0; i < transaction.logs.length; i++) {
                     const decodedLog = contractInterface.parseLog(transaction.logs[i]);
@@ -45,11 +44,10 @@ const tenderlyWebhook = async (req, res) => {
                     const tokenData = await Token.findOne({ tokenAddress: token });
 
                     const lastAirdrop = await Airdrop.findOne().sort({ index: -1 }).limit(1);
-                const tokenAirdrops = await Airdrop.find({ tokenAddress: tokenData.tokenAddress });
+                const tokenAirdrops = await Airdrop.find({ token: tokenData._id });
                 const index = lastAirdrop ? lastAirdrop.index + 1 : 0;
                 const distributed = new Airdrop({
-                    tokenAddress: tokenData.tokenAddress,
-                    handle: tokenData.handle,
+                    token: tokenData._id,
                     index,
                     merkleRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
                     limit: 5000,

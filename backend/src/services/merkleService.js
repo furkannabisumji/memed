@@ -6,79 +6,22 @@ const Airdrop = require('../models/Airdrop');
 
 /**
  * Generate a Merkle tree from all pending rewards for a specific token and airdrop round
- */
-async function generateMerkleTree(tokenAddress, index) {
-  console.log('Generating Merkle tree for:', {
-    tokenAddress,
-    index
-  });
+ */async function generateMerkleTree(selectedFollowers) {
+  console.log({ selectedFollowers });
 
-  // Get all unclaimed rewards for this token with case-insensitive matching
-  const rewards = await Reward.find({ 
-    tokenAddress: { $regex: new RegExp(`^${tokenAddress}$`, 'i') },
-    airdropIndex: index,
-    claimed: false
-  });
-
-  console.log('Rewards found for tree generation:', rewards);
-  
-  // Group rewards by user address and calculate total amounts
-  const rewardsByUser = {};
-  
-  for (const reward of rewards) {
-    const userAddress = reward.userAddress.toLowerCase(); // Normalize address
-    if (!rewardsByUser[userAddress]) {
-      rewardsByUser[userAddress] = ethers.getBigInt(0);
-    }
-    rewardsByUser[userAddress] = rewardsByUser[userAddress] + 
-      ethers.getBigInt(reward.amount);
-  }
-
-  console.log('Grouped rewards by user:', rewardsByUser);
-  
-  // Create leaves for the Merkle tree
-  const leaves = Object.entries(rewardsByUser).map(([address, amount]) => {
-    console.log('Creating leaf for:', {
-      tokenAddress,
-      userAddress: address,
-      amount: amount.toString(),
-      index
-    });
-    
-    const leaf = ethers.keccak256(
-      ethers.solidityPacked(
-        ['address', 'address', 'uint256', 'uint256'],
-        [tokenAddress, address, amount.toString(), index]
-      )
-    );
-    console.log('Generated leaf:', leaf);
-    return leaf;
-  });
-  
-  // Create and return the Merkle tree
-  const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
-  const root = tree.getHexRoot();
-  
-  console.log('Merkle tree generated:', {
-    leavesCount: leaves.length,
-    root
-  });
-
-  // Save the root to database
-  await Airdrop.findOneAndUpdate(
-    { tokenAddress, index },
-    {
-      tokenAddress,
-      index,
-      merkleRoot: root,
-      timestamp: Date.now()
-    },
-    { upsert: true }
+  const leaves = selectedFollowers.map(({ address, amount }) =>
+    keccak256(address.toLowerCase() + amount)
   );
 
-  return { tree, root, leaves };
-}
+  const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
 
+  const root = tree.getHexRoot();
+  const proofs = leaves.map(leaf => tree.getHexProof(leaf));
+
+  console.log({ proofs, root });
+
+  return { tree, root, proofs };
+}
 /**
  * Generate a proof for a specific user claim
  * 

@@ -6,16 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MemedEngageToEarn is Ownable {
-    struct Engagement {
-        bytes32 merkleRoot;
-        uint256 timestamp;
-    }
     uint256 public constant MAX_REWARD = 400_000_000 * 1e18;
     uint256 public constant MAX_ENGAGE_USER_REWARD = (MAX_REWARD * 2) / 100;
     uint256 public constant MAX_ENGAGE_CREATOR_REWARD = (MAX_REWARD * 1) / 100;
     address public factory;
 
-    mapping(address => mapping(uint256 => Engagement)) public engagements;
+    mapping(address => mapping(uint256 => bytes32)) public engagements;
     mapping(address => uint256) public unlokedAmount;
     mapping(bytes32 => bool) public claimed;
 
@@ -29,7 +25,7 @@ contract MemedEngageToEarn is Ownable {
         bytes32[] calldata proof
     ) external {
         bytes32 leaf = keccak256(abi.encodePacked(token, msg.sender, amount, index));
-        require(MerkleProof.verify(proof, engagements[token][index].merkleRoot, leaf), "Invalid proof");
+        require(MerkleProof.verify(proof, engagements[token][index], leaf), "Invalid proof");
         require(!claimed[leaf], "Already claimed");
         require(unlokedAmount[token] >= amount, "Not enough tokens");
 
@@ -40,15 +36,13 @@ contract MemedEngageToEarn is Ownable {
     }
 
  function setMerkleRoot(address token, uint256 index, bytes32 root) external onlyOwner {
-    require(engagements[token][index].merkleRoot == bytes32(0), "Already set");
+    require(engagements[token][index] == bytes32(0), "Already set");
 
     if (index > 0) {
-        require(engagements[token][index - 1].merkleRoot != bytes32(0), "Previous index not set");
-        require(engagements[token][index - 1].timestamp + 24 hours < block.timestamp, "Too soon to set");
+        require(engagements[token][index - 1] != bytes32(0), "Previous index not set");
     }
 
-    engagements[token][index].merkleRoot = root;
-    engagements[token][index].timestamp = block.timestamp;
+    engagements[token][index] = root;
     emit SetMerkleRoot(token, index, root);
 }
 

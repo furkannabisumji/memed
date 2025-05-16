@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 
 const AirdropSchema = new mongoose.Schema({
-  tokenAddress: {
-    type: String,
+  token: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Token',
     required: true,
     index: true
   },
@@ -38,6 +39,6 @@ const AirdropSchema = new mongoose.Schema({
 });
 
 // Compound index to ensure unique airdrop rounds per token
-AirdropSchema.index({ tokenAddress: 1, index: 1 }, { unique: true });
+AirdropSchema.index({ token: 1, index: 1 }, { unique: true });
 
 module.exports = mongoose.model('Airdrop', AirdropSchema); 
