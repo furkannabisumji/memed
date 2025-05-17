@@ -5,12 +5,26 @@ import axiosInstance from "@/lib/axios";
 import { useState } from "react";
 
 // Define types for our API response
-import { Meme } from "@/app/types";
+interface Token {
+  tokenAddress: string;
+  name: string;
+  ticker: string;
+  description: string;
+  image: string;
+  createdAt: string;
+  totalDistributed: string;
+}
 
-interface MemesResponse {
+export interface CreatorResponse {
+  address: string;
+  handle: string;
+  tokens: Token[];
+}
+
+interface CreatorsResponse {
   success: boolean;
   data: {
-    tokens: Meme[];
+    creators: CreatorResponse[];
     pagination: {
       currentPage: number;
       totalPages: number;
@@ -26,9 +40,9 @@ interface UseMemeOptions {
   category?: "tokens" | "creators";
 }
 
-export const useMemes = ({
+export const useCreators = ({
   initialLimit = 10,
-  category = "tokens",
+  category = "creators",
 }: UseMemeOptions = {}) => {
   const [limit] = useState(initialLimit);
 
@@ -36,24 +50,29 @@ export const useMemes = ({
     try {
       // Log the full URL being requested for debugging
       const url = new URL(
-        "/api/tokens",
+        "/api/creators",
         process.env.NEXT_PUBLIC_BACKEND_URL || window.location.origin
       );
       url.searchParams.append("page", pageParam.toString());
       url.searchParams.append("limit", limit.toString());
 
-      const response = await axiosInstance.get<MemesResponse>("/api/tokens", {
-        params: {
-          page: pageParam,
-          limit,
-        },
-      });
+      const response = await axiosInstance.get<CreatorsResponse>(
+        "/api/creators",
+        {
+          params: {
+            page: pageParam,
+            limit,
+          },
+        }
+      );
 
+      // Return the nested data structure that contains both creators and pagination
       return response.data.data;
     } catch (error) {
-      // Return a default structure to prevent errors
+      console.error("Error fetching creators:", error);
+      // Return a default structure to prevent errors with the same structure as success
       return {
-        tokens: [],
+        creators: [],
         pagination: {
           currentPage: pageParam,
           totalPages: 0,
@@ -75,9 +94,13 @@ export const useMemes = ({
     isLoading,
     isPending,
   } = useInfiniteQuery({
-    queryKey: ["memes", category, limit],
+    queryKey: ["creators", category, limit],
     queryFn: fetchMemes,
     getNextPageParam: (lastPage) => {
+      // Add null check to prevent the error
+      if (!lastPage || !lastPage.pagination) {
+        return undefined;
+      }
       return lastPage.pagination.hasNextPage
         ? lastPage.pagination.currentPage + 1
         : undefined;
@@ -85,11 +108,11 @@ export const useMemes = ({
     initialPageParam: 1,
   });
 
-  // Flatten the pages array into a single array of memes
-  const memes = data?.pages.flatMap((page) => page.tokens) || [];
-  // console.log(memes);
+  // Flatten the pages array into a single array of creators
+  const creators = data?.pages.flatMap((page) => page.creators || []) || [];
+
   return {
-    memes,
+    creators,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,

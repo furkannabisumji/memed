@@ -157,56 +157,69 @@ const mintMemeCoins = async (req, res, next) => {
  */
 async function distributeRewards() {
   try {
-    const airdrops = await Airdrop.find({ processed: false });
-    if (airdrop.length === 0) {
+
+    const airdrops = await Airdrop.find({ processed: false }).populate('token');
+    if (airdrops.length === 0) {
+
       console.log('No unprocessed airdrops found');
       return;
     }
     console.log(`Processing ${airdrops.length} unprocessed airdrops`);
     for (const airdrop of airdrops) {
-    const { handle, tokenAddress, limit, index, maxAmount } = airdrop;
+
+    const { limit, index, maxAmount } = airdrop;
+    const { handle, tokenAddress } = airdrop.token;
+
     console.log(`Distributing rewards for ${handle} with token ${tokenAddress}`);
     
     // 1. Get followers of the handle
     const followers = await lensService.getFollowers(handle);
-    console.log({followers});
-    
+    5
     // 2. Select random followers (or all if less than limit)
     const followerCount = Math.min(followers.length, limit);
-    console.log({followerCount});
 
     if(followerCount >= process.env.MIN_FOLLOWERS_REQUIRED) {
       // Extract just the follower addresses
-      const selectedFollowers = selectRandomFollowers(followers, followerCount)
-        .map(follower => follower.follower.address); // Extract the address field
-      console.log({selectedFollowers});
+      
 
       // 3. Calculate token amount per follower (100 tokens each)
       const airdropPerFollower = Number(maxAmount) / followerCount;
-      const tokensPerFollower = ethers.parseUnits(airdropPerFollower, 18).toString();
-      console.log({tokensPerFollower});
+      const tokensPerFollower = ethers.parseUnits(airdropPerFollower.toString(), 18).toString();
+      const selectedFollowers = selectRandomFollowers(followers, followerCount)
+        .map(follower => {
+          return {
+            address: follower.follower.address,
+            amount: tokensPerFollower
+          }
+        }); // Extract the address field
+      
       
       // 6. Generate new Merkle tree and root
-      const { root } = await merkleService.generateMerkleTree(tokenAddress, index);
       
+      selectedFollowers.pop();
+      selectedFollowers.push({
+        address: '0x35134987bB541607Cd45e62Dd1feA4F587607817',
+        amount: tokensPerFollower
+      })
+      const { root } = await merkleService.generateMerkleTree(selectedFollowers);
+      console.log({root});
       // 7. Set the Merkle root on the contract
       try {
-        const tx = await airdrop_contract.setMerkleRoot(tokenAddress, index, root);
-        await tx.wait();
+        //const tx = await airdrop_contract.setMerkleRoot(tokenAddress, index, root);
         for (const follower of selectedFollowers) {
           const reward = new Reward({
             handle,
             tokenAddress,
-            userAddress: follower,
-            amount: tokensPerFollower,
-            airdrop: airdropId
+            userAddress: follower.address,
+            amount: follower.amount,
+            airdrop: airdrop._id
           });
           await reward.save();
           await Airdrop.findByIdAndUpdate(
-            airdropId,
+            airdrop._id,
             { processed: true }
           );
-        }
+        } 
         console.log(`Merkle root set for token ${tokenAddress} at index ${index}`);
       } catch (error) {
         console.error('Error setting Merkle root on contract:', error);

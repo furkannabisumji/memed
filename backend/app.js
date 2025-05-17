@@ -19,7 +19,7 @@ mongoose
   .then(() => {
     console.log('Connected to MongoDB');
     // Start schedulers after successful connection
-    // rewardScheduler.start();
+    rewardScheduler.start();
     heatScheduler.start();
   })
   .catch(err => {
