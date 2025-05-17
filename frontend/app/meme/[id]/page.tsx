@@ -506,7 +506,7 @@ export default function MemeViewPage() {
 
               {/* Battles Tab */}
               <TabsContent value="Battles" className="mt-8">
-                <MemeBattles profile={profile} />
+                <MemeBattles meme={memeToken} />
               </TabsContent>
 
               {/* Staking Tab */}
