@@ -40,20 +40,17 @@ const tenderlyWebhook = async (req, res) => {
                     }
                 }
                 
-                    const [token, userAmount] = airdrop;
+                    const [token, userAmount, _, index] = airdrop;
                     const tokenData = await Token.findOne({ tokenAddress: token });
 
-                    const lastAirdrop = await Airdrop.findOne().sort({ index: -1 }).limit(1);
                 const tokenAirdrops = await Airdrop.find({ token: tokenData._id });
-                const index = lastAirdrop ? lastAirdrop.index + 1 : 0;
                 const distributed = new Airdrop({
                     token: tokenData._id,
-                    index,
-                    merkleRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
                     limit: 5000,
                     type: tokenAirdrops.length > 0 ? 'engagement' : 'initial',
                     maxAmount: ethers.formatUnits(userAmount, 18),
                     processed: false,
+                    index: index.toString(),
                     timestamp: Date.now()
                 });
                 await distributed.save();

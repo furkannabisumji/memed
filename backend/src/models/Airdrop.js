@@ -18,7 +18,6 @@ const AirdropSchema = new mongoose.Schema({
   },
   merkleRoot: {
     type: String,
-    required: false
   },
   limit: {
     type: Number,

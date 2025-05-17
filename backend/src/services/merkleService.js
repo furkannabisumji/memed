@@ -6,22 +6,36 @@ const Airdrop = require('../models/Airdrop');
 
 /**
  * Generate a Merkle tree from all pending rewards for a specific token and airdrop round
- */async function generateMerkleTree(selectedFollowers) {
-  console.log({ selectedFollowers });
+ * @param {Array} selectedFollowers - Array of followers with address and amount
+ * @returns {Object} Object containing tree, root, proofs, and followers with linked proofs
+ */
+async function generateMerkleTree(selectedFollowers) {
 
+  // Create leaves from the followers' data
   const leaves = selectedFollowers.map(({ address, amount }) =>
     keccak256(address.toLowerCase() + amount)
   );
 
+  // Create the Merkle tree
   const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
 
+  // Get the root and generate proofs
   const root = tree.getHexRoot();
-  const proofs = leaves.map(leaf => tree.getHexProof(leaf));
+  
+  // Link proofs to followers
+  const followersWithProofs = selectedFollowers.map((follower, index) => {
+    const leaf = leaves[index];
+    const proof = tree.getHexProof(leaf);
+    return {
+      ...follower,
+      proof,
+      leaf: '0x' + leaf.toString('hex')
+    };
+  });
 
-  console.log({ proofs, root });
-
-  return { tree, root, proofs };
+  return { tree, root, followersWithProofs }
 }
+
 /**
  * Generate a proof for a specific user claim
  * 

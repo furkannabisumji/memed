@@ -17,8 +17,8 @@ router.get("/getMintableCheck/:handle", lensController.getMintableCheck);
 router.post("/mintMemeCoins/:handle", lensController.mintMemeCoins);
 
 // New routes for rewards and claiming
-router.get("/claims/:userAddress", lensController.generateClaimData);
-router.post("/claims/record", lensController.recordClaim);
+router.get("/claims/:userAddress", lensController.rewardsForUser);
+
 
 // Admin route to manually trigger engagement rewards distribution
 router.post("/admin/distribute-rewards", async (req, res, next) => {

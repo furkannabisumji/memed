@@ -53,7 +53,13 @@ contract MemedBattle is Ownable {
         require(msg.sender == factory, "Unauthorized");
         b.winner = _winner;
         b.resolved = true;
-        MemedFactory(factory).updateHeat(_winner, 20000, false);
+        MemedFactory.HeatUpdate[] memory heatUpdate = new MemedFactory.HeatUpdate[](1);
+        heatUpdate[0] = MemedFactory.HeatUpdate({
+            token: _winner,
+            heat: 20000,
+            minusHeat: false
+        });
+        MemedFactory(factory).updateHeat(heatUpdate);
 
         emit BattleResolved(_battleId, _winner);
     }
