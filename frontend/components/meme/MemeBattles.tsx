@@ -401,9 +401,9 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           )) : (
             <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
-              <h2 className="mb-2 text-2xl font-bold">Still undefeated in meme battles</h2>
+              <h2 className="mb-2 text-2xl font-bold">Still waiting for that first meme battle victory.</h2>
               <p className="mb-6 text-gray-600">
-              Undefeated in the meme arena — not a single loss found so far.
+                Hasn't claimed a win in any meme battles yet — the grind for glory continues.
               </p>
               <Link href="/explore">
                 <Button className="gap-2 bg-primary hover:bg-primary/90">
@@ -422,9 +422,9 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           )) : (
             <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
-              <h2 className="mb-2 text-2xl font-bold">No Ongoing Meme Battle Found</h2>
+              <h2 className="mb-2 text-2xl font-bold">Still undefeated in meme battles.</h2>
               <p className="mb-6 text-gray-600">
-                You don't have any Ongoing meme battle at the moment.
+                Never known defeat — still going strong.
               </p>
               <Link href="/explore">
                 <Button className="gap-2 bg-primary hover:bg-primary/90">

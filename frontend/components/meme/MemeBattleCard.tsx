@@ -6,6 +6,7 @@ import { Card } from '../ui/card'
 import { ClockIcon, FlameIcon, Swords } from 'lucide-react'
 import { Battle } from './MemeBattles'
 import BattleTimer from './BattleTimer'
+import { Badge } from '../ui/badge'
 
 export default function MemeBattleCard({ battle }: { battle: Battle }) {
     const [battleDummy] = useState({
@@ -59,7 +60,7 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Card className="w-full max-w-md  shadow-md relative rounded-md transition-all duration-300 bg-white border-2 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:border-black">
+            <Card className="w-full max-w-full  shadow-md relative rounded-md transition-all duration-300 bg-white border-2 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:border-black">
                 <div className="p-5">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold">🔥 Meme Battle</h2>
@@ -79,11 +80,12 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
                             transition={{ delay: 0.2 }}
                         >
                             <div className="flex items-center mb-2">
-                                <div className="w-20 h-20 relative bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="w-32 h-32 relative bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeA.image}` || "/coing.png"} alt={battle.memeA.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1">{battle.memeA.name}</h3>
+                                    <h3 className="text-sm font-medium mb-1"> {battle.memeA.name}</h3>
+
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeA.isLeading ? "text-red-500" : "text-gray-400"}`}
@@ -119,7 +121,7 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
                             transition={{ delay: 0.2 * 2 }}
                         >
                             <div className="flex items-center mb-2">
-                                <div className="w-20 h-20 relative bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="w-32 h-32 relative bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeB.image}` || "/coing.png"} alt={battle.memeB.name} fill className="object-cover" />
                                 </div>
                                 <div>
