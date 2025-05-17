@@ -58,20 +58,20 @@ const formatNumber = (num: number): string => {
 
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>("memes");
-  const [timeFrame, setTimeFrame] = useState<TimeFrame>("allTime");
-  const [memes, setMemes] = useState<Meme[]>([]);
-  const [creators, setCreators] = useState<Creator[]>([]);
-  const [displayedMemes, setDisplayedMemes] = useState<Meme[]>([]);
-  const [displayedCreators, setDisplayedCreators] = useState<Creator[]>([]);
-  const [hasMoreMemes, setHasMoreMemes] = useState(false);
-  const [hasMoreCreators, setHasMoreCreators] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState<Record<LeaderboardTab, boolean>>({
-    memes: false,
-    creators: false,
-  });
+  // const [timeFrame, setTimeFrame] = useState<TimeFrame>("allTime");
+  // const [memes, setMemes] = useState<Meme[]>([]);
+  // const [creators, setCreators] = useState<Creator[]>([]);
+  // const [displayedMemes, setDisplayedMemes] = useState<Meme[]>([]);
+  // const [displayedCreators, setDisplayedCreators] = useState<Creator[]>([]);
+  // const [hasMoreMemes, setHasMoreMemes] = useState(false);
+  // const [hasMoreCreators, setHasMoreCreators] = useState(false);
+  // const [loading, setLoading] = useState(true);
+  // const [loadingMore, setLoadingMore] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
+  // const [hasMore, setHasMore] = useState<Record<LeaderboardTab, boolean>>({
+  //   memes: false,
+  //   creators: false,
+  // });
   const {
     topMemes,
     topCreators,
@@ -87,59 +87,59 @@ export default function LeaderboardPage() {
   const itemsPerPage = 10;
 
   // Handle load more for memes
-  const handleLoadMoreMemes = () => {
-    setLoadingMore(true);
-    // Simulate loading delay
-    setTimeout(() => {
-      const currentlyDisplayed = displayedMemes.length;
-      const newItems = memes.slice(
-        currentlyDisplayed,
-        currentlyDisplayed + itemsPerPage
-      );
-      setDisplayedMemes([...displayedMemes, ...newItems]);
-      setHasMoreMemes(currentlyDisplayed + newItems.length < memes.length);
-      setHasMore((prev) => ({
-        ...prev,
-        memes: currentlyDisplayed + newItems.length < memes.length,
-      }));
-      setLoadingMore(false);
-    }, 500);
-  };
+  // const handleLoadMoreMemes = () => {
+  //   setLoadingMore(true);
+  //   // Simulate loading delay
+  //   setTimeout(() => {
+  //     const currentlyDisplayed = displayedMemes.length;
+  //     const newItems = memes.slice(
+  //       currentlyDisplayed,
+  //       currentlyDisplayed + itemsPerPage
+  //     );
+  //     setDisplayedMemes([...displayedMemes, ...newItems]);
+  //     setHasMoreMemes(currentlyDisplayed + newItems.length < memes.length);
+  //     setHasMore((prev) => ({
+  //       ...prev,
+  //       memes: currentlyDisplayed + newItems.length < memes.length,
+  //     }));
+  //     setLoadingMore(false);
+  //   }, 500);
+  // };
 
   // Handle load more for creators
-  const handleLoadMoreCreators = () => {
-    setLoadingMore(true);
-    // Simulate loading delay
-    setTimeout(() => {
-      const currentlyDisplayed = displayedCreators.length;
-      const newItems = creators.slice(
-        currentlyDisplayed,
-        currentlyDisplayed + itemsPerPage
-      );
-      setDisplayedCreators([...displayedCreators, ...newItems]);
-      setHasMoreCreators(
-        currentlyDisplayed + newItems.length < creators.length
-      );
-      setHasMore((prev) => ({
-        ...prev,
-        creators: currentlyDisplayed + newItems.length < creators.length,
-      }));
-      setLoadingMore(false);
-    }, 500);
-  };
+  // const handleLoadMoreCreators = () => {
+  //   setLoadingMore(true);
+  //   // Simulate loading delay
+  //   setTimeout(() => {
+  //     const currentlyDisplayed = displayedCreators.length;
+  //     const newItems = creators.slice(
+  //       currentlyDisplayed,
+  //       currentlyDisplayed + itemsPerPage
+  //     );
+  //     setDisplayedCreators([...displayedCreators, ...newItems]);
+  //     setHasMoreCreators(
+  //       currentlyDisplayed + newItems.length < creators.length
+  //     );
+  //     setHasMore((prev) => ({
+  //       ...prev,
+  //       creators: currentlyDisplayed + newItems.length < creators.length,
+  //     }));
+  //     setLoadingMore(false);
+  //   }, 500);
+  // };
 
   // Handle load more based on active tab
-  const handleLoadMore = () => {
-    if (isLoading || !hasMore[activeTab]) return;
+  // const handleLoadMore = () => {
+  //   if (isLoading || !hasMore[activeTab]) return;
 
-    setIsLoading(true);
-    if (activeTab === "memes") {
-      handleLoadMoreMemes();
-    } else if (activeTab === "creators") {
-      handleLoadMoreCreators();
-    }
-    setIsLoading(false);
-  };
+  //   setIsLoading(true);
+  //   if (activeTab === "memes") {
+  //     handleLoadMoreMemes();
+  //   } else if (activeTab === "creators") {
+  //     handleLoadMoreCreators();
+  //   }
+  //   setIsLoading(false);
+  // };
 
   return (
     <>
@@ -276,7 +276,7 @@ export default function LeaderboardPage() {
                             scope="col"
                             className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
                           >
-                            Engagement
+                            Heat score
                           </th>
                         </tr>
                       </thead>
@@ -375,7 +375,7 @@ export default function LeaderboardPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-center mt-8">
+          {/* <div className="flex justify-center mt-8">
             <Button
               variant="outline"
               className="border-2 border-black text-black hover:bg-black cursor-pointer hover:text-white"
@@ -393,7 +393,7 @@ export default function LeaderboardPage() {
                 `Load More ${activeTab === "memes" ? "Memes" : "Creators"}`
               )}
             </Button>
-          </div>
+          </div> */}
         </div>
       </div>
       <Footer />
