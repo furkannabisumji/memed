@@ -67,7 +67,7 @@ export default function MemeViewPage() {
     memeToken?.handle || ""
   );
 
-  console.log(stats);
+  // console.log(stats);
 
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
@@ -163,36 +163,6 @@ export default function MemeViewPage() {
       </div>
     );
   }
-
-  //mock data
-  const profile = {
-    id: memeId,
-    username: "DogeToTheMoon",
-    displayName: "Doge To The Moon",
-    bio: "The original meme that started it all. Much wow. Very token. Such value.",
-    followers: 78432,
-    following: 0,
-    profileImage: "/fallback.png",
-    bannerImage: "/fallback.png",
-    isVerified: true,
-    isFollowing: isFollowing,
-    isOwner: false,
-    createdAt: "2025-01-15T00:00:00Z",
-    creatorName: "Crypto Memer",
-    creatorHandle: "apurva_borhade_",
-    creatorProfileImage: "/fallback.png",
-    tokenSymbol: "DOGE",
-    tokenPrice: "0.01",
-    totalSupply: 1000000000,
-    circulatingSupply: 250000000,
-    holders: 12900,
-    heatScore: 78,
-    likes: 24500,
-    comments: 1250,
-    mirrors: 3450,
-    engagements: 89245,
-    tokenRequirement: 1000,
-  };
 
   return (
     <>
