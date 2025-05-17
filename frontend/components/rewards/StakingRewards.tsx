@@ -17,41 +17,41 @@ import EngageToEarn from '@/config/memedEngageToEarnABI.json'
 import { config } from '@/providers/Web3Provider';
 import { Abi } from 'viem';
 
-const stakingRewards = [
-    {
-        id: "1",
-        tokenTicker: "MEME",
-        token: "0x123abc...def",
-        handle: "0xbruh",
-        amount: "2500",
-        proof: ["0xabc", "0xdef", "0xghi"],
-        leaf: "0xleaf1",
-        index: 0,
-        type: "Airdrop"
-    },
-    {
-        id: "2",
-        tokenTicker: "LOL",
-        token: "0x456def...abc",
-        handle: "memeLord",
-        amount: "15000",
-        proof: ["0x123", "0x456", "0x789"],
-        leaf: "0xleaf2",
-        index: 1,
-        type: "Reward"
-    },
-    {
-        id: "3",
-        tokenTicker: "GIGGLE",
-        token: "0x789ghi...xyz",
-        handle: "gagMaster",
-        amount: "320",
-        proof: ["0xaaa", "0xbbb"],
-        leaf: "0xleaf3",
-        index: 2,
-        type: "Engage-to-Earn"
-    }
-];
+// const stakingRewards = [
+//     {
+//         _id: "1",
+//         ticker: "MEME",
+//         tokenAddress: "0x123abc...def",
+//         handle: "0xbruh",
+//         amount: "2500",
+//         proof: ["0xabc", "0xdef", "0xghi"],
+//         leaf: "0xleaf1",
+//         index: 0,
+//         type: "Airdrop"
+//     },
+//     {
+//         _id: "2",
+//         ticker: "LOL",
+//         tokenAddress: "0x456def...abc",
+//         handle: "memeLord",
+//         amount: "15000",
+//         proof: ["0x123", "0x456", "0x789"],
+//         leaf: "0xleaf2",
+//         index: 1,
+//         type: "Reward"
+//     },
+//     {
+//         _id: "3",
+//         ticker: "GIGGLE",
+//         tokenAddress: "0x789ghi...xyz",
+//         handle: "gagMaster",
+//         amount: "320",
+//         proof: ["0xaaa", "0xbbb"],
+//         leaf: "0xleaf3",
+//         index: 2,
+//         type: "Engage-to-Earn"
+//     }
+// ];
 
 const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; }> => {
     return axiosInstance.get(`/tokens/${tokenAddress}`)
@@ -67,7 +67,7 @@ const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description:
 export default function StakingRewards({ ticker }: { ticker: string }) {
     const { address, isConnecting } = useAccount()
     const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [rewards, setRewards] = useState<MemeDetails[]>([])
+    const [rewards, setRewards] = useState<ClaimProof[]>([])
     const [claimingToken, setClaimingToken] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState<boolean>(false)
     const [page, setPage] = useState<number>(1)
@@ -80,24 +80,24 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
         isLoading: REWARDS_LOADING,
     } = useClaimData(address);
 
+
     const fetchRewards = async (
         pageNum: number,
         tabType = "available",
         reset: boolean = false
     ) => {
-        const account = getFirstAccount()
+
         // Fetch Rewards
         if (pageNum === 1) {
             setIsLoading(true);
         }
         // Get the appropriate data based on tab
-        // if (fetchedRewards == null) {
-        //     setIsLoading(false)
-        //     return;
-        // }
-
+        if (fetchedRewards == null) {
+            setIsLoading(false)
+            return;
+        }
         // Sort claims based Only Conected Users 
-        let sourceData = stakingRewards.filter((reward) => reward.handle === account?.metadata.name)
+        let sourceData = fetchedRewards.filter((reward) => reward.userAddress === address)
 
         // Simulate paginated data fetch
         const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
@@ -105,22 +105,7 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
         const paginatedRewards = sourceData.slice(startIndex, endIndex);
 
         console.log("Paginated", paginatedRewards)
-        // Fetch meme info for each reward handle concurrently
-        const rewardsWithDetails = await Promise.all(
-            paginatedRewards.map(async (reward: ClaimProof) => {
-                // Fetch meme info for the handle
-                // const memeInfo = await getMemeInfo(reward.token); // Assuming `getMemeInfoByHandle` is a function that fetches meme info by handle
-                // if (memeInfo)
-                //     return {
-                //         ...reward, // Retain all the reward properties
-                //         ...memeInfo,  // Add fetched meme info
-                //     };
-                // else
-                return reward as MemeDetails
-            })
-        );
 
-        console.log("Detials", rewardsWithDetails)
 
         // Check if there are more items to load
         setHasMore(endIndex < sourceData.length);
@@ -128,19 +113,13 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
         // Reset
         if (reset) {
             if (tabType === "available") {
-                setRewards(rewardsWithDetails);
+                setRewards(paginatedRewards);
             } else {
                 const sliced = sourceData.slice(0, endIndex);
-                const detailedSliced = await Promise.all(
-                    sliced.map(async (reward: ClaimProof) => {
-                        const memeInfo = await getMemeInfo(reward.token);
-                        return { ...reward, ...memeInfo };
-                    })
-                );
-                setRewards(detailedSliced);
+                setRewards(sliced);
             }
         } else {
-            setRewards((prev) => [...prev, ...rewardsWithDetails]);
+            setRewards((prev) => [...prev, ...paginatedRewards]);
         }
 
 
@@ -152,14 +131,14 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
 
     // Initial Fetch
     useEffect(() => {
-        if (address) {
+        if (address && fetchedRewards) {
             fetchRewards(1, "available", true)
 
         } else {
             setIsLoading(false)
             setRewards([])
         }
-    }, [address])
+    }, [address, fetchedRewards])
 
 
     // Handle load more button click
@@ -211,7 +190,7 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
                 const isSuccess = receipt.status === "success";
 
                 // Find the token data
-                const tokenData = rewards.find((r) => r.token === tokenAddress);
+                const tokenData = rewards.find((r) => r.tokenAddress === tokenAddress);
 
                 if (!tokenData) {
                     throw new Error("Token data not found");
@@ -220,7 +199,7 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
                 // Success - update UI
                 if (isSuccess) {
                     toast.success(
-                        `Successfully claimed ${tokenData.amount} ${tokenData.tokenTicker}`
+                        `Successfully claimed ${tokenData.amount} ${tokenData.ticker}`
                     );
                 }
 
@@ -233,7 +212,7 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
                 throw new Error(message);
             }
             // Remove the claimed token from the list
-            setRewards(rewards.filter((r) => r.token !== tokenAddress));
+            setRewards(rewards.filter((r) => r.tokenAddress !== tokenAddress));
 
         } catch (error) {
             console.error("Claim error:", error);
@@ -255,33 +234,33 @@ export default function StakingRewards({ ticker }: { ticker: string }) {
             ) : rewards && rewards.length !== 0 ? (
                 rewards.map((reward) => (
                     <div
-                        key={reward.id}
+                        key={reward._id}
                         className="flex justify-between items-center p-3 border border-gray-200 rounded-lg"
                     >
                         <div>
                             <p className="font-medium">@{reward.handle}</p>
                             {/* <p className="text-sm text-gray-500">Type: {reward.type}</p> */}
                             <Badge className="bg-primary hover:bg-primary text-white">
-                                +{parseFloat(reward.amount).toLocaleString()} ${reward.tokenTicker}
+                                +{parseFloat(reward.amount).toLocaleString()} ${reward.ticker}
                             </Badge>
                         </div>
                         <div className="flex items-center gap-2">
-                            
+
                             <button
                                 className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md flex items-center gap-2"
                                 onClick={() => handleClaim({
                                     amount: reward.amount,
                                     index: reward.index,
                                     proof: reward.proof,
-                                    tokenAddress: reward.token
+                                    tokenAddress: reward.tokenAddress
                                 })}
                             >
-                                {claimingToken === reward.token ? (
+                                {claimingToken === reward.tokenAddress ? (
                                     <>
                                         <Loader2 className="w-3 h-3 animate-spin" />
                                         Claiming...
                                     </>
-                                ) : (   
+                                ) : (
                                     <>
                                         <Gift className="w-3 h-3" />
                                         Claim

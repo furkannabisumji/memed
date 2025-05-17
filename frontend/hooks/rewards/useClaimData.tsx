@@ -10,16 +10,14 @@ export function useClaimData(userAddress: string | undefined) {
         queryKey: ['claim-data', userAddress],
         queryFn: async () => {
             if (!userAddress) return null;
-
             try {
                 const res = await axiosInstance.get(`/api/claims/${userAddress}`);
-                return res.data.proofs;
+                return res.data.rewards;
+            
             } catch (error: any) {
                 const axiosErr = error as AxiosError<{ error?: string }>;
                 const message =
                     axiosErr?.response?.data?.error || axiosErr?.message || "Failed to fetch Claims";
-
-                
                 throw new Error(message);
             }
         },

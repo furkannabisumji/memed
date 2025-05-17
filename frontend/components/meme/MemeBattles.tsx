@@ -32,59 +32,52 @@ import { Flame } from "lucide-react";
 import { RenderBattleCard } from "./RenderBattleCard";
 import { useMemes } from "@/hooks/useMemes";
 
-import { useAccount, useWalletClient } from "wagmi";
-import { Abi, WalletClient } from "viem";
+import { useAccount } from "wagmi";
+import { Abi } from "viem";
 import CONTRACTS from "@/config/contracts";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import { config } from "@/providers/Web3Provider";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import axiosInstance from "@/lib/axios";
-import { AxiosError } from "axios";
 import factoryAbi from "@/config/factoryABI.json";
 import { Meme } from "@/app/types";
 // Mock data for potential opponents
 
-const getMemeHeatScore = async (handle: string) => {
-  // try {
-  //   const result = await readContract(config,{
-  //     abi: factoryAbi as Abi,
-  //     address: CONTRACTS.factory as `0x${string}`,
-  //     functionName: 'getTokens',
-  //     args: [handle as `0x${string}`],
-  //   })
+interface MemeDetails extends Meme {
+  heat: bigint
+}
 
-  //   console.log('Fetched tokens:', result)
-  //   return result // this will be a TokenData[] array
-  // } catch (err) {
-  //   console.error('Error fetching tokens:', err)
-  //   return []
-  // }
-
+const getMemeHeatScore = async (token: string) => {
   try {
-    console.log(handle);
-    const res = await axiosInstance.get(`/api/heat/${handle}`);
-    return res.data;
-  } catch (error: any) {
-    // console.log(error)
-    const axiosErr = error as AxiosError<{ error?: string }>;
-    const message =
-      axiosErr?.response?.data?.error ||
-      axiosErr?.message ||
-      "Failed to get heat score";
-    throw new Error(message);
+    if (!token) return;
+
+    const result: any = await readContract(config, {
+      abi: factoryAbi as Abi,
+      address: CONTRACTS.factory as `0x${string}`,
+      functionName: 'getTokens',
+      args: [token as `0x${string}`],
+    })
+
+    return result[0].heat  // this will be a TokenData[] array
+  } catch (err) {
+    console.error('Error fetching tokens:', err)
+    return []
   }
 };
 const MemeBattles = ({ meme }: { meme: Meme }) => {
   const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingMemes, setLoadingMemes] = useState<boolean>(true)
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false);
-  const [heatScore, setHeatScore] = useState<number>(0);
+
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
   const { chain, switchToChain } = useChainSwitch();
+  const [opponents, setOpponents] = useState<MemeDetails[]>([])
+  const [filteredOpponents, setFilteredOpponents] = useState<MemeDetails[]>([])
+
   const {
     memes,
     fetchNextPage,
@@ -94,6 +87,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     error,
   } = useMemes({ initialLimit: 10, category: "tokens" });
 
+
   //check chain
   useEffect(() => {
     if (chain?.id !== chains.testnet.id) {
@@ -101,13 +95,41 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     }
   }, [chain, switchToChain]);
 
-  const { data } = useWalletClient();
 
-  // Filter opponents based on search query
-  const filteredOpponents = memes.filter(
-    (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
-    // meme.handle?.toLowerCase() === profile.creatorHandle
-  );
+
+
+  useEffect(() => {
+    if (searchQuery) {
+      setFilteredOpponents(opponents.filter(
+        (currMeme) => currMeme.tokenAddress !== meme.tokenAddress && (
+          currMeme?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          currMeme?.ticker?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      ));
+    } else {
+      setFilteredOpponents(opponents.filter(
+        (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
+      ));
+    }
+  }, [searchQuery, opponents])
+
+
+  const fetchOpponents = async () => {
+    setLoadingMemes(true)
+    // Filter opponents based on search query
+    const filteredOpponentsWithHeat = await Promise.all(
+      memes.map(async (opp) => {
+        const heatScore = await getMemeHeatScore(opp.tokenAddress)
+        return {
+          ...opp,
+          heat: heatScore
+        }
+      })
+    )
+    setLoadingMemes(false)
+
+    return filteredOpponentsWithHeat
+  }
 
   // useEffect(() => {
   //   if (filteredOpponents && filteredOpponents.length !== 0) {
@@ -179,7 +201,11 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     }
   };
 
-  console.log(selectedOpponent);
+  useEffect(() => {
+    if (memes && address) {
+      fetchOpponents().then((res) => setOpponents(res)).catch((err) => console.log(err))
+    }
+  }, [isLoading, address])
 
   return (
     <>
@@ -286,16 +312,29 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             </DialogHeader>
 
             <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search memes by name or symbol"
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <div className="border rounded-md max-h-[30vh] md:max-h-[40vh] overflow-y-auto">
-                {filteredOpponents.length > 0 ? (
+                {loadingMemes ? (
+                  <div className="flex items-center justify-center gap-2 py-3">
+                    <Loader2 className="animate-spin" />
+                    <p>Loading Memes..</p>
+                  </div>
+                ) : filteredOpponents.length > 0 ? (
                   filteredOpponents.map((opponent) => (
                     <div
                       key={opponent._id}
-                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
-                        selectedOpponent?._id === opponent._id
-                          ? "bg-gray-50"
-                          : ""
-                      }`}
+                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?._id === opponent._id
+                        ? "bg-gray-50"
+                        : ""
+                        }`}
                       onClick={() => setSelectedOpponent(opponent)}
                     >
                       <div className="flex items-center gap-3">
@@ -317,7 +356,8 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                       </div>
                       <Badge className="bg-amber-500 hover:bg-amber-500 flex items-center gap-1">
                         <Flame size={12} />
-                        {heatScore} {/* HeatScore Update */}
+                        {Intl.NumberFormat('en', { notation: 'compact' }).format(Number(opponent.heat))
+                      } {/* HeatScore Update */}
                       </Badge>
                     </div>
                   ))

@@ -167,8 +167,8 @@ const dummyAvailableReward = [
 
 
 const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; }> => {
-  return axiosInstance.get(`/tokens/${tokenAddress}`)
-    .then((res) => res.data)
+  return axiosInstance.get(`/api/tokens/${tokenAddress}`)
+    .then((res) => res.data.data)
     .catch((error) => {
       const axiosErr = error as AxiosError<{ message?: string }>;
       const message =
@@ -275,7 +275,7 @@ export default function RewardsPage() {
     tabType: TabType = "available",
     reset: boolean = false
   ) => {
- 
+
     if (pageNum === 1) {
       setIsLoading(true);
     }
@@ -284,6 +284,7 @@ export default function RewardsPage() {
 
     // Get the appropriate data based on tab
     if (fetchedrewards == null) {
+      console.log(fetchedrewards + `is null`)
       setIsLoading(false)
       return;
     }
@@ -295,6 +296,8 @@ export default function RewardsPage() {
       sourceData = fetchedrewards.filter((reward) => reward.type === "engagement");
     }
 
+
+
     // Simulate paginated data fetch
     const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -305,15 +308,16 @@ export default function RewardsPage() {
     const rewardsWithDetails = await Promise.all(
       paginatedRewards.map(async (reward: ClaimProof) => {
         // Fetch meme info for the handle
-        const memeInfo = await getMemeInfo(reward.token); // Assuming `getMemeInfoByHandle` is a function that fetches meme info by handle
+        const memeInfo = await getMemeInfo(reward.tokenAddress); // Assuming `getMemeInfoByHandle` is a function that fetches meme info by handle
         return {
           ...reward, // Retain all the reward properties
           ...memeInfo,  // Add fetched meme info
         };
-     
+
       })
     );
 
+    console.log("Source", rewardsWithDetails)
     // Check if there are more items to load
     setHasMore((prev) => ({
       ...prev,
@@ -327,7 +331,7 @@ export default function RewardsPage() {
         const sliced = sourceData.slice(0, endIndex);
         const detailedSliced = await Promise.all(
           sliced.map(async (reward: ClaimProof) => {
-            const memeInfo = await getMemeInfo(reward.token);
+            const memeInfo = await getMemeInfo(reward.tokenAddress);
             return { ...reward, ...memeInfo };
           })
         );
@@ -347,13 +351,13 @@ export default function RewardsPage() {
 
   // Initialize rewards on mount
   useEffect(() => {
-    if (address) {
+    if (address && fetchedrewards) {
       fetchRewards(1, "available", true);
     } else {
       setIsLoading(false);
       setRewards([]);
     }
-  }, [address]);
+  }, [address, fetchedrewards]);
 
   // Handle tab change
   useEffect(() => {
@@ -381,14 +385,14 @@ export default function RewardsPage() {
       // On chain transaction
       try {
         console.log("🚀 Claiming reward...");
-
+        console.log(amount,index)
         const { request } = await simulateContract(config, {
           abi: EngageToEarn as Abi,
           address: CONTRACTS.memedEngageToEarn as `0x${string}`,
           functionName: 'claim',
           args: [
             tokenAddress as `0x${string}`,
-            BigInt(amount),
+            amount,
             BigInt(index),
             proof as `0x${string}`[],
           ],
@@ -403,7 +407,7 @@ export default function RewardsPage() {
         const isSuccess = receipt.status === "success";
 
         // Find the token data
-        const tokenData = rewards.find((r) => r.token === tokenAddress);
+        const tokenData = rewards.find((r) => r.tokenAddress === tokenAddress);
 
         if (!tokenData) {
           throw new Error("Token data not found");
@@ -412,7 +416,7 @@ export default function RewardsPage() {
         // Success - update UI
         if (isSuccess) {
           toast.success(
-            `Successfully claimed ${tokenData.amount} ${tokenData.tokenTicker}`
+            `Successfully claimed ${tokenData.amount} ${tokenData.ticker}`
           );
         }
 
@@ -425,7 +429,7 @@ export default function RewardsPage() {
         throw new Error(message);
       }
       // Remove the claimed token from the list
-      setRewards(rewards.filter((r) => r.token !== tokenAddress));
+      setRewards(rewards.filter((r) => r.tokenAddress !== tokenAddress));
 
     } catch (error) {
       console.error("Claim error:", error);
@@ -544,10 +548,10 @@ export default function RewardsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {rewards.map((reward) => (
                       <RewardCard
-                        key={reward.id}
+                        key={reward._id}
                         reward={reward}
-                        onClaim={handleClaim}
-                        isClaiming={claimingToken === reward.token}
+                        onClaim={() => handleClaim({ tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.index, proof: reward.proof })}
+                        isClaiming={claimingToken === reward.tokenAddress}
                       />
                     ))}
                   </div>
@@ -558,10 +562,10 @@ export default function RewardsPage() {
                     {initialRewards.length > 0 ? (
                       initialRewards.map((reward) => (
                         <RewardCard
-                          key={reward.id}
+                          key={reward._id}
                           reward={reward}
                           onClaim={handleClaim}
-                          isClaiming={claimingToken === reward.token}
+                          isClaiming={claimingToken === reward.tokenAddress}
                         />
                       ))
                     ) : (
@@ -579,10 +583,10 @@ export default function RewardsPage() {
                     {engagementRewards.length > 0 ? (
                       engagementRewards.map((reward) => (
                         <RewardCard
-                          key={reward.id}
+                          key={reward._id}
                           reward={reward}
                           onClaim={handleClaim}
-                          isClaiming={claimingToken === reward.token}
+                          isClaiming={claimingToken === reward.tokenAddress}
                         />
                       ))
                     ) : (
@@ -661,7 +665,7 @@ function RewardCard({
         {/* Left side - Image */}
         <div className="w-20 h- flex-shrink-0 border-r-2 b">
           <Image
-            src={reward.image || "/fallback.png"}
+            src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${reward.image}` || "/fallback.png"}
             alt={reward.name}
             width={80}
             height={80}
@@ -682,7 +686,7 @@ function RewardCard({
                   {reward.type === "initial" ? "Initial" : "Engagement"}
                 </p>
                 <p className="text-sm font-bold text-primary">
-                  {reward.amount} {reward.tokenTicker}
+                  {reward.amount} {reward.ticker}
                 </p>
               </div>
             </div>
@@ -690,11 +694,11 @@ function RewardCard({
             <div className="flex flex-col items-end gap-2">
               <div className="flex items-center gap-1 px-2 py-0.5 text-white bg-primary rounded-full text-xs">
                 <Zap size={10} />
-                <span className="font-bold">${reward.tokenTicker}</span>
+                <span className="font-bold">${reward.ticker}</span>
               </div>
 
               <Button
-                onClick={() => onClaim({ amount: reward.amount, index: reward.index, proof: reward.proof, tokenAddress: reward.token, })}
+                onClick={() => onClaim({ amount: reward.amount, index: reward.index, proof: reward.proof, tokenAddress: reward.tokenAddress, })}
                 className="gap-1 bg-primary hover:bg-primary/90 h-8 px-3 py-1 text-xs"
                 disabled={isClaiming}
               >
