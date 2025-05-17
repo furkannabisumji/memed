@@ -5,7 +5,6 @@ const AirdropSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Token',
     required: true,
-    index: true
   },
   index: {
     type: Number,
@@ -36,8 +35,5 @@ const AirdropSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
-// Compound index to ensure unique airdrop rounds per token
-AirdropSchema.index({ token: 1, index: 1 }, { unique: true });
 
 module.exports = mongoose.model('Airdrop', AirdropSchema); 
