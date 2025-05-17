@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from "next/image"
 import { Card } from '../ui/card'
-import { ClockIcon, FlameIcon } from 'lucide-react'
+import { ClockIcon, FlameIcon, Swords } from 'lucide-react'
 import { Battle } from './MemeBattles'
 import BattleTimer from './BattleTimer'
+import { Badge } from '../ui/badge'
 
 export default function MemeBattleCard({ battle }: { battle: Battle }) {
     const [battleDummy] = useState({
@@ -59,7 +60,7 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Card className="w-full max-w-md  shadow-md relative rounded-md transition-all duration-300 bg-white border-2 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:border-black">
+            <Card className="w-full max-w-full  shadow-md relative rounded-md transition-all duration-300 bg-white border-2 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:border-black">
                 <div className="p-5">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold">🔥 Meme Battle</h2>
@@ -79,11 +80,12 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
                             transition={{ delay: 0.2 }}
                         >
                             <div className="flex items-center mb-2">
-                                <div className="w-20 h-20 relative bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="w-32 h-32 relative bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeA.image}` || "/coing.png"} alt={battle.memeA.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1">{battle.memeA.name}</h3>
+                                    <h3 className="text-sm font-medium mb-1"> {battle.memeA.name}</h3>
+
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeA.isLeading ? "text-red-500" : "text-gray-400"}`}
@@ -102,25 +104,24 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
 
                         {/* Crossed swords in center */}
                         <motion.div
-                            className="-translate-x-1/3"
+                            className="-translate-x-4"
                             initial={{ rotate: -15, scale: 0 }}
                             animate={{ rotate: 0, scale: 1 }}
                             transition={{ delay: 0.4, type: 'spring' }}
                         >
                             <div className="flex flex-col items-center text-4xl font-bold text-gray-600 opacity-70">
-                                <p>VS</p>
+                               <Swords className='w-10 h-10' />
                             </div>
                         </motion.div>
 
                         <motion.div
-
                             className="flex-1"
                             initial={{ opacity: 0, x: 10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 * 2 }}
                         >
                             <div className="flex items-center mb-2">
-                                <div className="w-20 h-20 relative bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="w-32 h-32 relative bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeB.image}` || "/coing.png"} alt={battle.memeB.name} fill className="object-cover" />
                                 </div>
                                 <div>

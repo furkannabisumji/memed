@@ -11,6 +11,7 @@ import {
   ClockIcon,
   FlameIcon,
   ArrowUpIcon,
+  Swords,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ import { Meme } from "@/app/types";
 import MemeBattleCard from "./MemeBattleCard";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
+import Link from "next/link";
 
 
 // Mock data for potential opponents
@@ -68,7 +70,7 @@ export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
     image: string;
     handle: string;
     heatScoreA: bigint;
-    isLeading:boolean;
+    isLeading: boolean;
   },
   memeB: {
     name: string;
@@ -76,7 +78,7 @@ export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
     image: string;
     handle: string;
     heatScoreB: bigint;
-    isLeading:boolean;
+    isLeading: boolean;
   },
   ending: Date
 }
@@ -178,12 +180,13 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
         (currMeme) => currMeme.tokenAddress !== meme.tokenAddress && (
           currMeme?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           currMeme?.ticker?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        ) && currMeme.handle !== meme.handle
       ));
     } else {
       setFilteredOpponents(opponents.filter(
         (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
       ));
+
     }
   }, [searchQuery, opponents])
 
@@ -364,35 +367,72 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
         </TabsList>
 
 
-        <TabsContent value="ongoing" className="space-y-4 grid grid-cols-2 gap-4">
+        <TabsContent value="ongoing" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
             <div className="flex justify-center items-center w-full p-10 col-span-3">
               <Loader2 className="animate-spin" />
             </div>
-          ) : battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
-            <>
-              <MemeBattleCard key={battle.battleId} battle={battle} />
-            </>
-          ))}
+          ) : battles && battles.length !== 0 ? battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
+            <MemeBattleCard key={battle.battleId} battle={battle} />
+          )) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Swords className="w-12 h-12 mb-4 text-gray-400" />
+              <h2 className="mb-2 text-2xl font-bold">No Ongoing Meme Battle Found</h2>
+              <p className="mb-6 text-gray-600">
+                You don't have any Ongoing meme battle at the moment.
+              </p>
+              <Link href="/explore">
+                <Button className="gap-2 bg-primary hover:bg-primary/90">
+                  Explore Memes
+                </Button>
+              </Link>
+            </div>
+          )}
 
         </TabsContent>
 
-        <TabsContent value="won" className="space-y-4">
+        <TabsContent value="won" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
             <div className="w-full p-3 flex justify-center items-center">
               <Loader2 className="animate-spin" />
             </div>
-          ) : battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
+          ) : battles.filter((battle) => battle.winner === meme.tokenAddress).length !== 0 ? battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
-          ))}
+          )) : (
+            <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
+              <Swords className="w-12 h-12 mb-4 text-gray-400" />
+              <h2 className="mb-2 text-2xl font-bold">Still waiting for that first meme battle victory.</h2>
+              <p className="mb-6 text-gray-600">
+                Hasn't claimed a win in any meme battles yet — the grind for glory continues.
+              </p>
+              <Link href="/explore">
+                <Button className="gap-2 bg-primary hover:bg-primary/90">
+                  Explore Memes
+                </Button>
+              </Link>
+            </div>
+          )}
         </TabsContent>
 
-        <TabsContent value="lost" className="space-y-4">
+        <TabsContent value="lost" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
             <Loader2 className="animate-spin" />
-          ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
+          ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").length !== 0 ? battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
-          ))}
+          )) : (
+            <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
+              <Swords className="w-12 h-12 mb-4 text-gray-400" />
+              <h2 className="mb-2 text-2xl font-bold">Still undefeated in meme battles.</h2>
+              <p className="mb-6 text-gray-600">
+                Never known defeat — still going strong.
+              </p>
+              <Link href="/explore">
+                <Button className="gap-2 bg-primary hover:bg-primary/90">
+                  Explore Memes
+                </Button>
+              </Link>
+            </div>
+          )}
         </TabsContent>
 
       </Tabs>
