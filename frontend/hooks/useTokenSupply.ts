@@ -1,8 +1,9 @@
 import { useReadContract } from "wagmi";
 import factoryABI from "@/config/factoryABI.json";
 import CONTRACTS from "@/config/contracts";
-import { Address } from "viem";
+import { Address, erc20Abi } from "viem";
 import { useAccount } from "wagmi";
+import { formatEther } from "viem";
 
 interface TokenSupply {
   totalSupply: bigint;
@@ -15,42 +16,22 @@ interface TokenSupply {
  * @param lensUsername The Lens username to look up token supply for
  * @returns The token supply data and query status
  */
-export const useTokenSupply = (lensUsername?: string) => {
-  const { address: account } = useAccount();
-  const isEnabled = Boolean(lensUsername && lensUsername.trim().length > 0);
-
+export const useTokenSupply = (tokenAddress: Address) => {
   const {
-    data: rawSupplyData,
-    isPending,
-    isError,
-    error,
+    data: totalSupply,
+    isLoading,
     refetch,
   } = useReadContract({
-    abi: factoryABI,
-    address: CONTRACTS.factory as Address,
-    functionName: "tokenSupply",
-    args: isEnabled ? [lensUsername] : undefined,
+    address: tokenAddress as Address,
+    abi: erc20Abi,
+    functionName: "totalSupply",
     query: {
-      enabled: isEnabled,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      enabled: !!tokenAddress,
     },
   });
 
-  // Safe type assertion with proper structure checking
-  const transformedData: TokenSupply | null =
-    rawSupplyData && Array.isArray(rawSupplyData) && rawSupplyData.length === 3
-      ? {
-          totalSupply: rawSupplyData[0] as bigint,
-          circulatingSupply: rawSupplyData[1] as bigint,
-          maxSupply: rawSupplyData[2] as bigint,
-        }
-      : null;
-
   return {
-    data: transformedData,
-    isPending,
-    isError,
-    error,
-    refetch,
+    data: formatEther((totalSupply as bigint) || 0n),
+    isLoading,
   };
 };

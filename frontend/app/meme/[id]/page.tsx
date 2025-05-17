@@ -397,39 +397,23 @@ export default function MemeViewPage() {
                 <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
                   <TabsTrigger
                     value="Details"
-                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary  rounded-none bg-transparent transition-colors ${
                       activeTab === "Details" ? "text-primary" : ""
                     }`}
                     ref={(el: HTMLButtonElement | null) => {
                       tabRefs.current.Details = el;
                     }}
                   >
-                    <span className="relative z-10">Details</span>
+                    Details
                     <span
-                      className={`absolute bottom-0 left-0 right-0 h-0.5  transition-all duration-200 ${
+                      className={` bottom-0 left-0 right-0 h-0.5  transition-all duration-200 ${
                         activeTab === "Details" ? "opacity-100" : "opacity-0"
                       }`}
                     />
                   </TabsTrigger>
-                  {/* <TabsTrigger
-                    value="Supporters"
-                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
-                      activeTab === "Supporters" ? "text-primary" : ""
-                    }`}
-                    ref={(el: HTMLButtonElement | null) => {
-                      tabRefs.current.Supporters = el;
-                    }}
-                  >
-                    <span className="relative z-10">Supporters</span>
-                    <span
-                      className={`absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all duration-200 ${
-                        activeTab === "Supporters" ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                  </TabsTrigger> */}
                   <TabsTrigger
                     value="Battles"
-                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary  rounded-none bg-transparent transition-colors ${
                       activeTab === "Battles" ? "text-primary" : ""
                     }`}
                     ref={(el: HTMLButtonElement | null) => {
@@ -437,19 +421,24 @@ export default function MemeViewPage() {
                     }}
                   >
                     Battles
+                    <span
+                      className={` bottom-0 left-0 right-0 h-0.5  transition-all duration-200 ${
+                        activeTab === "Battles" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
                   </TabsTrigger>
                   <TabsTrigger
                     value="Staking"
-                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary rounded-none bg-transparent transition-colors ${
+                    className={`relative px-6 py-3 cursor-pointer hover:bg-secondary  rounded-none bg-transparent transition-colors ${
                       activeTab === "Staking" ? "text-primary" : ""
                     }`}
                     ref={(el: HTMLButtonElement | null) => {
                       tabRefs.current.Staking = el;
                     }}
                   >
-                    <span className="relative z-10">Staking</span>
+                    Staking
                     <span
-                      className={`absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all duration-200 ${
+                      className={` bottom-0 left-0 right-0 h-0.5  transition-all duration-200 ${
                         activeTab === "Staking" ? "opacity-100" : "opacity-0"
                       }`}
                     />
@@ -466,7 +455,7 @@ export default function MemeViewPage() {
 
               {/* Details Tab */}
               <TabsContent value="Details" className="mt-8">
-                <MemeDetails meme={memeToken} />
+                <MemeDetails meme={memeToken} stats={stats} />
               </TabsContent>
 
               {/* Supporters Tab */}
