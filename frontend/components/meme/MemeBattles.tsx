@@ -367,7 +367,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
         </TabsList>
 
 
-        <TabsContent value="ongoing" className="space-y-4 grid grid-cols-2 gap-4">
+        <TabsContent value="ongoing" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
             <div className="flex justify-center items-center w-full p-10 col-span-3">
               <Loader2 className="animate-spin" />
@@ -391,7 +391,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
 
         </TabsContent>
 
-        <TabsContent value="won" className="space-y-4">
+        <TabsContent value="won" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
             <div className="w-full p-3 flex justify-center items-center">
               <Loader2 className="animate-spin" />
@@ -399,7 +399,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           ) : battles.filter((battle) => battle.winner === meme.tokenAddress).length !== 0 ? battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
           )) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
               <h2 className="mb-2 text-2xl font-bold">Still undefeated in meme battles</h2>
               <p className="mb-6 text-gray-600">
@@ -414,13 +414,13 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           )}
         </TabsContent>
 
-        <TabsContent value="lost" className="space-y-4">
+        <TabsContent value="lost" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
             <Loader2 className="animate-spin" />
           ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").length !== 0 ? battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
           )) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
               <h2 className="mb-2 text-2xl font-bold">No Ongoing Meme Battle Found</h2>
               <p className="mb-6 text-gray-600">

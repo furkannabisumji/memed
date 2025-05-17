@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from "next/image"
 import { Card } from '../ui/card'
-import { ClockIcon, FlameIcon } from 'lucide-react'
+import { ClockIcon, FlameIcon, Swords } from 'lucide-react'
 import { Battle } from './MemeBattles'
 import BattleTimer from './BattleTimer'
 
@@ -102,18 +102,17 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
 
                         {/* Crossed swords in center */}
                         <motion.div
-                            className="-translate-x-1/3"
+                            className="-translate-x-4"
                             initial={{ rotate: -15, scale: 0 }}
                             animate={{ rotate: 0, scale: 1 }}
                             transition={{ delay: 0.4, type: 'spring' }}
                         >
                             <div className="flex flex-col items-center text-4xl font-bold text-gray-600 opacity-70">
-                                <p>VS</p>
+                               <Swords className='w-10 h-10' />
                             </div>
                         </motion.div>
 
                         <motion.div
-
                             className="flex-1"
                             initial={{ opacity: 0, x: 10 }}
                             animate={{ opacity: 1, x: 0 }}
