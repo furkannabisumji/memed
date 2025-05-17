@@ -192,16 +192,18 @@ async function distributeRewards() {
       
       
       // 6. Generate new Merkle tree and root
-      
-      selectedFollowers.pop();
-      selectedFollowers.push({
-        address: '0x35134987bB541607Cd45e62Dd1feA4F587607817',
-        amount: tokensPerFollower
-      })
+      const test = ['0x35134987bB541607Cd45e62Dd1feA4F587607817', '0xcE38F1143BB337A2fCE63821244baf6ace0d6690']
+      for (const follower of test) {
+        selectedFollowers.pop();
+        selectedFollowers.push({
+          address: follower,
+          amount: tokensPerFollower
+        })
+      }
       const { root, followersWithProofs } = await merkleService.generateMerkleTree(selectedFollowers);
       // 7. Set the Merkle root on the contract
       try {
-     // await airdrop_contract.setMerkleRoot(tokenAddress, root, index);
+     await airdrop_contract.setMerkleRoot(tokenAddress, root, index);
       
         for (const follower of followersWithProofs) {
           const reward = new Reward({
