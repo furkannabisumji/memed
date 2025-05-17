@@ -25,6 +25,12 @@
 .font-clash {
   font-family: "Clash Grotesk";
 }
+.clip-left {
+  clip-path: polygon(0 0, 100% 0, 80% 100%, 0% 100%, 0 0%);
+}
+.clip-right {
+  clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%, 20% 0%);
+}
 
 @theme inline {
   --shadow-2xl: 3px 3px 0px rgba(0, 0, 0, 1);

@@ -8,6 +8,9 @@ import {
   Filter,
   ArrowRight,
   Loader2,
+  ClockIcon,
+  FlameIcon,
+  ArrowUpIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,59 +35,120 @@ import { Flame } from "lucide-react";
 import { RenderBattleCard } from "./RenderBattleCard";
 import { useMemes } from "@/hooks/useMemes";
 
-import { useAccount, useWalletClient } from "wagmi";
-import { Abi, WalletClient } from "viem";
+import { useAccount } from "wagmi";
+import { Abi } from "viem";
 import CONTRACTS from "@/config/contracts";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import { config } from "@/providers/Web3Provider";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import axiosInstance from "@/lib/axios";
-import { AxiosError } from "axios";
 import factoryAbi from "@/config/factoryABI.json";
 import { Meme } from "@/app/types";
+import MemeBattleCard from "./MemeBattleCard";
+import axiosInstance from "@/lib/axios";
+import { AxiosError } from "axios";
+
+
 // Mock data for potential opponents
 
-const getMemeHeatScore = async (handle: string) => {
-  // try {
-  //   const result = await readContract(config,{
-  //     abi: factoryAbi as Abi,
-  //     address: CONTRACTS.factory as `0x${string}`,
-  //     functionName: 'getTokens',
-  //     args: [handle as `0x${string}`],
-  //   })
+interface MemeBattle {
+  battleId: bigint
+  endTime: bigint
+  memeA: `0x${string}`
+  memeB: `0x${string}`
+  resolved: boolean
+  startTime: bigint
+  winner: `0x${string}`
+}
 
-  //   console.log('Fetched tokens:', result)
-  //   return result // this will be a TokenData[] array
-  // } catch (err) {
-  //   console.error('Error fetching tokens:', err)
-  //   return []
-  // }
+export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
+  memeA: {
+    name: string;
+    description: string;
+    image: string;
+    handle: string;
+    heatScoreA: bigint
+  },
+  memeB: {
+    name: string;
+    description: string;
+    image: string;
+    handle: string;
+    heatScoreB: bigint
+  },
+  ending: Date
+}
 
+
+interface MemeDetails extends Meme {
+  heat: bigint
+}
+
+const getMemeHeatScore = async (token: string) => {
   try {
-    console.log(handle);
-    const res = await axiosInstance.get(`/api/heat/${handle}`);
-    return res.data;
-  } catch (error: any) {
-    // console.log(error)
-    const axiosErr = error as AxiosError<{ error?: string }>;
-    const message =
-      axiosErr?.response?.data?.error ||
-      axiosErr?.message ||
-      "Failed to get heat score";
-    throw new Error(message);
+    if (!token) return;
+
+    const result: any = await readContract(config, {
+      abi: factoryAbi as Abi,
+      address: CONTRACTS.factory as `0x${string}`,
+      functionName: 'getTokens',
+      args: [token as `0x${string}`],
+    })
+
+    return result[0].heat  // this will be a TokenData[] array
+  } catch (err) {
+    console.error('Error fetching tokens:', err)
+    return []
   }
 };
+
+const getMemeBattles = async (token: string): Promise<MemeBattle[]> => {
+  try {
+
+    if (!token) return [];
+
+    const result: any = await readContract(config, {
+      abi: MemedBattleABI as Abi,
+      address: CONTRACTS.memedBattle as `0x${string}`,
+      functionName: 'getUserBattles',
+      args: [token as `0x${string}`],
+    })
+    return result // this will be a TokenData[] array
+  } catch (err) {
+    console.error('Error fetching tokens:', err)
+    return []
+  }
+}
+
+const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; tokenAddress: string }> => {
+  return axiosInstance.get(`/api/tokens/${tokenAddress}`)
+    .then((res) => res.data.data)
+    .catch((error) => {
+      const axiosErr = error as AxiosError<{ message?: string }>;
+      const message =
+        axiosErr.response?.data?.message || axiosErr.message || "Failed to fetch Claims";
+
+      throw new Error(message);
+    })
+}
+
 const MemeBattles = ({ meme }: { meme: Meme }) => {
   const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingMemes, setLoadingMemes] = useState<boolean>(true)
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false);
-  const [heatScore, setHeatScore] = useState<number>(0);
+
+  const [battles, setBattles] = useState<Battle[]>([])
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
   const { chain, switchToChain } = useChainSwitch();
+  const [opponents, setOpponents] = useState<MemeDetails[]>([])
+  const [filteredOpponents, setFilteredOpponents] = useState<MemeDetails[]>([])
+  const [isLoadingMemeBattles, setIsLoadingMemeBattles] = useState<boolean>(true)
+
+
   const {
     memes,
     fetchNextPage,
@@ -94,6 +158,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     error,
   } = useMemes({ initialLimit: 10, category: "tokens" });
 
+
   //check chain
   useEffect(() => {
     if (chain?.id !== chains.testnet.id) {
@@ -101,21 +166,75 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     }
   }, [chain, switchToChain]);
 
-  const { data } = useWalletClient();
 
-  // Filter opponents based on search query
-  const filteredOpponents = memes.filter(
-    (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
-    // meme.handle?.toLowerCase() === profile.creatorHandle
-  );
 
-  // useEffect(() => {
-  //   if (filteredOpponents && filteredOpponents.length !== 0) {
-  //     getMemeHeatScore(filteredOpponents[0].tokenAddress).then((data) => {
-  //       setHeatScore(data.heatScore)
-  //     }).catch((err) => console.log(err))
-  //   }
-  // }, [filteredOpponents])
+
+
+  useEffect(() => {
+    if (searchQuery) {
+      setFilteredOpponents(opponents.filter(
+        (currMeme) => currMeme.tokenAddress !== meme.tokenAddress && (
+          currMeme?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          currMeme?.ticker?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      ));
+    } else {
+      setFilteredOpponents(opponents.filter(
+        (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
+      ));
+    }
+  }, [searchQuery, opponents])
+
+  const fetchMemeBattles = async () => {
+    setIsLoadingMemeBattles(true)
+    const memeBattles = await getMemeBattles(meme.tokenAddress)
+
+    const battleRes = await Promise.all(
+      memeBattles
+        .filter((battle) => battle.memeA !== "0x0000000000000000000000000000000000000000" &&
+          battle.memeB !== "0x0000000000000000000000000000000000000000")
+        .map(async (battle) => {
+          const memeA = await getMemeInfo(battle.memeA)
+          const memeB = await getMemeInfo(battle.memeB)
+          const heatScoreA = await getMemeHeatScore(memeA.tokenAddress)
+          const heatScoreB = await getMemeHeatScore(memeB.tokenAddress)
+
+          return {
+            ...battle,
+            ending: new Date(Number(battle.endTime) * 1000),
+            memeA: {
+              ...memeA,
+              heatScoreA,
+              isLeading: heatScoreA > heatScoreB
+            },
+            memeB: {
+              ...memeB,
+              heatScoreB,
+              isLeading: heatScoreB > heatScoreA
+            }
+          }
+        })
+    )
+    setBattles(battleRes)
+    setIsLoadingMemeBattles(false)
+  }
+  const fetchOpponents = async () => {
+    setLoadingMemes(true)
+    // Filter opponents based on search query
+    const filteredOpponentsWithHeat = await Promise.all(
+      memes.map(async (opp) => {
+        const heatScore = await getMemeHeatScore(opp.tokenAddress)
+        return {
+          ...opp,
+          heat: heatScore
+        }
+      })
+    )
+    setLoadingMemes(false)
+
+    return filteredOpponentsWithHeat
+  }
+
 
   const handleChallenge = async () => {
     try {
@@ -179,7 +298,30 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     }
   };
 
-  console.log(selectedOpponent);
+
+
+  useEffect(() => {
+    if (memes && address) {
+      fetchOpponents().then((res) => setOpponents(res)).catch((err) => console.log(err))
+    }
+  }, [isLoading, address])
+
+  useEffect(() => {
+    if (memes && address) {
+      fetchMemeBattles()
+    }
+  }, [isLoading, address])
+
+
+
+  useEffect(() => {
+    if (battles) {
+      console.log(battles)
+    }
+  }, [battles])
+
+
+
 
   return (
     <>
@@ -219,53 +361,33 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           </TabsTrigger>
         </TabsList>
 
-        {/* <TabsContent value="ongoing" className="space-y-4">
-          {ongoingBattles.length > 0 ? (
-            ongoingBattles.map((battle) => (
-              <RenderBattleCard
-                key={battle.id}
-                battle={battle}
-                profile={profile}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No ongoing battles. Challenge someone to start a battle!</p>
-            </div>
-          )}
-        </TabsContent> */}
 
-        {/* <TabsContent value="won" className="space-y-4">
-          {wonBattles.length > 0 ? (
-            wonBattles.map((battle) => (
-              <RenderBattleCard
-                key={battle.id}
-                battle={battle}
-                profile={profile}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No won battles yet. Keep battling to earn victories!</p>
-            </div>
-          )}
-        </TabsContent> */}
-        {/* 
+        <TabsContent value="ongoing" className="space-y-4">
+
+          {isLoadingMemeBattles ? (
+            <Loader2 className="animate-spin" />
+          ) : battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
+            <MemeBattleCard key={battle.battleId} battle={battle} />
+          ))}
+
+        </TabsContent>
+
+        <TabsContent value="won" className="space-y-4">
+          {isLoadingMemeBattles ? (
+            <Loader2 className="animate-spin" />
+          ) : battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
+            <MemeBattleCard key={battle.battleId} battle={battle} />
+          ))}
+        </TabsContent>
+        
         <TabsContent value="lost" className="space-y-4">
-          {lostBattles.length > 0 ? (
-            lostBattles.map((battle) => (
-              <RenderBattleCard
-                key={battle.id}
-                battle={battle}
-                profile={profile}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No lost battles. Keep up the good work!</p>
-            </div>
-          )}
-        </TabsContent> */}
+        {isLoadingMemeBattles ? (
+            <Loader2 className="animate-spin" />
+          ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
+            <MemeBattleCard key={battle.battleId} battle={battle} />
+          ))}
+        </TabsContent>
+
       </Tabs>
 
       <div className="mt-6">
@@ -286,16 +408,33 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             </DialogHeader>
 
             <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
+
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search memes by name or symbol"
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
               <div className="border rounded-md max-h-[30vh] md:max-h-[40vh] overflow-y-auto">
-                {filteredOpponents.length > 0 ? (
+                {loadingMemes ? (
+                  <div className="flex items-center justify-center gap-2 py-3">
+                    <Loader2 className="animate-spin" />
+                    <p>Loading Memes..</p>
+                  </div>
+                ) : filteredOpponents.length > 0 ? (
                   filteredOpponents.map((opponent) => (
                     <div
                       key={opponent._id}
-                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
-                        selectedOpponent?._id === opponent._id
-                          ? "bg-gray-50"
-                          : ""
-                      }`}
+
+                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?._id === opponent._id
+                        ? "bg-gray-50"
+                        : ""
+                        }`}
+
                       onClick={() => setSelectedOpponent(opponent)}
                     >
                       <div className="flex items-center gap-3">
@@ -317,7 +456,8 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                       </div>
                       <Badge className="bg-amber-500 hover:bg-amber-500 flex items-center gap-1">
                         <Flame size={12} />
-                        {heatScore} {/* HeatScore Update */}
+                        {Intl.NumberFormat('en', { notation: 'compact' }).format(Number(opponent.heat))
+                        } {/* HeatScore Update */}
                       </Badge>
                     </div>
                   ))
