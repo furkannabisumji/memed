@@ -13,6 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { writeContract, simulateContract } from "@wagmi/core";
+import MemedBattleABI from '@/config/memedBattleABI.json';
 import {
   Dialog,
   DialogContent,
@@ -29,12 +31,14 @@ import { useCustomToast } from "@/components/ui/custom-toast";
 import { Flame } from "lucide-react";
 import { RenderBattleCard } from "./RenderBattleCard";
 import { useMemes } from "@/hooks/useMemes";
-import { startBattle } from "@/utils/blockchainServices";
+
 import { useAccount, useWalletClient } from "wagmi";
-import { WalletClient } from "viem";
+import { Abi, WalletClient } from "viem";
 import CONTRACTS from "@/config/contracts";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
+import { config } from "@/providers/Web3Provider";
+import { waitForTransactionReceipt } from "wagmi/actions";
 
 // Mock data for potential opponents
 const potentialOpponents = [
@@ -226,8 +230,8 @@ const MemeBattles = ({ profile }: { profile: any }) => {
 
   // Filter opponents based on search query
   const filteredOpponents = memes.filter(
-    (meme) =>
-      meme.handle?.toLowerCase() === profile.creatorHandle
+    (meme) =>meme
+      // meme.handle?.toLowerCase() === profile.creatorHandle
   )
 
   console.log("Filtered Opponenets: ", filteredOpponents)
@@ -241,18 +245,54 @@ const MemeBattles = ({ profile }: { profile: any }) => {
         return;
       }
       setChallengingMeme(true)
-  
-      // Challenge Meme
-      await startBattle({ userAddress: address as `0x${string}`, contractAddress: CONTRACTS.memedBattle, memeBAddress })
 
-      toast.success("Challenge sent!", {
-        description: `You've challenged ${selectedOpponent.name} to a ${battleDuration}-hour battle`,
-      });
+      const contractAddress = CONTRACTS.memedBattle
+      // Challenge Meme
+      // await startBattle({ userAddress: address as `0x${string}`, contractAddress: contractAddress as `0x${string}`, memeBAddress: memeBAddress as `0x${string}` })
+      try {
+        console.log("🚀 Starting battle...");
+
+
+        const { request } = await simulateContract(config, {
+          abi: MemedBattleABI as Abi,
+          address: contractAddress as `0x${string}`,
+          functionName: 'startBattle',
+          args: [
+            memeBAddress as `0x${string}`
+          ],
+          account: address
+        })
+
+        const hash = await writeContract(config, request)
+
+        // Wait for transaction to be mined
+        const receipt = await waitForTransactionReceipt(config, { hash });
+
+        const isSuccess = receipt.status === "success";
+
+        if (isSuccess) {
+          toast.success("Challenge sent!", {
+            description: `You've challenged ${selectedOpponent.name} to a ${battleDuration}-hour battle`,
+          });
+        }
+
+        console.log("✅ Battle transaction sent:", hash);
+
+      } catch (err: any) {
+        console.log(err)
+        const message =
+          err?.shortMessage ||
+          err?.message ||
+          "Something went wrong while starting the battle";
+
+        throw new Error(message);
+      }
 
       setIsModalOpen(false);
       setSelectedOpponent(null);
       setBattleDuration("24");
       setSearchQuery("");
+      
     } catch (error: any) {
       setChallengingMeme(false)
       toast.error("Battle failed", {

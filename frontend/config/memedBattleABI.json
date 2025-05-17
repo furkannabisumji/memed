@@ -204,7 +204,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_user",
+        "name": "_token",
         "type": "address"
       }
     ],

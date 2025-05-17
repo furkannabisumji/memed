@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { useAccountStore } from "@/store/accountStore";
-import { useConnectKitSign } from "@/hooks/useConnectKitSign";
+
 import { useCustomToast } from "@/components/ui/custom-toast";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
@@ -23,16 +22,21 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import RewardHistory from "@/components/rewards/RewardHistory";
-import { claimReward } from "@/utils/blockchainServices";
+
 import { useClaimData } from "@/hooks/rewards/useClaimData";
 import { ClaimProof, MemeDetails } from "../types";
 import { useRecordClaim } from "@/hooks/rewards/useRecordClaim";
-import { WalletClient } from "viem";
+import { Abi, WalletClient } from "viem";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import CONTRACTS from "@/config/contracts";
+import { simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import { config } from "@/providers/Web3Provider";
+
+
+import EngageToEarn from '@/config/memedEngageToEarnABI.json'
 
 type RewardToken = {
   id: string;
@@ -268,12 +272,11 @@ const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description:
 }
 export default function RewardsPage() {
   const { address } = useAccount();
-  const { selectedAccount } = useAccountStore();
-  const { signWithConnectKit } = useConnectKitSign();
-  const toast = useCustomToast();
-  const { data } = useWalletClient()
 
-  const walletClient = data as WalletClient;
+  const toast = useCustomToast();
+
+
+
   // Fetch Rewards
   const {
     data: fetchedrewards,
@@ -315,6 +318,7 @@ export default function RewardsPage() {
   const ITEMS_PER_PAGE = 8;
 
   const tabsListRef = useRef<HTMLDivElement>(null);
+
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
     available: null,
     initial: null,
@@ -327,7 +331,7 @@ export default function RewardsPage() {
       switchToChain();
     }
   }, [chain, switchToChain]);
-  
+
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
     const activeTabElement = tabRefs.current[activeTab];
@@ -367,7 +371,6 @@ export default function RewardsPage() {
     if (pageNum === 1) {
       setIsLoading(true);
     }
-
     // Simulate API delay
     // await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -377,6 +380,7 @@ export default function RewardsPage() {
       return;
     }
     let sourceData = fetchedrewards;
+
     if (tabType === "initial") {
       sourceData = fetchedrewards.filter((reward) => reward.type === "initial");
     } else if (tabType === "engagement") {
@@ -463,37 +467,56 @@ export default function RewardsPage() {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const claimRewardArgs = {
-        userAddress: address as `0x${string}`,
-        contractAddress:CONTRACTS.memedEngageToEarn as `0x${string}`,
-        tokenAddress:tokenAddress as `0x${string}`,
-        amount,
-        index,
-        proof:proof as `0x${string}`[]
-      }
+
       // On chain transaction
-      const tx = await claimReward(claimRewardArgs)
+      try {
+        console.log("🚀 Claiming reward...");
 
-      await recordClaim({
-        amount: claimRewardArgs.amount,
-        tokenAddress: claimRewardArgs.tokenAddress,
-        transactionHash: tx,
-        userAddress: claimRewardArgs.userAddress
-      })
+        const { request } = await simulateContract(config, {
+          abi: EngageToEarn as Abi,
+          address: CONTRACTS.memedEngageToEarn as `0x${string}`,
+          functionName: 'claim',
+          args: [
+            tokenAddress as `0x${string}`,
+            BigInt(amount),
+            BigInt(index),
+            proof as `0x${string}`[],
+          ],
+          account: address,
+        });
 
-      // Find the token data
-      const tokenData = rewards.find((r) => r.token === tokenAddress);
-      if (!tokenData) {
-        throw new Error("Token data not found");
+        const hash = await writeContract(config, request);
+
+        console.log('✅ Claim transaction sent:', hash);
+
+        const receipt = await waitForTransactionReceipt(config, { hash });
+        const isSuccess = receipt.status === "success";
+
+        // Find the token data
+        const tokenData = rewards.find((r) => r.token === tokenAddress);
+
+        if (!tokenData) {
+          throw new Error("Token data not found");
+        }
+
+        // Success - update UI
+        if (isSuccess) {
+          toast.success(
+            `Successfully claimed ${tokenData.amount} ${tokenData.tokenTicker}`
+          );
+        }
+
+      } catch (err: any) {
+        console.error('❌ Error sending claim transaction:', err);
+        const message =
+          err?.shortMessage ||
+          err?.message ||
+          "Something went wrong while claiming the reward";
+        throw new Error(message);
       }
-
-      // Success - update UI
-      toast.success(
-        `Successfully claimed ${tokenData.amount} ${tokenData.tokenTicker}`
-      );
-
       // Remove the claimed token from the list
       setRewards(rewards.filter((r) => r.token !== tokenAddress));
+
     } catch (error) {
       console.error("Claim error:", error);
       toast.error(

@@ -18,6 +18,7 @@ import type { Abi } from "viem";
 
 // Import ABI
 import memedStakingABI from "@/config/memedStakingABI.json";
+import StakingRewards from "../rewards/StakingRewards";
 
 // Ensure we have a valid ABI
 if (!Array.isArray(memedStakingABI)) {
@@ -357,43 +358,12 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
             </h3>
 
             {(() => {
-              const stakingRewards = [
-                {
-                  id: "1",
-                  reason: "Heat Score Milestone (75+)",
-                  date: "2023-06-15",
-                  amount: 25000,
-                },
-                {
-                  id: "2",
-                  reason: "Battle Victory Bonus",
-                  date: "2023-06-10",
-                  amount: 15000,
-                },
-                {
-                  id: "3",
-                  reason: "Weekly Trading Volume Share",
-                  date: "2023-06-07",
-                  amount: 8500,
-                },
-              ];
+              
 
               return (
                 <div className="space-y-4">
-                  {stakingRewards.map((reward) => (
-                    <div
-                      key={reward.id}
-                      className="flex justify-between items-center p-3 border border-gray-200 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">{reward.reason}</p>
-                        <p className="text-sm text-gray-500">{reward.date}</p>
-                      </div>
-                      <Badge className="bg-primary hover:bg-primary text-white">
-                        +{reward.amount.toLocaleString()} ${meme.ticker}
-                      </Badge>
-                    </div>
-                  ))}
+                  <StakingRewards ticker={meme.ticker as string}/>
+                  
                 </div>
               );
             })()}
