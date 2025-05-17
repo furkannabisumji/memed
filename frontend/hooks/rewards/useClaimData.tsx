@@ -15,10 +15,13 @@ export function useClaimData(userAddress: string | undefined) {
                 return res.data.rewards;
             
             } catch (error: any) {
+
                 const axiosErr = error as AxiosError<{ error?: string }>;
+                console.log(axiosErr)
                 const message =
                     axiosErr?.response?.data?.error || axiosErr?.message || "Failed to fetch Claims";
-                throw new Error(message);
+                
+                    throw new Error(message);
             }
         },
         enabled: !!userAddress,

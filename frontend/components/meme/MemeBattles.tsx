@@ -67,14 +67,16 @@ export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
     description: string;
     image: string;
     handle: string;
-    heatScoreA: bigint
+    heatScoreA: bigint;
+    isLeading:boolean;
   },
   memeB: {
     name: string;
     description: string;
     image: string;
     handle: string;
-    heatScoreB: bigint
+    heatScoreB: bigint;
+    isLeading:boolean;
   },
   ending: Date
 }
@@ -362,26 +364,31 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
         </TabsList>
 
 
-        <TabsContent value="ongoing" className="space-y-4">
-
+        <TabsContent value="ongoing" className="space-y-4 grid grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
-            <Loader2 className="animate-spin" />
+            <div className="flex justify-center items-center w-full p-10 col-span-3">
+              <Loader2 className="animate-spin" />
+            </div>
           ) : battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} />
+            <>
+              <MemeBattleCard key={battle.battleId} battle={battle} />
+            </>
           ))}
 
         </TabsContent>
 
         <TabsContent value="won" className="space-y-4">
           {isLoadingMemeBattles ? (
-            <Loader2 className="animate-spin" />
+            <div className="w-full p-3 flex justify-center items-center">
+              <Loader2 className="animate-spin" />
+            </div>
           ) : battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
           ))}
         </TabsContent>
-        
+
         <TabsContent value="lost" className="space-y-4">
-        {isLoadingMemeBattles ? (
+          {isLoadingMemeBattles ? (
             <Loader2 className="animate-spin" />
           ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
