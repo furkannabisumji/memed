@@ -271,7 +271,6 @@ const rewardsForUser = async (req, res, next) => {
     // Get all unclaimed rewards for the user
     const rewards = await Reward.find({ 
       userAddress, 
-
     }).populate('airdrop token');
 
     
