@@ -31,6 +31,7 @@ const tenderlyWebhook = async (req, res) => {
             // Process logs if available
             if (transaction.logs && transaction.logs.length > 0) {
                 const contractInterface = ethers.Interface.from(airdropABI);
+
                 let airdrop;
                 for (let i = 0; i < transaction.logs.length; i++) {
                     const decodedLog = contractInterface.parseLog(transaction.logs[i]);

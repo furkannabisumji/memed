@@ -8,6 +8,8 @@ import Footer from "@/components/shared/Footer";
 import MemeCard from "@/components/meme/MemeCard";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMemes } from "@/hooks/useMemes";
+import { useCreators } from "@/hooks/useCreators";
+import { CreatorCard } from "@/components/meme/CreatorCard";
 
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState("tokens");
@@ -29,13 +31,15 @@ export default function ExplorePage() {
   } = useMemes({ category: "tokens" });
 
   const {
-    memes: creatorMemesData,
-    fetchNextPage: fetchNextCreatorMemes,
-    hasNextPage: hasNextCreatorMemes,
-    isFetchingNextPage: isFetchingNextCreatorMemes,
-    isLoading: isLoadingCreatorMemes,
-    isPending: isPendingCreatorMemes,
-  } = useMemes({ category: "creators" });
+    creators: creatorsData,
+    fetchNextPage: fetchNextCreators,
+    hasNextPage: hasNextCreators,
+    isFetchingNextPage: isFetchingNextCreators,
+    isLoading: isLoadingCreators,
+    isPending: isPendingCreators,
+  } = useCreators({ category: "creators" });
+
+  console.log(creatorsData);
 
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
@@ -153,15 +157,15 @@ export default function ExplorePage() {
             </TabsContent>
 
             <TabsContent value="creators" className="mt-8">
-              {isPendingCreatorMemes ? (
+              {isPendingCreators ? (
                 <div className="flex justify-center items-center h-40">
                   <Loader2 className="h-8 w-8 animate-spin text-black" />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {creatorMemesData && creatorMemesData.length > 0 ? (
-                    creatorMemesData.map((meme) => (
-                      <MemeCard key={meme._id} meme={meme} />
+                  {creatorsData && creatorsData.length > 0 ? (
+                    creatorsData.map((creator) => (
+                      <CreatorCard key={creator.address} creator={creator} />
                     ))
                   ) : (
                     <div className="col-span-3 text-center py-10">
@@ -191,14 +195,14 @@ export default function ExplorePage() {
                 )}
               </Button>
             )}
-            {activeTab === "creators" && hasNextCreatorMemes && (
+            {activeTab === "creators" && hasNextCreators && (
               <Button
                 variant="outline"
                 className="border-2 border-black text-black hover:bg-black hover:text-white"
-                onClick={() => fetchNextCreatorMemes()}
-                disabled={isFetchingNextCreatorMemes}
+                onClick={() => fetchNextCreators()}
+                disabled={isFetchingNextCreators}
               >
-                {isFetchingNextCreatorMemes ? (
+                {isFetchingNextCreators ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading...

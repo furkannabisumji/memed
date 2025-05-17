@@ -155,8 +155,10 @@ const mintMemeCoins = async (req, res, next) => {
  */
 async function distributeRewards() {
   try {
+
     const airdrops = await Airdrop.find({ processed: false }).populate('token');
     if (airdrops.length === 0) {
+
       console.log('No unprocessed airdrops found');
       return;
     }
@@ -164,6 +166,7 @@ async function distributeRewards() {
     for (const airdrop of airdrops) {
     const { index, limit, maxAmount } = airdrop;
     const { handle, tokenAddress } = airdrop.token;
+
     console.log(`Distributing rewards for ${handle} with token ${tokenAddress}`);
     
     // 1. Get followers of the handle
