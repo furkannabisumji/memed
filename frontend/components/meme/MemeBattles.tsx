@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { writeContract, simulateContract, readContract } from "@wagmi/core";
-import MemedBattleABI from '@/config/memedBattleABI.json';
+import MemedBattleABI from "@/config/memedBattleABI.json";
 import {
   Dialog,
   DialogContent,
@@ -41,156 +41,9 @@ import { config } from "@/providers/Web3Provider";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
-import factoryAbi from '@/config/factoryABI.json'
+import factoryAbi from "@/config/factoryABI.json";
+import { Meme } from "@/app/types";
 // Mock data for potential opponents
-const potentialOpponents = [
-  {
-    id: "1",
-    name: "Pepe's Adventure",
-    symbol: "PEPE",
-    image: "/fallback.png",
-    followers: 65420,
-    heatScore: 82,
-  },
-  {
-    id: "2",
-    name: "Wojak Feels",
-    symbol: "WOJAK",
-    image: "/fallback.png",
-    followers: 42180,
-    heatScore: 75,
-  },
-  {
-    id: "3",
-    name: "Stonks Guy",
-    symbol: "STONK",
-    image: "/fallback.png",
-    followers: 38750,
-    heatScore: 79,
-  },
-  {
-    id: "4",
-    name: "Distracted Boyfriend",
-    symbol: "DISTRACT",
-    image: "/fallback.png",
-    followers: 29840,
-    heatScore: 68,
-  },
-  {
-    id: "5",
-    name: "This is Fine",
-    symbol: "FINE",
-    image: "/fallback.png",
-    followers: 52340,
-    heatScore: 77,
-  },
-  {
-    id: "6",
-    name: "Galaxy Brain",
-    symbol: "BRAIN",
-    image: "/fallback.png",
-    followers: 31250,
-    heatScore: 71,
-  },
-  {
-    id: "7",
-    name: "Moon",
-    symbol: "MOON",
-    image: "/fallback.png",
-    followers: 42180,
-    heatScore: 85,
-  },
-  {
-    id: "8",
-    name: "Like a Boss",
-    symbol: "BOSS",
-    image: "/fallback.png",
-    followers: 38750,
-    heatScore: 82,
-  },
-  {
-    id: "9",
-    name: "Arthur's Fist",
-    symbol: "FIST",
-    image: "/fallback.png",
-    followers: 29840,
-    heatScore: 73,
-  },
-  {
-    id: "10",
-    name: "Overly Attached Girlfriend",
-    symbol: "OAG",
-    image: "/fallback.png",
-    followers: 52340,
-    heatScore: 74,
-  },
-  {
-    id: "11",
-    name: "Scumbag Steve",
-    symbol: "SCUMBAG",
-    image: "/fallback.png",
-    followers: 31250,
-    heatScore: 86,
-  },
-];
-
-// Mock data for battles
-const mockBattles = [
-  {
-    id: "1",
-    opponent: "Pepe's Adventure",
-    opponentImage: "/fallback.png",
-    status: "ongoing",
-    endTime: new Date(Date.now() + 86400000).toISOString(), // 24 hours from now
-    votes: 12500,
-    opponentVotes: 10200,
-  },
-  {
-    id: "2",
-    opponent: "Wojak Feels",
-    opponentImage: "/fallback.png",
-    status: "ongoing",
-    endTime: new Date(Date.now() + 172800000).toISOString(), // 48 hours from now
-    votes: 8200,
-    opponentVotes: 7900,
-  },
-  {
-    id: "3",
-    opponent: "Stonks Guy",
-    opponentImage: "/fallback.png",
-    status: "won",
-    endTime: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-    votes: 18900,
-    opponentVotes: 12300,
-  },
-  {
-    id: "4",
-    opponent: "Distracted Boyfriend",
-    opponentImage: "/fallback.png",
-    status: "won",
-    endTime: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
-    votes: 22400,
-    opponentVotes: 19800,
-  },
-  {
-    id: "5",
-    opponent: "This is Fine",
-    opponentImage: "/fallback.png",
-    status: "lost",
-    endTime: new Date(Date.now() - 432000000).toISOString(), // 5 days ago
-    votes: 8700,
-    opponentVotes: 9800,
-  },
-  {
-    id: "6",
-    opponent: "Galaxy Brain",
-    opponentImage: "/fallback.png",
-    status: "lost",
-    endTime: new Date(Date.now() - 604800000).toISOString(), // 7 days ago
-    votes: 15200,
-    opponentVotes: 17500,
-  },
-];
 
 const getMemeHeatScore = async (handle: string) => {
   // try {
@@ -209,27 +62,29 @@ const getMemeHeatScore = async (handle: string) => {
   // }
 
   try {
-    console.log(handle)
+    console.log(handle);
     const res = await axiosInstance.get(`/api/heat/${handle}`);
     return res.data;
   } catch (error: any) {
     // console.log(error)
     const axiosErr = error as AxiosError<{ error?: string }>;
     const message =
-      axiosErr?.response?.data?.error || axiosErr?.message || "Failed to get heat score";
+      axiosErr?.response?.data?.error ||
+      axiosErr?.message ||
+      "Failed to get heat score";
     throw new Error(message);
   }
-}
-const MemeBattles = ({ profile }: { profile: any }) => {
+};
+const MemeBattles = ({ meme }: { meme: Meme }) => {
   const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
-  const [challengingMeme, setChallengingMeme] = useState<boolean>(false)
-  const [heatScore, setHeatScore] = useState<number>(0)
+  const [challengingMeme, setChallengingMeme] = useState<boolean>(false);
+  const [heatScore, setHeatScore] = useState<number>(0);
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
-  const { chain, switchToChain } = useChainSwitch()
+  const { chain, switchToChain } = useChainSwitch();
   const {
     memes,
     fetchNextPage,
@@ -237,8 +92,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useMemes({ initialLimit: 10, category: 'tokens' });
-
+  } = useMemes({ initialLimit: 10, category: "tokens" });
 
   //check chain
   useEffect(() => {
@@ -247,23 +101,13 @@ const MemeBattles = ({ profile }: { profile: any }) => {
     }
   }, [chain, switchToChain]);
 
-  console.log("Profile Handle:", profile.creatorHandle)
-  const { data } = useWalletClient()
-
-
-  // Filter battles by status
-  const ongoingBattles = mockBattles.filter(
-    (battle) => battle.status === "ongoing"
-  );
-  const wonBattles = mockBattles.filter((battle) => battle.status === "won");
-  const lostBattles = mockBattles.filter((battle) => battle.status === "lost");
-
+  const { data } = useWalletClient();
 
   // Filter opponents based on search query
   const filteredOpponents = memes.filter(
-    (meme) => meme
+    (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
     // meme.handle?.toLowerCase() === profile.creatorHandle
-  )
+  );
 
   // useEffect(() => {
   //   if (filteredOpponents && filteredOpponents.length !== 0) {
@@ -273,9 +117,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
   //   }
   // }, [filteredOpponents])
 
-
-
-  const handleChallenge = async (memeBAddress: string) => {
+  const handleChallenge = async () => {
     try {
       if (!selectedOpponent) {
         toast.error("Select an opponent", {
@@ -283,26 +125,22 @@ const MemeBattles = ({ profile }: { profile: any }) => {
         });
         return;
       }
-      setChallengingMeme(true)
+      setChallengingMeme(true);
 
-      const contractAddress = CONTRACTS.memedBattle
-      // Challenge Meme
-      // await startBattle({ userAddress: address as `0x${string}`, contractAddress: contractAddress as `0x${string}`, memeBAddress: memeBAddress as `0x${string}` })
+      const contractAddress = CONTRACTS.memedBattle;
+
       try {
         console.log("🚀 Starting battle...");
-
 
         const { request } = await simulateContract(config, {
           abi: MemedBattleABI as Abi,
           address: contractAddress as `0x${string}`,
-          functionName: 'startBattle',
-          args: [
-            '0xe2951106f485e9bB94F43c7ceE8539F7660F4815'
-          ],
-          account: address
-        })
+          functionName: "startBattle",
+          args: [selectedOpponent.tokenAddress as `0x${string}`],
+          account: address,
+        });
 
-        const hash = await writeContract(config, request)
+        const hash = await writeContract(config, request);
 
         // Wait for transaction to be mined
         const receipt = await waitForTransactionReceipt(config, { hash });
@@ -316,9 +154,8 @@ const MemeBattles = ({ profile }: { profile: any }) => {
         }
 
         console.log("✅ Battle transaction sent:", hash);
-
       } catch (err: any) {
-        console.log("Start Battle Meme Error : ",err)
+        console.log("Start Battle Meme Error : ", err);
         const message =
           err?.shortMessage ||
           err?.message ||
@@ -331,17 +168,18 @@ const MemeBattles = ({ profile }: { profile: any }) => {
       setSelectedOpponent(null);
       setBattleDuration("24");
       setSearchQuery("");
-
     } catch (error: any) {
-      setChallengingMeme(false)
+      setChallengingMeme(false);
       toast.error("Battle failed", {
         description: error?.message || "Something went wrong",
       });
-      console.log(error)
+      console.log(error);
     } finally {
-      setChallengingMeme(false)
+      setChallengingMeme(false);
     }
   };
+
+  console.log(selectedOpponent);
 
   return (
     <>
@@ -363,25 +201,25 @@ const MemeBattles = ({ profile }: { profile: any }) => {
             className="flex items-center gap-1 cursor-pointer  "
           >
             <Clock size={16} />
-            Ongoing ({ongoingBattles.length})
+            Ongoing ({0})
           </TabsTrigger>
           <TabsTrigger
             value="won"
             className="flex items-center gap-1 cursor-pointer"
           >
             <CheckCircle size={16} />
-            Won ({wonBattles.length})
+            Won ({0})
           </TabsTrigger>
           <TabsTrigger
             value="lost"
             className="flex items-center gap-1 cursor-pointer"
           >
             <XCircle size={16} />
-            Lost ({lostBattles.length})
+            Lost ({0})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ongoing" className="space-y-4">
+        {/* <TabsContent value="ongoing" className="space-y-4">
           {ongoingBattles.length > 0 ? (
             ongoingBattles.map((battle) => (
               <RenderBattleCard
@@ -395,9 +233,9 @@ const MemeBattles = ({ profile }: { profile: any }) => {
               <p>No ongoing battles. Challenge someone to start a battle!</p>
             </div>
           )}
-        </TabsContent>
+        </TabsContent> */}
 
-        <TabsContent value="won" className="space-y-4">
+        {/* <TabsContent value="won" className="space-y-4">
           {wonBattles.length > 0 ? (
             wonBattles.map((battle) => (
               <RenderBattleCard
@@ -411,8 +249,8 @@ const MemeBattles = ({ profile }: { profile: any }) => {
               <p>No won battles yet. Keep battling to earn victories!</p>
             </div>
           )}
-        </TabsContent>
-
+        </TabsContent> */}
+        {/* 
         <TabsContent value="lost" className="space-y-4">
           {lostBattles.length > 0 ? (
             lostBattles.map((battle) => (
@@ -427,7 +265,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
               <p>No lost battles. Keep up the good work!</p>
             </div>
           )}
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
 
       <div className="mt-6">
@@ -448,15 +286,16 @@ const MemeBattles = ({ profile }: { profile: any }) => {
             </DialogHeader>
 
             <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
-
-
               <div className="border rounded-md max-h-[30vh] md:max-h-[40vh] overflow-y-auto">
                 {filteredOpponents.length > 0 ? (
                   filteredOpponents.map((opponent) => (
                     <div
                       key={opponent._id}
-                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?.id === opponent._id ? "bg-gray-50" : ""
-                        }`}
+                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
+                        selectedOpponent?._id === opponent._id
+                          ? "bg-gray-50"
+                          : ""
+                      }`}
                       onClick={() => setSelectedOpponent(opponent)}
                     >
                       <div className="flex items-center gap-3">
@@ -526,20 +365,19 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                       <span>{selectedOpponent.name}</span>
                     </div>
 
-
                     <ArrowRight size={16} className="text-gray-500" />
 
                     <div className="flex items-center gap-2">
                       <Avatar>
                         <AvatarImage
-                          src={profile.profileImage}
-                          alt={profile.displayName}
+                          src={selectedOpponent.image}
+                          alt={selectedOpponent.name}
                         />
                         <AvatarFallback>
-                          {profile.displayName.substring(0, 2)}
+                          {selectedOpponent.name.substring(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span>{profile.displayName}</span>
+                      <span>{selectedOpponent.name}</span>
                     </div>
                   </div>
                 </div>
@@ -551,11 +389,15 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                 Cancel
               </Button>
               <Button
-                className="bg-primary hover:bg-primary/90"
-                onClick={() => handleChallenge(profile.id)}
+                className="bg-primary hover:bg-primary/90 cursor-pointer  "
+                onClick={() => handleChallenge()}
                 disabled={!selectedOpponent}
               >
-                {challengingMeme ? <Loader2 className="animate-spin" /> : 'Start Battle'}
+                {challengingMeme ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Start Battle"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
