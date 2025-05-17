@@ -474,19 +474,26 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_heat",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "_minusHeat",
-        "type": "bool"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "heat",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "minusHeat",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct MemedFactory.HeatUpdate[]",
+        "name": "_heatUpdates",
+        "type": "tuple[]"
       }
     ],
     "name": "updateHeat",
