@@ -102,7 +102,7 @@ export default function MemeBattleCard({ battle }: { battle: Battle }) {
 
                         {/* Crossed swords in center */}
                         <motion.div
-                            className=""
+                            className="-translate-x-1/3"
                             initial={{ rotate: -15, scale: 0 }}
                             animate={{ rotate: 0, scale: 1 }}
                             transition={{ delay: 0.4, type: 'spring' }}
