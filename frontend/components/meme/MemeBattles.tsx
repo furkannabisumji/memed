@@ -48,6 +48,7 @@ import MemeBattleCard from "./MemeBattleCard";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 
+
 // Mock data for potential opponents
 
 interface MemeBattle {
@@ -78,6 +79,7 @@ export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
   ending: Date
 }
 
+
 interface MemeDetails extends Meme {
   heat: bigint
 }
@@ -102,6 +104,7 @@ const getMemeHeatScore = async (token: string) => {
 
 const getMemeBattles = async (token: string): Promise<MemeBattle[]> => {
   try {
+
     if (!token) return [];
 
     const result: any = await readContract(config, {
@@ -128,6 +131,7 @@ const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description:
       throw new Error(message);
     })
 }
+
 const MemeBattles = ({ meme }: { meme: Meme }) => {
   const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,6 +139,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   const [loadingMemes, setLoadingMemes] = useState<boolean>(true)
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false);
+
   const [battles, setBattles] = useState<Battle[]>([])
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
@@ -142,6 +147,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   const [opponents, setOpponents] = useState<MemeDetails[]>([])
   const [filteredOpponents, setFilteredOpponents] = useState<MemeDetails[]>([])
   const [isLoadingMemeBattles, setIsLoadingMemeBattles] = useState<boolean>(true)
+
 
   const {
     memes,
@@ -153,13 +159,13 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   } = useMemes({ initialLimit: 10, category: "tokens" });
 
 
-
   //check chain
   useEffect(() => {
     if (chain?.id !== chains.testnet.id) {
       switchToChain();
     }
   }, [chain, switchToChain]);
+
 
 
 
@@ -293,6 +299,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   };
 
 
+
   useEffect(() => {
     if (memes && address) {
       fetchOpponents().then((res) => setOpponents(res)).catch((err) => console.log(err))
@@ -312,6 +319,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
       console.log(battles)
     }
   }, [battles])
+
 
 
 
@@ -353,6 +361,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           </TabsTrigger>
         </TabsList>
 
+
         <TabsContent value="ongoing" className="space-y-4">
 
           {isLoadingMemeBattles ? (
@@ -378,6 +387,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             <MemeBattleCard key={battle.battleId} battle={battle} />
           ))}
         </TabsContent>
+
       </Tabs>
 
       <div className="mt-6">
@@ -398,6 +408,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             </DialogHeader>
 
             <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
+
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -407,6 +418,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+
               <div className="border rounded-md max-h-[30vh] md:max-h-[40vh] overflow-y-auto">
                 {loadingMemes ? (
                   <div className="flex items-center justify-center gap-2 py-3">
@@ -417,10 +429,12 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                   filteredOpponents.map((opponent) => (
                     <div
                       key={opponent._id}
+
                       className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?._id === opponent._id
                         ? "bg-gray-50"
                         : ""
                         }`}
+
                       onClick={() => setSelectedOpponent(opponent)}
                     >
                       <div className="flex items-center gap-3">
