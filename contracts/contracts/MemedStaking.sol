@@ -32,7 +32,13 @@ contract MemedStaking is Ownable {
         }
         stakes[meme][msg.sender].amount += amount;
         totalStakedPerMeme[meme] += amount;
-        factory.updateHeat(meme, amount / TOKENS_PER_HEAT, false);
+        MemedFactory.HeatUpdate[] memory heatUpdate = new MemedFactory.HeatUpdate[](1);
+        heatUpdate[0] = MemedFactory.HeatUpdate({
+            token: meme,
+            heat: amount / TOKENS_PER_HEAT,
+            minusHeat: false
+        });
+        factory.updateHeat(heatUpdate);
         emit Staked(msg.sender, meme, amount);
     }
 
@@ -50,7 +56,13 @@ contract MemedStaking is Ownable {
                 }
             }
         }
-        factory.updateHeat(meme, amount / TOKENS_PER_HEAT, true);
+        MemedFactory.HeatUpdate[] memory heatUpdate = new MemedFactory.HeatUpdate[](1);
+        heatUpdate[0] = MemedFactory.HeatUpdate({
+            token: meme,
+            heat: amount / TOKENS_PER_HEAT,
+            minusHeat: true
+        });
+        factory.updateHeat(heatUpdate);
         IERC20(meme).transfer(msg.sender, amount);
         emit Unstaked(msg.sender, meme, amount);
     }

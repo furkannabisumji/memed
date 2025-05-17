@@ -77,8 +77,6 @@ const mintMemeCoins = async (req, res, next) => {
 
     // 3. Check that the message is in the expected format
     const expectedMessage = `Mint meme for handle: ${handle} at ${timestamp}`;
-    console.log({expectedMessage});
-    console.log({message});
     // if (message !== expectedMessage) {
     //   return res.status(400).json({ error: 'Invalid message format' });
     // }
@@ -166,8 +164,7 @@ async function distributeRewards() {
     }
     console.log(`Processing ${airdrops.length} unprocessed airdrops`);
     for (const airdrop of airdrops) {
-
-    const { limit, index, maxAmount } = airdrop;
+    const { index, limit, maxAmount } = airdrop;
     const { handle, tokenAddress } = airdrop.token;
 
     console.log(`Distributing rewards for ${handle} with token ${tokenAddress}`);
@@ -180,15 +177,15 @@ async function distributeRewards() {
 
     if(followerCount >= process.env.MIN_FOLLOWERS_REQUIRED) {
       // Extract just the follower addresses
-      
+      const followerAddresses = followers.map(follower => follower.follower.address);
 
       // 3. Calculate token amount per follower (100 tokens each)
       const airdropPerFollower = Number(maxAmount) / followerCount;
       const tokensPerFollower = ethers.parseUnits(airdropPerFollower.toString(), 18).toString();
-      const selectedFollowers = selectRandomFollowers(followers, followerCount)
+      const selectedFollowers = selectRandomFollowers(followerAddresses, followerCount)
         .map(follower => {
           return {
-            address: follower.follower.address,
+            address: follower,
             amount: tokensPerFollower
           }
         }); // Extract the address field
@@ -201,23 +198,24 @@ async function distributeRewards() {
         address: '0x35134987bB541607Cd45e62Dd1feA4F587607817',
         amount: tokensPerFollower
       })
-      const { root } = await merkleService.generateMerkleTree(selectedFollowers);
-      console.log({root});
+      const { root, followersWithProofs } = await merkleService.generateMerkleTree(selectedFollowers);
       // 7. Set the Merkle root on the contract
       try {
-        //const tx = await airdrop_contract.setMerkleRoot(tokenAddress, index, root);
-        for (const follower of selectedFollowers) {
+      await airdrop_contract.setMerkleRoot(tokenAddress, root, index);
+      
+        for (const follower of followersWithProofs) {
           const reward = new Reward({
             handle,
             tokenAddress,
+            proof: follower.proof,
             userAddress: follower.address,
-            amount: follower.amount,
+            amount: ethers.formatUnits(follower.amount, 18),
             airdrop: airdrop._id
           });
           await reward.save();
           await Airdrop.findByIdAndUpdate(
             airdrop._id,
-            { processed: true }
+            { processed: true, merkleRoot: root }
           );
         } 
         console.log(`Merkle root set for token ${tokenAddress} at index ${index}`);
@@ -263,7 +261,7 @@ const getEngagementMetrics = async (req, res, next) => {
 /**
  * Generate claim data for a user
  */
-const generateClaimData = async (req, res, next) => {
+const rewardsForUser = async (req, res, next) => {
   try {
     const userAddress = req.params.userAddress;
     console.log({userAddress});
@@ -271,115 +269,15 @@ const generateClaimData = async (req, res, next) => {
     // Get all unclaimed rewards for the user
     const rewards = await Reward.find({ 
       userAddress, 
-      claimed: false 
     });
-    console.log({rewards});
-    
-    if (!rewards || rewards.length === 0) {
-      return res.status(404).json({ error: 'No unclaimed rewards found' });
-    }
-    
-    // Group rewards by token
-    const rewardsByToken = {};
-    
-    for (const reward of rewards) {
-      if (!rewardsByToken[reward.tokenAddress]) {
-        rewardsByToken[reward.tokenAddress] = {
-          tokenAddress: reward.tokenAddress,
-          handle: reward.handle,
-          airdropIndex: reward.airdropIndex,
-          rewards: []
-        };
-      }
-      rewardsByToken[reward.tokenAddress].rewards.push(reward);
-    }
-    
-    // Generate Merkle proofs for each token
-    const claims = [];
-    for (const tokenData of Object.values(rewardsByToken)) {
-      const { proof, leaf, amount } = await merkleService.generateProof(
-        tokenData.tokenAddress,
-        userAddress,
-        tokenData.airdropIndex
-      );
-      
-      if (proof.length > 0) {
-        // Get the type from the first reward for this token
-        const rewardType = tokenData.rewards[0].type;
-        console.log({tokenData});
-        
-        claims.push({
-          token: tokenData.tokenAddress,
-          handle: tokenData.handle,
-          amount: amount,
-          proof,
-          leaf,
-          index: tokenData.airdropIndex,
-          type: rewardType
-        });
-      }
-    }
     
     return res.status(200).json({
       address: userAddress,
-      proofs: claims,
-      airdropContract: process.env.AIRDROP_CONTRACT_ADDRESS
+      rewards,
     });
     
   } catch (error) {
     console.error('Error generating claim data:', error);
-    next(error);
-  }
-};
-
-/**
- * Record a claim as successful
- */
-const recordClaim = async (req, res, next) => {
-  try {
-    const { userAddress, tokenAddress, amount, transactionHash } = req.body;
-    
-    // Validate required fields
-    if (!userAddress || !tokenAddress || !amount || !transactionHash) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    // Find rewards for this user/token
-    const rewards = await Reward.find({
-      userAddress,
-      tokenAddress,
-      claimed: false
-    });
-    
-    if (!rewards || rewards.length === 0) {
-      return res.status(404).json({ error: 'No matching unclaimed rewards found' });
-    }
-    
-    // Mark as claimed
-    await Reward.updateMany(
-      {
-        userAddress,
-        tokenAddress,
-        claimed: false
-      },
-      {
-        $set: {
-          claimed: true,
-          claimTransactionHash: transactionHash
-        }
-      }
-    );
-    
-    return res.status(200).json({
-      message: 'Claim recorded successfully',
-      userAddress,
-      tokenAddress,
-      amount,
-      transactionHash
-    });
-    
-  } catch (error) {
-    console.error('Error recording claim:', error);
     next(error);
   }
 };
@@ -401,66 +299,6 @@ function selectRandomFollowers(followers, count) {
   
   return selected;
 }
-
-/**
- * Add rewards for a specific user
- * @param {Object} req - Express request object with tokenAddress, userAddress, and amount
- * @param {Object} res - Express response object
- */
-const addRewardsForUser = async (req, res, next) => {
-  try {
-    const { tokenAddress, userAddress, amount } = req.body;
-
-    // Validate inputs
-    if (!tokenAddress || !userAddress || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Get the latest airdrop index for this token
-    const airdropIndex = await merkleService.getLatestAirdropIndex(tokenAddress) + 1;
-
-    // Create the new reward record
-    const reward = await Reward.create({
-      tokenAddress,
-      userAddress,
-      amount: ethers.parseUnits(amount.toString(), 18).toString(), // Convert to wei
-      type: 'manual',
-      airdropIndex,
-      claimed: false
-    });
-
-    console.log('Created new reward:', reward);
-
-    // Generate new Merkle tree and root
-    const { root } = await merkleService.generateMerkleTree(tokenAddress, airdropIndex);
-    
-    // Update the root on the contract
-    try {
-      const tx = await airdrop_contract.setMerkleRoot(tokenAddress, airdropIndex, root);
-      await tx.wait();
-      console.log('Updated Merkle root on chain');
-
-      return res.status(200).json({
-        message: 'Rewards added successfully',
-        reward,
-        merkleRoot: root,
-        transactionHash: tx.hash
-      });
-    } catch (error) {
-      console.error('Error setting merkle root:', error);
-      // Even if contract update fails, reward is still created
-      return res.status(200).json({
-        message: 'Reward created but merkle root update failed',
-        reward,
-        error: error.message
-      });
-    }
-
-  } catch (error) {
-    console.error('Error adding rewards:', error);
-    next(error);
-  }
-};
 
 /**
  * Get aggregated engagement metrics for a handle
@@ -498,8 +336,6 @@ module.exports = {
   getMintableCheck,
   mintMemeCoins,
   distributeRewards,
-  generateClaimData,
-  recordClaim,
-  addRewardsForUser,
+  rewardsForUser,
   getAggregatedEngagementMetrics
 }; 

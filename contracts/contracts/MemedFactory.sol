@@ -27,6 +27,12 @@ contract MemedFactory is Ownable {
         uint createdAt;
     }
 
+    struct HeatUpdate {
+        address token;
+        uint heat;
+        bool minusHeat;
+    }
+
     mapping(string => TokenData) public tokenData;
     string[] public tokens;
 
@@ -95,37 +101,42 @@ contract MemedFactory is Ownable {
         );
     }
 
-    function updateHeat(address _token, uint256 _heat, bool _minusHeat) public {
+    function updateHeat(HeatUpdate[] calldata _heatUpdates) public {
         require(msg.sender == address(memedStaking) || msg.sender == address(memedBattle) || msg.sender == owner(), "unauthorized");
-        string memory lensUsername = getByToken(_token);
+        for(uint i = 0; i < _heatUpdates.length; i++) {
+            address token = _heatUpdates[i].token;
+            uint heat = _heatUpdates[i].heat;
+            bool minusHeat = _heatUpdates[i].minusHeat;
+        string memory lensUsername = getByToken(token);
         address creator = tokenData[lensUsername].creator;
         require(tokenData[lensUsername].token != address(0), "not minted");
-        require(!_minusHeat || (msg.sender == address(memedStaking)), "Only staking can minus heat");
-        if(_minusHeat) {
-            tokenData[lensUsername].heat -= _heat;
+        require(!minusHeat || (msg.sender == address(memedStaking)), "Only staking can minus heat");
+        if(minusHeat) {
+            tokenData[lensUsername].heat -= heat;
         } else {
-            tokenData[lensUsername].heat += _heat;
+            tokenData[lensUsername].heat += heat;
         }
-        MemedBattle.Battle[] memory battles = memedBattle.getUserBattles(_token);
-        for(uint i = 0; i < battles.length; i++) {
-            if(battles[i].memeA == address(0) || battles[i].memeB == address(0)) {
+        MemedBattle.Battle[] memory battles = memedBattle.getUserBattles(token);
+        for(uint j = 0; j < battles.length; j++) {
+            if(battles[j].memeA == address(0) || battles[j].memeB == address(0)) {
                 continue;
             }
-            address opponent = battles[i].memeA == _token ? battles[i].memeB : battles[i].memeA;
-            if(block.timestamp > battles[i].endTime && !battles[i].resolved) {
-                address winner = tokenData[getByToken(opponent)].heat > tokenData[lensUsername].heat ? opponent : _token;
-                memedBattle.resolveBattle(battles[i].battleId, winner);
-                if(memedStaking.isRewardable(_token)) {
-                    memedStaking.reward(_token, creator);
+            address opponent = battles[j].memeA == token ? battles[j].memeB : battles[j].memeA;
+            if(block.timestamp > battles[j].endTime && !battles[j].resolved) {
+                address winner = tokenData[getByToken(opponent)].heat > tokenData[lensUsername].heat ? opponent : token;
+                memedBattle.resolveBattle(battles[j].battleId, winner);
+                if(memedStaking.isRewardable(token)) {
+                    memedStaking.reward(token, creator);
                 }
             }
         }
-        if ((tokenData[lensUsername].heat - tokenData[lensUsername].lastRewardAt) >= REWARD_PER_ENGAGEMENT &&memedEngageToEarn.isRewardable(_token)) {
-            memedEngageToEarn.reward(_token, creator);
+        if ((tokenData[lensUsername].heat - tokenData[lensUsername].lastRewardAt) >= REWARD_PER_ENGAGEMENT &&memedEngageToEarn.isRewardable(token)) {
+            memedEngageToEarn.reward(token, creator);
             tokenData[lensUsername].lastRewardAt = tokenData[lensUsername].heat;
-            if(memedStaking.isRewardable(_token)) {
-                memedStaking.reward(_token, creator);
+            if(memedStaking.isRewardable(token)) {
+                memedStaking.reward(token, creator);
             }
+        }
         }
     }
 
@@ -153,8 +164,8 @@ contract MemedFactory is Ownable {
         } else {
             for (uint i = 0; i < tokens.length; i++) {
                 if (tokenData[tokens[i]].token == _token) {
-                    token = tokenData[tokens[i]].token;
-                    creator = _creator;
+                    token = _token;
+                    creator = tokenData[tokens[i]].creator;
                 }
             }
         }

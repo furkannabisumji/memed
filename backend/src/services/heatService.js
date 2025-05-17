@@ -1,37 +1,41 @@
 const { factory_contract } = require('../config/factory');
 const Token = require('../models/Token');
-const Post = require('../models/Post');
 const lensService = require('./lensService');
 
 const HEAT_PER_ENGAGEMENT = 1;
 
 /**
  * Update heat score for a meme based on engagement
- * @param {string} handle - The Lens handle
+ * @param {Token[]} tokens - The tokens to update
  * @param {boolean} update - Whether to update the database
  * @returns {Promise<number>} - The new heat score
  */
-async function updateHeatFromEngagement(handle, update = false) {
+async function updateHeatFromEngagement(tokens, update = false) {
   try {
-    const token = await Token.findOne({ handle });
-    if (!token) {
-      throw new Error('Token not found');
-    }
+    const heatUpdates = [];
+    
+    for (const token of tokens) {
+      const {handle, tokenAddress} = token;
 
     // Get new engagement metrics
     const newEngagement = await lensService.getEngagementMetrics(handle, update);
-    console.log({newEngagement,handle});
     
     // Calculate heat from engagement
-    const heatFromEngagement = newEngagement * HEAT_PER_ENGAGEMENT;
+    const heat = newEngagement * HEAT_PER_ENGAGEMENT;
     
     // Update heat on contract
-    if(heatFromEngagement > 0){
-      await factory_contract.updateHeat(token.tokenAddress, heatFromEngagement, false);
-      console.log("Updated heat on contract");
+    if(heat > 0){
+      heatUpdates.push({
+        token: tokenAddress,
+        heat,
+        minusHeat: false
+      });
     }
-    
-    return heatFromEngagement;
+  }
+  if(heatUpdates.length > 0){ 
+    await factory_contract.updateHeat(heatUpdates);
+    return heatUpdates;
+  }
   } catch (error) {
     console.error('Error updating heat from engagement:', error);
     throw error;

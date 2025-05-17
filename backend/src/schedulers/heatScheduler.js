@@ -15,37 +15,8 @@ async function updateAllHeatScores() {
     console.log('Starting heat score and engagement metrics update...');
     
     const tokens = await Token.find({});
-    let updatedCount = 0;
-    
-    for (const token of tokens) {
-      try {
         // Update heat from engagement
-        await heatService.updateHeatFromEngagement(token.handle, true);
-        
-        // // Update engagement metrics
-        // const { value: account } = await fetchAccount(client, {
-        //   username: {
-        //     localName: token.handle,
-        //   }
-        // });
-        
-        // if (account) {
-        //   const engagementMetrics = await fetchPosts(client, {
-        //     filter: {
-        //       authors: [evmAddress(account.address)]
-        //     }
-        //   });
-
-        // }
-        
-        updatedCount++;
-      } catch (error) {
-        console.error(`Error updating heat and metrics for ${token.handle}:`, error);
-        continue;
-      }
-    }
-    
-    console.log(`Heat score and engagement metrics update completed. Updated ${updatedCount} tokens.`);
+        await heatService.updateHeatFromEngagement(tokens, true);
   } catch (error) {
     console.error('Error in heat score and metrics update:', error);
   }

@@ -72,22 +72,6 @@ async function getFollowers(handle) {
   }
 }
 
-async function getFollowerWithTokenHoldings(tokenAddress) {
-const holder = (await factory_contract.getTokens(tokenAddress))[0][7];
-let holderWithLens = [];
-for (const address of holder) {
-    const { value: account } = await fetchAccount(client, {
-        address: evmAddress(address)
-    });
-    if (account) {
-        holderWithLens.push({
-            address: account.address,
-            handle: account.username
-        });
-    }
-}
-return holderWithLens;
-}
 /**
  * mock stats
  */
@@ -259,6 +243,5 @@ module.exports = {
   getHandleOwner,
   getFollowers,
   getEngagementMetrics,
-  getFollowerWithTokenHoldings,
   getAggregatedEngagementMetrics
 }; 
