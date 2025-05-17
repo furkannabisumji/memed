@@ -217,7 +217,6 @@ async function getEngagementMetrics(handle, update) {
       );
     }
 
-    console.log("Total new engagement calculated:", newEngagement);
     return newEngagement;
   } catch (error) {
     console.error(`Error fetching engagement metrics for ${handle}:`, error);

@@ -201,7 +201,7 @@ async function distributeRewards() {
       const { root, followersWithProofs } = await merkleService.generateMerkleTree(selectedFollowers);
       // 7. Set the Merkle root on the contract
       try {
-      await airdrop_contract.setMerkleRoot(tokenAddress, root, index);
+     // await airdrop_contract.setMerkleRoot(tokenAddress, root, index);
       
         for (const follower of followersWithProofs) {
           const reward = new Reward({
