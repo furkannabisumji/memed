@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { writeContract, simulateContract } from "@wagmi/core";
+import { writeContract, simulateContract, readContract } from "@wagmi/core";
 import MemedBattleABI from '@/config/memedBattleABI.json';
 import {
   Dialog,
@@ -39,7 +39,9 @@ import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import { config } from "@/providers/Web3Provider";
 import { waitForTransactionReceipt } from "wagmi/actions";
-
+import axiosInstance from "@/lib/axios";
+import { AxiosError } from "axios";
+import factoryAbi from '@/config/factoryABI.json'
 // Mock data for potential opponents
 const potentialOpponents = [
   {
@@ -190,13 +192,41 @@ const mockBattles = [
   },
 ];
 
+const getMemeHeatScore = async (handle: string) => {
+  // try {
+  //   const result = await readContract(config,{
+  //     abi: factoryAbi as Abi,
+  //     address: CONTRACTS.factory as `0x${string}`,
+  //     functionName: 'getTokens',
+  //     args: [handle as `0x${string}`],
+  //   })
 
+  //   console.log('Fetched tokens:', result)
+  //   return result // this will be a TokenData[] array
+  // } catch (err) {
+  //   console.error('Error fetching tokens:', err)
+  //   return []
+  // }
+
+  try {
+    console.log(handle)
+    const res = await axiosInstance.get(`/api/heat/${handle}`);
+    return res.data;
+  } catch (error: any) {
+    // console.log(error)
+    const axiosErr = error as AxiosError<{ error?: string }>;
+    const message =
+      axiosErr?.response?.data?.error || axiosErr?.message || "Failed to get heat score";
+    throw new Error(message);
+  }
+}
 const MemeBattles = ({ profile }: { profile: any }) => {
   const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false)
+  const [heatScore, setHeatScore] = useState<number>(0)
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
   const { chain, switchToChain } = useChainSwitch()
@@ -209,6 +239,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
     error,
   } = useMemes({ initialLimit: 10, category: 'tokens' });
 
+
   //check chain
   useEffect(() => {
     if (chain?.id !== chains.testnet.id) {
@@ -219,7 +250,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
   console.log("Profile Handle:", profile.creatorHandle)
   const { data } = useWalletClient()
 
-  const walletClient = data as WalletClient;
+
   // Filter battles by status
   const ongoingBattles = mockBattles.filter(
     (battle) => battle.status === "ongoing"
@@ -230,11 +261,19 @@ const MemeBattles = ({ profile }: { profile: any }) => {
 
   // Filter opponents based on search query
   const filteredOpponents = memes.filter(
-    (meme) =>meme
-      // meme.handle?.toLowerCase() === profile.creatorHandle
+    (meme) => meme
+    // meme.handle?.toLowerCase() === profile.creatorHandle
   )
 
-  console.log("Filtered Opponenets: ", filteredOpponents)
+  // useEffect(() => {
+  //   if (filteredOpponents && filteredOpponents.length !== 0) {
+  //     getMemeHeatScore(filteredOpponents[0].tokenAddress).then((data) => {
+  //       setHeatScore(data.heatScore)
+  //     }).catch((err) => console.log(err))
+  //   }
+  // }, [filteredOpponents])
+
+
 
   const handleChallenge = async (memeBAddress: string) => {
     try {
@@ -258,7 +297,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
           address: contractAddress as `0x${string}`,
           functionName: 'startBattle',
           args: [
-            memeBAddress as `0x${string}`
+            '0xe2951106f485e9bB94F43c7ceE8539F7660F4815'
           ],
           account: address
         })
@@ -279,7 +318,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
         console.log("✅ Battle transaction sent:", hash);
 
       } catch (err: any) {
-        console.log(err)
+        console.log("Start Battle Meme Error : ",err)
         const message =
           err?.shortMessage ||
           err?.message ||
@@ -292,7 +331,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
       setSelectedOpponent(null);
       setBattleDuration("24");
       setSearchQuery("");
-      
+
     } catch (error: any) {
       setChallengingMeme(false)
       toast.error("Battle failed", {
@@ -409,15 +448,7 @@ const MemeBattles = ({ profile }: { profile: any }) => {
             </DialogHeader>
 
             <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search memes by name or symbol"
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+
 
               <div className="border rounded-md max-h-[30vh] md:max-h-[40vh] overflow-y-auto">
                 {filteredOpponents.length > 0 ? (
@@ -442,15 +473,12 @@ const MemeBattles = ({ profile }: { profile: any }) => {
                           <p className="font-medium">{opponent.name}</p>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Badge variant="outline">${opponent.ticker}</Badge>
-                            <span>
-                              {opponent.followers?.toLocaleString()} followers
-                            </span>
                           </div>
                         </div>
                       </div>
                       <Badge className="bg-amber-500 hover:bg-amber-500 flex items-center gap-1">
                         <Flame size={12} />
-                        100 {/* HeatScore Update */}
+                        {heatScore} {/* HeatScore Update */}
                       </Badge>
                     </div>
                   ))

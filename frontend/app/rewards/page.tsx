@@ -55,209 +55,116 @@ type RewardToken = {
 const dummyAvailableReward = [
   {
     id: "1",
-    tokenAddress: "0x1234567890123456789012345678901234567890",
-    tokenName: "Doge to the Moon",
-    tokenTicker: "DOGE",
-    tokenImage: "/fallback.png",
-    handle: "CryptoMemer",
-    amount: "5000000000000000000000", // 5000 tokens with 18 decimals
-    formattedAmount: "5,000",
-    type: "initial",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    tokenTicker: "MEME",
+    token: "0xabc123...001",
+    handle: "memeQueen",
+    amount: "1200",
+    proof: ["0xproof1", "0xproof2"],
+    leaf: "0xleaf1",
+    index: 0,
+    type: "Airdrop"
   },
   {
     id: "2",
-    tokenAddress: "0x2345678901234567890123456789012345678901",
-    tokenName: "Pepe's Adventure",
-    tokenTicker: "PEPE",
-    tokenImage: "/fallback.png",
-    handle: "MemeKing",
-    amount: "1200000000000000000000", // 1200 tokens with 18 decimals
-    formattedAmount: "1,200",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    tokenTicker: "LOL",
+    token: "0xabc123...002",
+    handle: "jokeKing",
+    amount: "8500",
+    proof: ["0xproof3", "0xproof4"],
+    leaf: "0xleaf2",
+    index: 1,
+    type: "Reward"
   },
   {
     id: "3",
-    tokenAddress: "0x3456789012345678901234567890123456789012",
-    tokenName: "Wojak's Feelings",
-    tokenTicker: "WOJAK",
-    tokenImage: "/fallback.png",
-    handle: "EmotionMaster",
-    amount: "750000000000000000000", // 750 tokens with 18 decimals
-    formattedAmount: "750",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    tokenTicker: "ROFL",
+    token: "0xabc123...003",
+    handle: "giggleBot",
+    amount: "340",
+    proof: ["0xproof5"],
+    leaf: "0xleaf3",
+    index: 2,
+    type: "Engage-to-Earn"
   },
   {
     id: "4",
-    tokenAddress: "0x4567890123456789012345678901234567890123",
-    tokenName: "Stonks Only Go Up",
-    tokenTicker: "STONK",
-    tokenImage: "/fallback.png",
-    handle: "WallStreetBets",
-    amount: "3500000000000000000000", // 3500 tokens with 18 decimals
-    formattedAmount: "3,500",
-    type: "initial",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    tokenTicker: "MEME",
+    token: "0xabc123...004",
+    handle: "chuckleCat",
+    amount: "2100",
+    proof: ["0xproof6", "0xproof7"],
+    leaf: "0xleaf4",
+    index: 3,
+    type: "Airdrop"
   },
   {
     id: "5",
-    tokenAddress: "0x5678901234567890123456789012345678901234",
-    tokenName: "This is Fine",
-    tokenTicker: "FINE",
-    tokenImage: "/fallback.png",
-    handle: "FireMemer",
-    amount: "900000000000000000000", // 900 tokens with 18 decimals
-    formattedAmount: "900",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+    tokenTicker: "FUN",
+    token: "0xabc123...005",
+    handle: "punLord",
+    amount: "9999",
+    proof: ["0xproof8"],
+    leaf: "0xleaf5",
+    index: 4,
+    type: "Referral"
   },
   {
     id: "6",
-    tokenAddress: "0x6789012345678901234567890123456789012345",
-    tokenName: "Moon Lambo",
-    tokenTicker: "LAMBO",
-    tokenImage: "/fallback.png",
-    handle: "CryptoWhale",
-    amount: "2500000000000000000000", // 2500 tokens with 18 decimals
-    formattedAmount: "2,500",
-    type: "initial",
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days ago
+    tokenTicker: "LOL",
+    token: "0xabc123...006",
+    handle: "banterWizard",
+    amount: "4350",
+    proof: ["0xproof9", "0xproof10"],
+    leaf: "0xleaf6",
+    index: 5,
+    type: "Engage-to-Earn"
   },
   {
     id: "7",
-    tokenAddress: "0x7890123456789012345678901234567890123456",
-    tokenName: "Diamond Hands",
-    tokenTicker: "DHAND",
-    tokenImage: "/fallback.png",
-    handle: "HODLer",
-    amount: "800000000000000000000", // 800 tokens with 18 decimals
-    formattedAmount: "800",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    tokenTicker: "GAG",
+    token: "0xabc123...007",
+    handle: "roflGuru",
+    amount: "560",
+    proof: ["0xproof11"],
+    leaf: "0xleaf7",
+    index: 6,
+    type: "Airdrop"
   },
   {
     id: "8",
-    tokenAddress: "0x8901234567890123456789012345678901234567",
-    tokenName: "Wen Moon",
-    tokenTicker: "MOON",
-    tokenImage: "/fallback.png",
-    handle: "MoonBoy",
-    amount: "1800000000000000000000", // 1800 tokens with 18 decimals
-    formattedAmount: "1,800",
-    type: "initial",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+    tokenTicker: "MEME",
+    token: "0xabc123...008",
+    handle: "humorTank",
+    amount: "4200",
+    proof: ["0xproof12", "0xproof13"],
+    leaf: "0xleaf8",
+    index: 7,
+    type: "Reward"
   },
   {
     id: "9",
-    tokenAddress: "0x9012345678901234567890123456789012345678",
-    tokenName: "Wojak Crying",
-    tokenTicker: "CRY",
-    tokenImage: "/fallback.png",
-    handle: "SadTrader",
-    amount: "650000000000000000000", // 650 tokens with 18 decimals
-    formattedAmount: "650",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    tokenTicker: "XD",
+    token: "0xabc123...009",
+    handle: "laughGuru",
+    amount: "300",
+    proof: ["0xproof14"],
+    leaf: "0xleaf9",
+    index: 8,
+    type: "Referral"
   },
   {
     id: "10",
-    tokenAddress: "0xa123456789012345678901234567890123456789",
-    tokenName: "Pump It",
-    tokenTicker: "PUMP",
-    tokenImage: "/fallback.png",
-    handle: "BogdanoffTwin",
-    amount: "4200000000000000000000", // 4200 tokens with 18 decimals
-    formattedAmount: "4,200",
-    type: "initial",
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), // 8 days ago
-  },
-  {
-    id: "11",
-    tokenAddress: "0xb234567890123456789012345678901234567890",
-    tokenName: "Chad Trader",
-    tokenTicker: "CHAD",
-    tokenImage: "/fallback.png",
-    handle: "AlphaMemer",
-    amount: "950000000000000000000", // 950 tokens with 18 decimals
-    formattedAmount: "950",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-  },
-  {
-    id: "12",
-    tokenAddress: "0xc345678901234567890123456789012345678901",
-    tokenName: "Buy The Dip",
-    tokenTicker: "DIP",
-    tokenImage: "/fallback.png",
-    handle: "DipBuyer",
-    amount: "1500000000000000000000", // 1500 tokens with 18 decimals
-    formattedAmount: "1,500",
-    type: "initial",
-    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(), // 9 days ago
-  },
-  {
-    id: "13",
-    tokenAddress: "0xd456789012345678901234567890123456789012",
-    tokenName: "NFT Ape",
-    tokenTicker: "APE",
-    tokenImage: "/fallback.png",
-    handle: "NFTCollector",
-    amount: "3300000000000000000000", // 3300 tokens with 18 decimals
-    formattedAmount: "3,300",
-    type: "initial",
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
-  },
-  {
-    id: "14",
-    tokenAddress: "0xe567890123456789012345678901234567890123",
-    tokenName: "Rug Pull",
-    tokenTicker: "RUG",
-    tokenImage: "/fallback.png",
-    handle: "SafeDeveloper",
-    amount: "700000000000000000000", // 700 tokens with 18 decimals
-    formattedAmount: "700",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days ago
-  },
-  {
-    id: "15",
-    tokenAddress: "0xf678901234567890123456789012345678901234",
-    tokenName: "FOMO Sapiens",
-    tokenTicker: "FOMO",
-    tokenImage: "/fallback.png",
-    handle: "LateInvestor",
-    amount: "1100000000000000000000", // 1100 tokens with 18 decimals
-    formattedAmount: "1,100",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-  },
-  {
-    id: "16",
-    tokenAddress: "0xf789012345678901234567890123456789012345",
-    tokenName: "Giga Brain",
-    tokenTicker: "BRAIN",
-    tokenImage: "/fallback.png",
-    handle: "CryptoGenius",
-    amount: "2800000000000000000000", // 2800 tokens with 18 decimals
-    formattedAmount: "2,800",
-    type: "initial",
-    createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(), // 11 days ago
-  },
-  {
-    id: "17",
-    tokenAddress: "0xf890123456789012345678901234567890123456",
-    tokenName: "Not Financial Advice",
-    tokenTicker: "NFA",
-    tokenImage: "/fallback.png",
-    handle: "CryptoInfluencer",
-    amount: "1700000000000000000000", // 1700 tokens with 18 decimals
-    formattedAmount: "1,700",
-    type: "engagement",
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), // 8 days ago
-  },
+    tokenTicker: "LOL",
+    token: "0xabc123...010",
+    handle: "smileDealer",
+    amount: "777",
+    proof: ["0xproof15", "0xproof16"],
+    leaf: "0xleaf10",
+    index: 9,
+    type: "Reward"
+  }
 ];
+
 
 const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; }> => {
   return axiosInstance.get(`/tokens/${tokenAddress}`)
@@ -368,6 +275,7 @@ export default function RewardsPage() {
     tabType: TabType = "available",
     reset: boolean = false
   ) => {
+ 
     if (pageNum === 1) {
       setIsLoading(true);
     }
@@ -392,6 +300,7 @@ export default function RewardsPage() {
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const paginatedRewards = sourceData.slice(startIndex, endIndex);
 
+
     // Fetch meme info for each reward handle concurrently
     const rewardsWithDetails = await Promise.all(
       paginatedRewards.map(async (reward: ClaimProof) => {
@@ -401,6 +310,7 @@ export default function RewardsPage() {
           ...reward, // Retain all the reward properties
           ...memeInfo,  // Add fetched meme info
         };
+     
       })
     );
 
