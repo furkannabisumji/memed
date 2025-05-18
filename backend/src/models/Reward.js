@@ -11,7 +11,7 @@ const RewardSchema = new mongoose.Schema({
   },
   userAddress: {
     type: String,
-    required: false,
+    required: true,
   },
   amount: {
     type: String, // Store as string to handle large numbers
@@ -25,6 +25,14 @@ const RewardSchema = new mongoose.Schema({
   proof: {
     type: [String],
     required: true
+  },
+  claimed: {
+    type: Boolean,
+    default: false
+  },
+  transactionHash: {
+    type: String,
+    default: null
   },
   createdAt: {
     type: Date,
