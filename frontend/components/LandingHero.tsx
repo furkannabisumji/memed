@@ -27,7 +27,7 @@ export default function LandingHero() {
       {/* Floating Coins */}
       <motion.div
         className="absolute left-0 md:-top-0 top-0 coin-floating"
-        animate={{ y: [0, -20, 0] }}
+        animate={{ y: [0, -20, 0], }}
         transition={{ repeat: Infinity, duration: 3 }}
       >
         <Image alt="reward-coin" src="/coin2.png" width={250} height={100} />
@@ -44,7 +44,7 @@ export default function LandingHero() {
       {/* Hero Text */}
       <motion.div
         className="font-clash md:text-8xl text-3xl font-bold text-center md:max-w-11/12"
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -20,zIndex:-10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
