@@ -11,14 +11,13 @@ import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
 import { LeaderboardData, useLeaderboard } from "@/hooks/useLeaderBoard";
 import Image from "next/image";
-import { truncateAddress } from "@/lib/helpers";
+import { formatNumber, truncateAddress } from "@/lib/helpers";
 import { getAccountByAddress } from "@/lib/lens";
 import { UserImage } from "@/components/shared/UserImage";
 import Link from "next/link";
 import { useCallback, useRef } from "react";
 // Types
 type LeaderboardTab = "memes" | "creators";
-type TimeFrame = "daily" | "weekly" | "monthly" | "allTime";
 
 interface Creator {
   id: string;
@@ -45,17 +44,6 @@ interface Meme {
   score: number;
 }
 
-// Helper function to format numbers
-const formatNumber = (num: number): string => {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
-  } else {
-    return num.toString();
-  }
-};
-
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>("memes");
 
@@ -69,9 +57,8 @@ export default function LeaderboardPage() {
     topMemes,
     topCreators,
     isLoading: isLeaderboardLoading,
-    isError,
-    error,
   }: LeaderboardData = useLeaderboard();
+  // console.log(topMemes);
 
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
@@ -372,7 +359,7 @@ export default function LeaderboardPage() {
                                   className="mr-1 text-orange-500"
                                 />
                                 <span className="text-sm font-bold text-gray-900">
-                                  {creator.totalHeat}
+                                  {formatNumber(Number(creator.totalHeat))}
                                 </span>
                               </div>
                             </td>

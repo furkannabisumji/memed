@@ -55,44 +55,58 @@ export interface LeaderboardData {
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
+  fetchStatus: "idle" | "loading" | "succeeded" | "failed" | "retrying";
+  retryCount: number;
+  maxRetries: number;
 }
 
 /**
  * Hook to fetch all memes and their token data, and sort them by heat to create leaderboards
+ * @param options Configuration options for the hook
  * @returns Leaderboard data containing sorted top memes and top creators
  */
-export const useLeaderboard = (): LeaderboardData => {
+export const useLeaderboard = (
+  options = {
+    maxRetries: 3,
+    retryDelay: 3000,
+    batchSize: 5,
+    requireBlockchainData: true,
+  }
+): LeaderboardData => {
   const [memes, setMemes] = useState<MemeWithTokenData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [topMemesState, setTopMemesState] = useState<MemeWithTokenData[]>([]);
   const [topCreatorsState, setTopCreatorsState] = useState<any[]>([]);
+  const [fetchStatus, setFetchStatus] = useState<
+    "idle" | "loading" | "succeeded" | "failed" | "retrying"
+  >("idle");
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const { maxRetries, retryDelay, batchSize, requireBlockchainData } = options;
 
   useEffect(() => {
     const fetchMemesAndTokenData = async () => {
       try {
         setIsLoading(true);
+        setFetchStatus("loading");
 
         // Fetch all tokens from the API
         const response = await axiosInstance.get<TokensResponse>("/api/tokens");
-
-        // The API response now returns data.tokens instead of data.data
         const fetchedTokens = response.data.data.tokens;
 
         if (fetchedTokens.length === 0) {
           setIsLoading(false);
           setIsError(true);
           setError(new Error("No tokens found"));
+          setFetchStatus("failed");
           return;
         }
 
-        // IMPROVED APPROACH: Use readContracts to batch requests instead of individual readContract calls
+        // Filter tokens with valid addresses
         const validTokens = fetchedTokens.filter((token) => token.tokenAddress);
 
-        // Create batches of requests to avoid overloading the RPC provider
-        // Adjust BATCH_SIZE based on your RPC provider's limits
-        const BATCH_SIZE = 5;
+        // Initialize memes with token data set to null
         const memesWithTokenData: MemeWithTokenData[] = fetchedTokens.map(
           (token) => ({
             ...token,
@@ -101,15 +115,16 @@ export const useLeaderboard = (): LeaderboardData => {
         );
 
         // Process in batches
-        for (let i = 0; i < validTokens.length; i += BATCH_SIZE) {
-          const batchTokens = validTokens.slice(i, i + BATCH_SIZE);
+        let hasBlockchainData = false;
+        for (let i = 0; i < validTokens.length; i += batchSize) {
+          const batchTokens = validTokens.slice(i, i + batchSize);
 
           try {
             // Create contract read requests for this batch
             const contractReadResults = await readContracts(config, {
               contracts: batchTokens.map((token) => ({
                 address: CONTRACTS.factory as Address,
-                abi: factoryABI as any, // Type assertion to fix TypeScript error
+                abi: factoryABI as any,
                 functionName: "tokenData",
                 args: [token.handle],
               })),
@@ -145,6 +160,7 @@ export const useLeaderboard = (): LeaderboardData => {
                   ...memesWithTokenData[mainIndex],
                   tokenData,
                 };
+                hasBlockchainData = true;
               } else {
                 console.warn(
                   `Invalid token data for ${token.handle}:`,
@@ -154,12 +170,12 @@ export const useLeaderboard = (): LeaderboardData => {
             });
 
             // Small delay between batches to avoid overwhelming the RPC
-            if (i + BATCH_SIZE < validTokens.length) {
+            if (i + batchSize < validTokens.length) {
               await new Promise((resolve) => setTimeout(resolve, 500));
             }
           } catch (batchError) {
             console.error(
-              `Error processing batch ${i} to ${i + BATCH_SIZE}:`,
+              `Error processing batch ${i} to ${i + batchSize}:`,
               batchError
             );
 
@@ -200,6 +216,7 @@ export const useLeaderboard = (): LeaderboardData => {
                     ...memesWithTokenData[mainIndex],
                     tokenData,
                   };
+                  hasBlockchainData = true;
                 }
 
                 // Small delay between individual requests
@@ -219,11 +236,44 @@ export const useLeaderboard = (): LeaderboardData => {
           (meme) => meme.tokenData !== null
         );
 
+        // Set state with the fetched data
         setMemes(memesWithTokenData);
 
-        // Process the data right after fetching to ensure we have results
+        // Check if we have blockchain data and if we require it
+        if (!hasBlockchainData && requireBlockchainData) {
+          if (retryCount < maxRetries) {
+            console.log(
+              `No blockchain data found. Retrying (${
+                retryCount + 1
+              }/${maxRetries})...`
+            );
+            setRetryCount((prev) => prev + 1);
+            setFetchStatus("retrying");
+
+            // Retry after delay
+            setTimeout(() => {
+              fetchMemesAndTokenData();
+            }, retryDelay);
+
+            return;
+          } else {
+            console.error(
+              "Failed to fetch blockchain data after maximum retries"
+            );
+            setIsError(true);
+            setError(
+              new Error("Failed to fetch blockchain data after maximum retries")
+            );
+            setFetchStatus("failed");
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Process the data for leaderboards
         await processLeaderboardData(memesWithTokenData);
 
+        setFetchStatus("succeeded");
         setIsLoading(false);
       } catch (err) {
         console.error("Error fetching tokens:", err);
@@ -231,12 +281,13 @@ export const useLeaderboard = (): LeaderboardData => {
         setError(
           err instanceof Error ? err : new Error("Unknown error occurred")
         );
+        setFetchStatus("failed");
         setIsLoading(false);
       }
     };
 
     fetchMemesAndTokenData();
-  }, []);
+  }, []); // Dependencies array is empty to run only once on mount
 
   // Process leaderboard data from the memes
   const processLeaderboardData = async (memesData: MemeWithTokenData[]) => {
@@ -248,97 +299,9 @@ export const useLeaderboard = (): LeaderboardData => {
         "No valid memes with token data found. Check if token data is being fetched correctly."
       );
 
-      // As a fallback, we can try using API data instead when no blockchain data is available
-      const fallbackMemes = memesData.map((meme) => ({
-        ...meme,
-        tokenData: meme.tokenData || {
-          token: meme.tokenAddress as Address,
-          creator: meme.creator,
-          name: meme.name,
-          ticker: meme.ticker,
-          description: meme.description,
-          image: meme.image,
-          lensUsername: "",
-          heat: BigInt(meme.likesCount || 0), // Use likesCount as a fallback for heat
-          lastRewardAt: BigInt(
-            new Date(meme.lastRewardDistribution || 0).getTime()
-          ),
-          createdAt: BigInt(new Date(meme.createdAt || 0).getTime()),
-        },
-      }));
-
-      // Sort by fallback heat (likesCount)
-      const sortedFallbackMemes = [...fallbackMemes].sort((a, b) => {
-        const heatA = a.tokenData?.heat || BigInt(0);
-        const heatB = b.tokenData?.heat || BigInt(0);
-        return heatB > heatA ? 1 : heatB < heatA ? -1 : 0;
-      });
-
-      setTopMemesState(sortedFallbackMemes);
-
-      // Group memes by creator using fallback data
-      const creatorMap = new Map<
-        string,
-        {
-          creator: Address;
-          totalHeat: bigint;
-          memeCount: number;
-          memes: MemeWithTokenData[];
-          creatorData: Account | null;
-        }
-      >();
-
-      // First create entries for each creator
-      fallbackMemes.forEach((meme) => {
-        if (!meme.tokenData) return;
-
-        const creatorAddress = meme.tokenData.creator;
-        if (!creatorAddress) {
-          console.warn("Meme has no creator address:", meme.handle);
-          return;
-        }
-
-        const heat = meme.tokenData.heat || BigInt(0);
-
-        if (!creatorMap.has(creatorAddress)) {
-          creatorMap.set(creatorAddress, {
-            creator: creatorAddress,
-            totalHeat: BigInt(0),
-            memeCount: 0,
-            memes: [],
-            creatorData: null,
-          });
-        }
-
-        const creatorData = creatorMap.get(creatorAddress)!;
-        creatorData.totalHeat += heat;
-        creatorData.memeCount += 1;
-        creatorData.memes.push(meme);
-      });
-
-      // Now fetch creator data for each unique creator
-      const creatorAddresses = Array.from(creatorMap.keys());
-      for (const address of creatorAddresses) {
-        try {
-          const creatorEntry = creatorMap.get(address);
-          // console.log(creatorEntry);
-          const accountData = await getAccountByUsername(
-            creatorEntry?.memes[0].handle as string
-          );
-          if (creatorEntry) {
-            creatorEntry.creatorData = accountData as Account;
-          }
-        } catch (error) {
-          console.error(`Failed to fetch creator data for ${address}:`, error);
-        }
-      }
-
-      // Sort creators by total heat (descending)
-      const sortedCreators = Array.from(creatorMap.values()).sort((a, b) =>
-        b.totalHeat > a.totalHeat ? 1 : b.totalHeat < a.totalHeat ? -1 : 0
-      );
-
-      setTopCreatorsState(sortedCreators);
+      // Set empty states instead of using fallback
+      setTopMemesState([]);
+      setTopCreatorsState([]);
       return;
     }
 
@@ -395,8 +358,10 @@ export const useLeaderboard = (): LeaderboardData => {
     for (const address of creatorAddresses) {
       try {
         const creatorEntry = creatorMap.get(address);
+        if (!creatorEntry?.memes[0]?.handle) continue;
+
         const accountData = await getAccountByUsername(
-          creatorEntry?.memes[0].handle as string
+          creatorEntry.memes[0].handle as string
         );
         if (creatorEntry) {
           creatorEntry.creatorData = accountData as Account;
@@ -420,5 +385,8 @@ export const useLeaderboard = (): LeaderboardData => {
     isLoading,
     isError,
     error,
+    fetchStatus,
+    retryCount,
+    maxRetries,
   };
 };
