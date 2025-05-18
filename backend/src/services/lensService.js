@@ -1,8 +1,6 @@
 const { fetchAccount, fetchAccountGraphStats, fetchPosts, fetchFollowers } = require("@lens-protocol/client/actions");
 const { evmAddress } = require('@lens-protocol/client');
-const ethers = require('ethers');
 const client = require('../config/lens');
-const { factory_contract } = require("../config/factory");
 const Token = require("../models/Token");
 const Post = require("../models/Post");
 const EngagementMetrics = require('../models/EngagementMetrics');

@@ -1,9 +1,8 @@
 const lensService = require('../services/lensService');
 const merkleService = require('../services/merkleService');
 const ethers = require('ethers');
-const {factory_contract, wallet, airdrop_contract} = require('../config/factory');
+const {factory_contract, airdrop_contract} = require('../config/factory');
 const Token = require('../models/Token');
-const Post = require('../models/Post');
 const Reward = require('../models/Reward');
 const Airdrop = require('../models/Airdrop');
 
