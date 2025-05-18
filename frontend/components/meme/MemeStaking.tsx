@@ -362,7 +362,7 @@ const MemeStaking: React.FC<MemeStakingProps> = ({ meme, tokenAddress }) => {
 
               return (
                 <div className="space-y-4">
-                  <StakingRewards ticker={meme.ticker as string}/>
+                  <StakingRewards ticker={meme.ticker as string} tokenAddress={meme.tokenAddress}/>
                   
                 </div>
               );

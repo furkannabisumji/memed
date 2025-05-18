@@ -148,3 +148,13 @@ export interface TokenStats {
   totalEngagements: number;
   engagementRate: number;
 }
+
+export interface MemeBattle {
+  battleId: bigint
+  endTime: bigint
+  memeA: `0x${string}`
+  memeB: `0x${string}`
+  resolved: boolean
+  startTime: bigint
+  winner: `0x${string}`
+}
