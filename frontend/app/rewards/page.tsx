@@ -166,7 +166,7 @@ const dummyAvailableReward = [
 ];
 
 
-const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; }> => {
+const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; ticker: string }> => {
   return axiosInstance.get(`/api/tokens/${tokenAddress}`)
     .then((res) => res.data.data)
     .catch((error) => {
@@ -281,7 +281,7 @@ export default function RewardsPage() {
     }
     // Simulate API delay
     // await new Promise((resolve) => setTimeout(resolve, 1000));
-  
+
     // Get the appropriate data based on tab
     if (fetchedrewards == null) {
       console.log(fetchedrewards + `is null`)
@@ -311,7 +311,12 @@ export default function RewardsPage() {
         const memeInfo = await getMemeInfo(reward.tokenAddress); // Assuming `getMemeInfoByHandle` is a function that fetches meme info by handle
         return {
           ...reward, // Retain all the reward properties
-          ...memeInfo,  // Add fetched meme info
+          name: memeInfo.name,
+          image: memeInfo.image,
+          description: memeInfo.description,
+          handle: memeInfo.handle,
+          ticker: memeInfo.ticker,
+          _id: reward._id,  // Add fetched meme info
         };
 
       })
@@ -366,8 +371,8 @@ export default function RewardsPage() {
     }
   }, [activeTab, address]);
 
-  const handleClaim = async ({ tokenAddress, amount, index, proof }: {
-    tokenAddress: string, amount: string, index: number, proof: string[]
+  const handleClaim = async ({ id, tokenAddress, amount, index, proof }: {
+    id: string, tokenAddress: string, amount: string, index: number, proof: string[]
   }) => {
 
     if (!address) {
@@ -375,17 +380,18 @@ export default function RewardsPage() {
       return;
     }
 
-    setClaimingToken(tokenAddress);
+    setClaimingToken(id);
 
     try {
       // Simulate API delay
-      
+
 
 
       // On chain transaction
       try {
         console.log("🚀 Claiming reward...");
-        console.log(amount,index,proof)
+        console.log(amount, index, proof)
+
         const cleanAmount = parseUnits(amount, 18);
 
         const { request } = await simulateContract(config, {
@@ -456,6 +462,7 @@ export default function RewardsPage() {
     (reward) => reward.type === "engagement"
   );
 
+  const rewardHistory = rewards.filter((reward) => reward.transactionHash !== null)
   return (
     <>
       <Header />
@@ -548,12 +555,12 @@ export default function RewardsPage() {
               <>
                 <TabsContent value="available" className="mt-8">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {rewards.map((reward) => (
+                    {rewards.filter((reward) => reward.transactionHash === null).map((reward) => (
                       <RewardCard
                         key={reward._id}
                         reward={reward}
-                        onClaim={() => handleClaim({ tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.airdrop.index, proof: reward.proof })}
-                        isClaiming={claimingToken === reward.tokenAddress}
+                        onClaim={() => handleClaim({ id: reward._id, tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.airdrop.index, proof: reward.proof })}
+                        isClaiming={claimingToken === reward._id}
                       />
                     ))}
                   </div>
@@ -567,7 +574,7 @@ export default function RewardsPage() {
                           key={reward._id}
                           reward={reward}
                           onClaim={handleClaim}
-                          isClaiming={claimingToken === reward.tokenAddress}
+                          isClaiming={claimingToken === reward._id}
                         />
                       ))
                     ) : (
@@ -588,7 +595,7 @@ export default function RewardsPage() {
                           key={reward._id}
                           reward={reward}
                           onClaim={handleClaim}
-                          isClaiming={claimingToken === reward.tokenAddress}
+                          isClaiming={claimingToken === reward._id}
                         />
                       ))
                     ) : (
@@ -639,7 +646,7 @@ export default function RewardsPage() {
           {address && !isLoading && rewards.length > 0 && (
             <div className="mt-12">
               <h2 className="mb-6 text-3xl font-bold">Reward History</h2>
-              <RewardHistory />
+              <RewardHistory rewards={rewardHistory} />
             </div>
           )}
         </div>
@@ -656,8 +663,8 @@ function RewardCard({
   isClaiming,
 }: {
   reward: MemeDetails;
-  onClaim: ({ tokenAddress, amount, index, proof }: {
-    tokenAddress: string, amount: string, index: number, proof: string[]
+  onClaim: ({ id, tokenAddress, amount, index, proof }: {
+    id: string, tokenAddress: string, amount: string, index: number, proof: string[]
   }) => void;
   isClaiming: boolean;
 }) {
@@ -688,7 +695,10 @@ function RewardCard({
                   {reward.type === "initial" ? "Initial" : "Engagement"}
                 </p>
                 <p className="text-sm font-bold text-primary">
-                  {reward.amount} {reward.ticker}
+                  {Number(reward.amount).toLocaleString(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 6
+                  })} {reward.ticker}
                 </p>
               </div>
             </div>
@@ -700,8 +710,8 @@ function RewardCard({
               </div>
 
               <Button
-                onClick={() => onClaim({ amount: reward.amount, index: reward.index, proof: reward.proof, tokenAddress: reward.tokenAddress, })}
-                className="gap-1 bg-primary hover:bg-primary/90 h-8 px-3 py-1 text-xs"
+                onClick={() => onClaim({ id: reward.airdrop._id, amount: reward.amount, index: reward.index, proof: reward.proof, tokenAddress: reward.tokenAddress, })}
+                className="gap-1 bg-primary hover:bg-primary/90 h-8 px-3 py-1 text-xs cursor-pointer"
                 disabled={isClaiming || reward.transactionHash ? true : false}
               >
                 {isClaiming ? (
@@ -711,7 +721,7 @@ function RewardCard({
                   </>
                 ) : reward.transactionHash ? (
                   <>
-                  Claimed
+                    Claimed
                   </>
                 ) : (
                   <>

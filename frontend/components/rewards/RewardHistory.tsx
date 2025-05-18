@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Zap, CheckCircle, Loader2, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { MemeDetails } from "@/app/types";
 
 type ClaimedReward = {
   id: string;
@@ -86,7 +87,7 @@ const dummyClaimedRewards: ClaimedReward[] = [
   },
 ];
 
-export default function RewardHistory() {
+export default function RewardHistory({ rewards }: { rewards: MemeDetails[] }) {
   const { address } = useAccount();
   const [activeTab, setActiveTab] = useState("all");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
@@ -253,20 +254,13 @@ export default function RewardHistory() {
     );
   }
 
-  // Filter rewards by type
-  const initialRewards = claimedRewards.filter(
-    (reward) => reward.type === "initial"
-  );
-  const engagementRewards = claimedRewards.filter(
-    (reward) => reward.type === "engagement"
-  );
 
   return (
     <div>
       <Tabs defaultValue="all" onValueChange={setActiveTab} value={activeTab}>
         <div className="relative" ref={tabsListRef}>
           <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200">
-            {["all", "initial", "engagement"].map((tab) => (
+            {["all"].map((tab) => (
               <TabsTrigger
                 key={tab}
                 value={tab}
@@ -278,8 +272,8 @@ export default function RewardHistory() {
                 {tab === "all"
                   ? "All History"
                   : tab === "initial"
-                  ? "Initial Rewards"
-                  : "Engagement Rewards"}
+                    ? "Initial Rewards"
+                    : "Engagement Rewards"}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -294,42 +288,14 @@ export default function RewardHistory() {
 
         <TabsContent value="all" className="mt-8">
           <div className="grid grid-cols-1 gap-6">
-            {claimedRewards.map((reward) => (
-              <RewardHistoryCard key={reward.id} reward={reward} />
+            {rewards.map((reward) => (
+              <RewardHistoryCard key={reward._id} reward={reward} />
             ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="initial" className="mt-8">
-          <div className="grid grid-cols-1 gap-6">
-            {initialRewards.length > 0 ? (
-              initialRewards.map((reward) => (
-                <RewardHistoryCard key={reward.id} reward={reward} />
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No initial rewards claimed yet</p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="engagement" className="mt-8">
-          <div className="grid grid-cols-1 gap-6">
-            {engagementRewards.length > 0 ? (
-              engagementRewards.map((reward) => (
-                <RewardHistoryCard key={reward.id} reward={reward} />
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">
-                  No engagement rewards claimed yet
-                </p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
+       
+        
         <div className="flex justify-center mt-8">
           <Button
             variant="outline"
@@ -343,18 +309,16 @@ export default function RewardHistory() {
                 Loading...
               </>
             ) : !hasMore[activeTab as TabType] ? (
-              `No More ${
-                activeTab === "initial"
-                  ? "Initial"
-                  : activeTab === "engagement"
+              `No More ${activeTab === "initial"
+                ? "Initial"
+                : activeTab === "engagement"
                   ? "Engagement"
                   : "Reward"
               } History`
             ) : (
-              `Load More ${
-                activeTab === "initial"
-                  ? "Initial"
-                  : activeTab === "engagement"
+              `Load More ${activeTab === "initial"
+                ? "Initial"
+                : activeTab === "engagement"
                   ? "Engagement"
                   : "Reward"
               } History`
@@ -367,7 +331,7 @@ export default function RewardHistory() {
 }
 
 // Reward History Card Component
-function RewardHistoryCard({ reward }: { reward: ClaimedReward }) {
+function RewardHistoryCard({ reward }: { reward: MemeDetails }) {
   // Format reward type for display
   const formatRewardType = (type: "initial" | "engagement") => {
     return type === "initial" ? "Initial Distribution" : "Engagement Reward";
@@ -383,8 +347,8 @@ function RewardHistoryCard({ reward }: { reward: ClaimedReward }) {
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="relative w-16 h-16 flex-shrink-0">
           <Image
-            src={reward.tokenImage || "/fallback.png"}
-            alt={reward.tokenName}
+            src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${reward.image}` || "/fallback.png"}
+            alt={reward.name}
             fill
             className="object-contain"
           />
@@ -392,34 +356,34 @@ function RewardHistoryCard({ reward }: { reward: ClaimedReward }) {
 
         <div className="flex-grow text-center sm:text-left">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-            <h3 className="font-bold">{reward.tokenName}</h3>
+            <h3 className="font-bold">{reward.name}</h3>
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 text-white bg-primary rounded-full">
               <Zap size={12} />
-              <span className="font-bold">${reward.tokenTicker}</span>
+              <span className="font-bold">${reward.ticker}</span>
             </div>
           </div>
 
           <p className="text-lg font-bold text-primary">
-            {reward.formattedAmount} {reward.tokenTicker}
+            {Number(reward.amount).toLocaleString(undefined,{
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 6
+            })} {reward.ticker}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-500 mt-1">
-            <span>{formatRewardType(reward.type)}</span>
             <span className="hidden sm:inline">•</span>
             <span>From @{reward.handle}</span>
             <span className="hidden sm:inline">•</span>
             <span>
               Claimed{" "}
-              {formatDistanceToNow(new Date(reward.claimedAt), {
-                addSuffix: true,
-              })}
+             
             </span>
           </div>
         </div>
 
         <div className="flex-shrink-0">
           <a
-            href={getExplorerUrl(reward.claimTransactionHash)}
+            href={getExplorerUrl(reward.transactionHash)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
