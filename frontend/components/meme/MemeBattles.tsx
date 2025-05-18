@@ -50,6 +50,7 @@ import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 import Link from "next/link";
 import { getMemeBattles } from "@/utils/getMemeBattles";
+import { BattleCardSkeleton } from "../shared/skeletons/BattleCardSkeleton";
 
 
 // Mock data for potential opponents
@@ -340,13 +341,15 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
         </TabsList>
 
 
-        <TabsContent value="ongoing" className="space-y-4 grid md:grid-cols-2 gap-4">
+        <TabsContent value="ongoing" className="space-y-4 grid md:grid-cols-2 grid-cols-1 gap-4">
           {isLoadingMemeBattles ? (
-            <div className="flex justify-center items-center w-full p-10 col-span-3">
-              <Loader2 className="animate-spin" />
+            <div className="grid md:grid-cols-2 grid-cols-1 gap-4 col-span-2">
+              <BattleCardSkeleton />
+              <BattleCardSkeleton />
             </div>
+
           ) : battles && battles.length !== 0 ? battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} />
+            <MemeBattleCard key={battle.battleId} battle={battle} winner={false} pending={true} />
           )) : (
             <div className="flex flex-col items-center justify-center py-16 text-center col-span-2">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
@@ -366,11 +369,12 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
 
         <TabsContent value="won" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
-            <div className="w-full p-3 flex justify-center items-center">
-              <Loader2 className="animate-spin" />
+            <div className="grid md:grid-cols-2 grid-cols-1 gap-4 col-span-2">
+              <BattleCardSkeleton />
+              <BattleCardSkeleton />
             </div>
           ) : battles.filter((battle) => battle.winner === meme.tokenAddress).length !== 0 ? battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} />
+            <MemeBattleCard key={battle.battleId} battle={battle} winner={true} pending={false} />
           )) : (
             <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
@@ -389,9 +393,12 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
 
         <TabsContent value="lost" className="space-y-4 grid md:grid-cols-2 gap-4">
           {isLoadingMemeBattles ? (
-            <Loader2 className="animate-spin" />
+            <div className="grid md:grid-cols-2 grid-cols-1 gap-4 col-span-2">
+              <BattleCardSkeleton />
+              <BattleCardSkeleton />
+            </div>
           ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").length !== 0 ? battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} />
+            <MemeBattleCard key={battle.battleId} battle={battle} winner={false} pending={false} />
           )) : (
             <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
