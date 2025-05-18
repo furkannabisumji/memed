@@ -45,30 +45,6 @@ That's Memed.Fun - a playground where social influence meets token economics.
 - **Social Graph**: Lens Protocol
 - **Web3**: ethers.js
 
-## 🚀 Quick Start
-
-1. Clone the repo
-```bash
-git clone https://github.com/yourusername/Memed.Fun.git
-cd Memed.Fun
-```
-
-2. Install dependencies
-```bash
-npm install
-```
-
-3. Set up your environment
-```bash
-cp .env.example .env
-# Fill in your environment variables
-```
-
-4. Start the server
-```bash
-npm start
-```
-
 ## 📱 API Endpoints
 
 ### Creator Endpoints
