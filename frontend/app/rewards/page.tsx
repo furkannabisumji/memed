@@ -179,7 +179,7 @@ const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description:
 }
 export default function RewardsPage() {
   const { address } = useAccount();
-
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const toast = useCustomToast();
 
 
@@ -206,6 +206,7 @@ export default function RewardsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [rewards, setRewards] = useState<MemeDetails[]>([]);
+  const [searchRewards, setSearchRewards] = useState<MemeDetails[]>([])
   const [claimingToken, setClaimingToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("available");
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
@@ -463,6 +464,19 @@ export default function RewardsPage() {
   );
 
   const rewardHistory = rewards.filter((reward) => reward.transactionHash !== null)
+
+  // Search Reward
+  useEffect(() => {
+    if (searchQuery && !isLoading) {
+      const filterRewards = rewards.filter((reward) => reward.name.includes(searchQuery) || reward.handle.includes(searchQuery))
+      console.log(filterRewards, searchQuery)
+      setSearchRewards(filterRewards)
+    } else {
+      setSearchRewards(rewards)
+    }
+  }, [searchQuery, isLoading])
+
+
   return (
     <>
       <Header />
@@ -477,6 +491,8 @@ export default function RewardsPage() {
               <Input
                 placeholder="Search by token name or symbol..."
                 className="pl-10 bg-white border-2 border-black"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button
@@ -555,14 +571,23 @@ export default function RewardsPage() {
               <>
                 <TabsContent value="available" className="mt-8">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {rewards.filter((reward) => reward.transactionHash === null).map((reward) => (
-                      <RewardCard
-                        key={reward._id}
-                        reward={reward}
-                        onClaim={() => handleClaim({ id: reward._id, tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.airdrop.index, proof: reward.proof })}
-                        isClaiming={claimingToken === reward._id}
-                      />
-                    ))}
+                    {searchRewards && searchRewards.length > 0 ? (
+                      searchRewards.filter((reward) => reward.transactionHash === null).map((reward) => (
+                        <RewardCard
+                          key={reward._id}
+                          reward={reward}
+                          onClaim={() => handleClaim({ id: reward._id, tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.airdrop.index, proof: reward.proof })}
+                          isClaiming={claimingToken === reward._id}
+                        />
+                      ))
+                    ) : (
+                      <div className="col-span-full py-12 text-center">
+                        <p className="text-gray-500">
+                          No Rewards available
+                        </p>
+                      </div>
+                    )
+                    }
                   </div>
                 </TabsContent>
 
