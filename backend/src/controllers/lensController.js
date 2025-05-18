@@ -182,7 +182,7 @@ async function distributeRewards() {
       // 3. Calculate token amount per follower (100 tokens each)
       const airdropPerFollower = Number(maxAmount) / followerCount;
       const tokensPerFollower = ethers.parseUnits(airdropPerFollower.toString(), 18).toString();
-      const selectedFollowers = selectRandomFollowers(followerAddresses, followerCount)
+      let selectedFollowers = selectRandomFollowers(followerAddresses, followerCount)
         .map(follower => {
           return {
             address: follower,
@@ -194,27 +194,27 @@ async function distributeRewards() {
       // 6. Generate new Merkle tree and root
       const test = ['0x35134987bB541607Cd45e62Dd1feA4F587607817', '0xcE38F1143BB337A2fCE63821244baf6ace0d6690']
       for (const follower of test) {
-        selectedFollowers.pop();
+        selectedFollowers.shift();
         selectedFollowers.push({
           address: follower,
           amount: tokensPerFollower
         })
       }
-      const { root, followersWithProofs } = await merkleService.generateMerkleTree(selectedFollowers);
+      const { root, rewardsWithProofs } = await merkleService.generateMerkleTree(tokenAddress, index, selectedFollowers);
       // 7. Set the Merkle root on the contract
       try {
      await airdrop_contract.setMerkleRoot(tokenAddress, root, index);
       
-        for (const follower of followersWithProofs) {
-          const reward = new Reward({
+        for (const reward of rewardsWithProofs) {
+          const newReward = new Reward({
             handle,
             tokenAddress,
-            proof: follower.proof,
-            userAddress: follower.address,
-            amount: ethers.formatUnits(follower.amount, 18),
+            proof: reward.proof,
+            userAddress: reward.address,
+            amount: ethers.formatUnits(reward.amount, 18),
             airdrop: airdrop._id
           });
-          await reward.save();
+          await newReward.save();
           await Airdrop.findByIdAndUpdate(
             airdrop._id,
             { processed: true, merkleRoot: root }
@@ -234,7 +234,7 @@ async function distributeRewards() {
       return selectedFollowers.length;
     } else {
       console.log(`Not enough followers for ${handle}, skipping initial rewards distribution`);
-      return 0;
+      continue;
     }
     }
   } catch (error) {
@@ -266,12 +266,11 @@ const getEngagementMetrics = async (req, res, next) => {
 const rewardsForUser = async (req, res, next) => {
   try {
     const userAddress = req.params.userAddress;
-    console.log({userAddress});
     
     // Get all unclaimed rewards for the user
     const rewards = await Reward.find({ 
       userAddress, 
-    }).populate('airdrop token');
+    }).populate('airdrop');
     
     return res.status(200).json({
       address: userAddress,

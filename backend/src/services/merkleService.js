@@ -6,75 +6,73 @@ const Airdrop = require('../models/Airdrop');
 
 /**
  * Generate a Merkle tree from all pending rewards for a specific token and airdrop round
- * @param {Array} selectedFollowers - Array of followers with address and amount
- * @returns {Object} Object containing tree, root, proofs, and followers with linked proofs
+ * @param {string} tokenAddress - The token address
+ * @param {number} airdropIndex - The airdrop index
+ * @param {Array} rewards - The rewards array
+ * @returns {Object} Object containing tree, root
  */
-async function generateMerkleTree(selectedFollowers) {
+async function generateMerkleTree(tokenAddress, airdropIndex, rewards) {
+  // Get all rewards for this token and airdrop index
 
-  // Create leaves from the followers' data
-  const leaves = selectedFollowers.map(({ address, amount }) =>
-    keccak256(address.toLowerCase() + amount)
-  );
+  if (!rewards || rewards.length === 0) {
+    console.log('No rewards found for token and airdrop index');
+    return { tree: null, root: null, rewards: [] };
+  }
+
+  // Create leaves from the rewards data
+  const leaves = rewards.map(reward => {
+    return keccak256(
+      ethers.solidityPacked(
+        ['address', 'address', 'uint256', 'uint256'],
+        [tokenAddress, reward.address, reward.amount.toString(), airdropIndex.toString()]
+      )
+    );
+  });
 
   // Create the Merkle tree
   const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
 
-  // Get the root and generate proofs
+  // Get the root
   const root = tree.getHexRoot();
   
-  // Link proofs to followers
-  const followersWithProofs = selectedFollowers.map((follower, index) => {
+  // Link proofs to rewards
+  const rewardsWithProofs = rewards.map((reward, index) => {
     const leaf = leaves[index];
     const proof = tree.getHexProof(leaf);
     return {
-      ...follower,
+      ...reward,
       proof,
       leaf: '0x' + leaf.toString('hex')
     };
   });
 
-  return { tree, root, followersWithProofs }
+
+  return { tree, root, rewardsWithProofs }
 }
 
 /**
  * Generate a proof for a specific user claim
- * 
- *  tokenRewards.tokenAddress,
-        userAddress,
-        tokenRewards.total.toString(),
-        index
-      );
+ * @param {string} tokenAddress - The token address
+ * @param {string} userAddress - The user address
+ * @param {number} airdropIndex - The airdrop index
+ * @returns {Object} Object containing proof, leaf, amount, and isValid
  */
 async function generateProof(tokenAddress, userAddress, airdropIndex) {
-  // Log the exact reward we found initially
-  const initialReward = await Reward.findOne({
-    userAddress: userAddress,
-    claimed: false
-  });
-  console.log('Initial reward found:', initialReward);
-
-  // First query without case conversion to see what we find
-  const rewardsNoCase = await Reward.find({
-    tokenAddress,
-    userAddress,
-    airdropIndex,
-    claimed: false
-  });
-  console.log('Rewards without case conversion:', rewardsNoCase);
-
-  // Now try with case-insensitive query
+  console.log(`Generating proof for token: ${tokenAddress}, user: ${userAddress}, index: ${airdropIndex}`);
+  
+  // Find all unclaimed rewards for this user, token, and airdrop index
   const rewards = await Reward.find({
-    tokenAddress: { $regex: new RegExp(`^${tokenAddress}$`, 'i') },
-    userAddress: { $regex: new RegExp(`^${userAddress}$`, 'i') },
-    airdropIndex,
+    tokenAddress: tokenAddress,
+    userAddress: userAddress,
+    airdropIndex: airdropIndex,
     claimed: false
   });
 
-  console.log('Rewards with case-insensitive query:', rewards);
+  console.log(`Found ${rewards.length} unclaimed rewards`);
 
   if (!rewards || rewards.length === 0) {
     console.log('No rewards found for user');
-    return { proof: [], leaf: null, amount: "0" };
+    return { proof: [], leaf: null, amount: "0", isValid: false };
   }
 
   // Calculate total amount
@@ -86,16 +84,22 @@ async function generateProof(tokenAddress, userAddress, airdropIndex) {
 
   // Generate the tree
   const { tree, root } = await generateMerkleTree(tokenAddress, airdropIndex);
+  
+  if (!tree || !root) {
+    console.log('Failed to generate Merkle tree');
+    return { proof: [], leaf: null, amount: totalAmount.toString(), isValid: false };
+  }
 
-  // Create the leaf for this user
-  const leaf = ethers.keccak256(
+  // Create the leaf for this user exactly as in the smart contract
+  // bytes32 leaf = keccak256(abi.encodePacked(_token, msg.sender, _amount, _index));
+  const leaf = keccak256(
     ethers.solidityPacked(
       ['address', 'address', 'uint256', 'uint256'],
-      [tokenAddress, userAddress, totalAmount.toString(), airdropIndex]
+      [tokenAddress, userAddress, totalAmount.toString(), airdropIndex.toString()]
     )
   );
 
-  console.log('Generated leaf:', leaf);
+  console.log('Generated leaf:', '0x' + leaf.toString('hex'));
   console.log('Tree root:', root);
 
   // Get the proof
@@ -106,16 +110,11 @@ async function generateProof(tokenAddress, userAddress, airdropIndex) {
   const isValid = tree.verify(proof, leaf, root);
   console.log('Proof verification:', isValid);
 
-  // For single-leaf trees, proof will be empty array but that's valid
-  if (leaf === root) {
-    console.log('Single-leaf tree detected - empty proof is valid');
-  }
-
   return { 
     proof, 
-    leaf,
+    leaf: '0x' + leaf.toString('hex'),
     amount: totalAmount.toString(),
-    isValid: true  // If we got here, the proof is valid even if empty
+    isValid: isValid
   };
 }
 

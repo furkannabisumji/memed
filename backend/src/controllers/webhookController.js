@@ -2,6 +2,7 @@ const ethers = require('ethers');
 const airdropABI = require('../config/airdropABI.json');
 const Token = require('../models/Token');
 const Airdrop = require('../models/Airdrop');
+const Reward = require('../models/Reward');
 
 /**
  * Handle GET requests for Tenderly webhook
@@ -33,14 +34,16 @@ const tenderlyWebhook = async (req, res) => {
                 const contractInterface = ethers.Interface.from(airdropABI);
 
                 let airdrop;
+                let type;
                 for (let i = 0; i < transaction.logs.length; i++) {
                     const decodedLog = contractInterface.parseLog(transaction.logs[i]);
-                    if(decodedLog && decodedLog.name === 'Reward') {
+                    if(decodedLog && (decodedLog.name === 'Reward' || decodedLog.name === 'Claimed')) {
                         airdrop = decodedLog.args;
+                        type = decodedLog.name;
                         break;
                     }
                 }
-                
+                if(type === 'Reward') {
                     const [token, userAmount, _, index] = airdrop;
                     const tokenData = await Token.findOne({ tokenAddress: token });
 
@@ -55,7 +58,16 @@ const tenderlyWebhook = async (req, res) => {
                     timestamp: Date.now()
                 });
                 await distributed.save();
+                }
+                if(type === 'Claimed') {
+                    const [userAddress, amount, index] = airdrop;
 
+                    const rewards = await Reward.find({ userAddress, amount: ethers.formatUnits(amount, 18), claimed: false }).populate('airdrop');
+                    const reward = (rewards.filter(reward => reward.airdrop.index === parseInt(index.toString())))[0];
+                    if(reward) {
+                        await Reward.findByIdAndUpdate(reward._id, { claimed: true, transactionHash: transaction.hash });
+                    }
+                }
             }
         }
     } catch (error) {
