@@ -89,6 +89,9 @@ export interface AccountState {
 export interface ClaimProof {
   _id: string;
   ticker: string;
+  airdrop: {
+    index: number
+  }
   tokenAddress: string;
   handle: string;
   amount: string;
@@ -96,8 +99,9 @@ export interface ClaimProof {
   leaf: string;
   index: number;
   type: string;
-  airdrop: "68284238176c30eb6dfb5993"
-  createdAt: "2025-05-17T08:01:27.916Z"
+
+  createdAt: string;
+  transactionHash: string;
   userAddress: string
 }
 
