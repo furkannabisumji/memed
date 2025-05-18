@@ -26,7 +26,7 @@ import RewardHistory from "@/components/rewards/RewardHistory";
 import { useClaimData } from "@/hooks/rewards/useClaimData";
 import { ClaimProof, MemeDetails } from "../types";
 import { useRecordClaim } from "@/hooks/rewards/useRecordClaim";
-import { Abi, WalletClient } from "viem";
+import { Abi, parseUnits, WalletClient } from "viem";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
@@ -281,7 +281,7 @@ export default function RewardsPage() {
     }
     // Simulate API delay
     // await new Promise((resolve) => setTimeout(resolve, 1000));
-
+  
     // Get the appropriate data based on tab
     if (fetchedrewards == null) {
       console.log(fetchedrewards + `is null`)
@@ -385,15 +385,17 @@ export default function RewardsPage() {
       // On chain transaction
       try {
         console.log("🚀 Claiming reward...");
-        console.log(amount,index)
+        console.log(amount,index,proof)
+        const cleanAmount = parseUnits(amount, 18);
+
         const { request } = await simulateContract(config, {
           abi: EngageToEarn as Abi,
           address: CONTRACTS.memedEngageToEarn as `0x${string}`,
           functionName: 'claim',
           args: [
             tokenAddress as `0x${string}`,
-            amount,
-            BigInt(index),
+            cleanAmount,
+            index,
             proof as `0x${string}`[],
           ],
           account: address,
@@ -550,7 +552,7 @@ export default function RewardsPage() {
                       <RewardCard
                         key={reward._id}
                         reward={reward}
-                        onClaim={() => handleClaim({ tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.index, proof: reward.proof })}
+                        onClaim={() => handleClaim({ tokenAddress: reward.tokenAddress, amount: reward.amount, index: reward.airdrop.index, proof: reward.proof })}
                         isClaiming={claimingToken === reward.tokenAddress}
                       />
                     ))}
@@ -700,12 +702,16 @@ function RewardCard({
               <Button
                 onClick={() => onClaim({ amount: reward.amount, index: reward.index, proof: reward.proof, tokenAddress: reward.tokenAddress, })}
                 className="gap-1 bg-primary hover:bg-primary/90 h-8 px-3 py-1 text-xs"
-                disabled={isClaiming}
+                disabled={isClaiming || reward.transactionHash ? true : false}
               >
                 {isClaiming ? (
                   <>
                     <Loader2 className="w-3 h-3 animate-spin" />
                     Claiming...
+                  </>
+                ) : reward.transactionHash ? (
+                  <>
+                  Claimed
                   </>
                 ) : (
                   <>

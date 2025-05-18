@@ -41,7 +41,7 @@ export default function StakingRewards({ ticker, tokenAddress }: { ticker: strin
                 args: [token as `0x${string}`, address!],
             })
             console.log("Reward: ", result)
-
+            console.log(result)
             return result // this will be a TokenData[] array
         } catch (err) {
             console.error('Error fetching tokens:', err)
