@@ -128,7 +128,7 @@ export default function ExplorePage() {
                 ))}
               </TabsList>
               <div
-                className="absolute bottom-0 h-0.5 bg-black transition-all duration-300 ease-in-out"
+                className="absolute bottom-0 h-0.5 bg-green-400 transition-all duration-300 ease-in-out"
                 style={{
                   left: underlineStyle.left,
                   width: underlineStyle.width,
