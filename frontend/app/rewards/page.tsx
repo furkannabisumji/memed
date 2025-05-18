@@ -30,6 +30,7 @@ import {
 import { config } from "@/providers/Web3Provider";
 
 import EngageToEarn from "@/config/memedEngageToEarnABI.json";
+import { RewardCardSkeleton } from "@/components/shared/skeletons/RewardCardSkeleton";
 
 const getMemeInfo = (
   tokenAddress: string
@@ -382,8 +383,8 @@ export default function RewardsPage() {
                     {tab === "available"
                       ? "All Rewards"
                       : tab === "initial"
-                      ? "Initial Rewards"
-                      : "Engagement Rewards"}
+                        ? "Initial Rewards"
+                        : "Engagement Rewards"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -397,10 +398,12 @@ export default function RewardsPage() {
             </div>
 
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="w-12 h-12 mb-4 animate-spin text-primary" />
-                <p className="text-lg font-medium">Loading your rewards...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <RewardCardSkeleton key={index} />
+                ))}
               </div>
+
             ) : !address ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <AlertCircle className="w-12 h-12 mb-4 text-amber-500" />
@@ -425,7 +428,7 @@ export default function RewardsPage() {
             ) : (
               <>
                 <TabsContent value="available" className="mt-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                     {searchRewards && searchRewards.length > 0 ? (
                       searchRewards
                         .filter((reward) => reward.transactionHash === null)
@@ -512,18 +515,16 @@ export default function RewardsPage() {
                     Loading...
                   </>
                 ) : !hasMore[activeTab as TabType] ? (
-                  `No More ${
-                    activeTab === "initial"
-                      ? "Initial"
-                      : activeTab === "engagement"
+                  `No More ${activeTab === "initial"
+                    ? "Initial"
+                    : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
                 ) : (
-                  `Load More ${
-                    activeTab === "initial"
-                      ? "Initial"
-                      : activeTab === "engagement"
+                  `Load More ${activeTab === "initial"
+                    ? "Initial"
+                    : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`

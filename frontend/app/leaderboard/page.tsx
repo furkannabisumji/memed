@@ -16,6 +16,7 @@ import { getAccountByAddress } from "@/lib/lens";
 import { UserImage } from "@/components/shared/UserImage";
 import Link from "next/link";
 import { useCallback, useRef } from "react";
+import { ExploreCardSkeleton } from "@/components/shared/skeletons/ExploreCardSkeleton";
 // Types
 type LeaderboardTab = "memes" | "creators";
 
@@ -139,9 +140,10 @@ export default function LeaderboardPage() {
             {/* Memes Tab Content */}
             <TabsContent value="memes" className="w-full">
               {isLeaderboardLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <ExploreCardSkeleton key={index} />
+                  ))} </div>
               ) : (
                 <div className="flex flex-col w-full">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

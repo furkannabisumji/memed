@@ -7,6 +7,8 @@ import { Zap, CheckCircle, Loader2, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { MemeDetails } from "@/app/types";
+import { CompactCardSkeleton } from "../shared/skeletons/CompactCardSkeleton";
+import { RewardCardSkeleton } from "../shared/skeletons/RewardCardSkeleton";
 
 type ClaimedReward = {
   id: string;
@@ -228,8 +230,10 @@ export default function RewardHistory({ rewards }: { rewards: MemeDetails[] }) {
 
   if (isLoading && pages.all === 1) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <RewardCardSkeleton key={index} />
+        ))}
       </div>
     );
   }
@@ -294,8 +298,8 @@ export default function RewardHistory({ rewards }: { rewards: MemeDetails[] }) {
           </div>
         </TabsContent>
 
-       
-        
+
+
         <div className="flex justify-center mt-8">
           <Button
             variant="outline"
@@ -364,7 +368,7 @@ function RewardHistoryCard({ reward }: { reward: MemeDetails }) {
           </div>
 
           <p className="text-lg font-bold text-primary">
-            {Number(reward.amount).toLocaleString(undefined,{
+            {Number(reward.amount).toLocaleString(undefined, {
               minimumFractionDigits: 0,
               maximumFractionDigits: 6
             })} {reward.ticker}
@@ -376,7 +380,7 @@ function RewardHistoryCard({ reward }: { reward: MemeDetails }) {
             <span className="hidden sm:inline">•</span>
             <span>
               Claimed{" "}
-             
+
             </span>
           </div>
         </div>
