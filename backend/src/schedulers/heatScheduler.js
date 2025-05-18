@@ -1,8 +1,6 @@
 const cron = require('node-cron');
 const heatService = require('../services/heatService');
 const Token = require('../models/Token');
-const EngagementMetrics = require('../models/EngagementMetrics');
-const { client } = require('../config/factory');
 
 
 
