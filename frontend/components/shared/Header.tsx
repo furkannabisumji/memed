@@ -8,6 +8,7 @@ import { useAccount } from "wagmi";
 import { getAvailableAccounts } from "@/lib/lens";
 import { AccountButton } from "./AccountButton";
 import { Home, Search, Gift, Rocket, BarChart2, Menu, X } from "lucide-react";
+import Image from "next/image";
 
 const albertsans = Albert_Sans({
   weight: ["300", "400", "500", "700"],
@@ -63,10 +64,10 @@ export default function Header() {
     <header className={`${albertsans.className}`}>
       {/* Desktop Nav */}
       <div className="md:flex justify-end my-2 px-2 relative hidden">
-        <nav className="cursor-pointer mx-auto flex justify-center items-center bg-[#DCDCDC] p-1 rounded-md">
+        <nav className="cursor-pointer mx-auto flex justify-center gap-2 items-center bg-[#DCDCDC] p-1 rounded-md">
           <Link href={"/"}>
-            <div className="logo p-2 bg-[#28D358] text-white font-bold rounded-md">
-              MF
+            <div className="relative logo w-[40px] h-[40px] bg-[#28D358] text-white font-bold rounded-md">
+              <Image alt={"memed"} src={'/icon/android-chrome-512x512.png'} fill/>
             </div>
           </Link>
           <Link href={"/explore"}>
