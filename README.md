@@ -2,7 +2,7 @@
 
 Where memes meet money, and creators become legends. Memed.Fun is a platform that lets creators mint their own meme tokens, battle for supremacy, and reward their community through the power of Lens Protocol.
 
-## 🌟 What's the Hype?
+## What's the Hype?
 
 Imagine if your favorite meme creator could:
 - Mint their own token
@@ -37,15 +37,15 @@ That's Memed.Fun - a playground where social influence meets token economics.
 - Fair distribution through Merkle trees
 - Creator and user rewards
 
-## 💻 Tech Stack
+## Tech Stack
 
 - **Smart Contracts**: Solidity, OpenZeppelin
 - **Backend**: Node.js, Express
 - **Database**: MongoDB
 - **Social Graph**: Lens Protocol
-- **Web3**: ethers.js
+- **Web3**: ethers.js, viem
 
-## 📱 API Endpoints
+## API Endpoints
 
 ### Creator Endpoints
 ```http
