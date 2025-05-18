@@ -1,31 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
   BarChart3,
-  LineChart,
   Flame,
   ThumbsUp,
   TrendingUp,
   Trophy,
   Info,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Calendar,
-  DollarSign,
-  Activity,
-  Volume2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+
 import { useState, useEffect } from "react";
 import { Meme } from "@/app/types";
 import { useTokenSupply } from "@/hooks/useTokenSupply";
@@ -46,22 +29,29 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({
   meme: Meme;
   stats?: TokenStats | null;
 }) => {
-  const [battlesWon, setBattlesWon] = useState(0)
-  const [battleCount, setBattleCount] = useState(0)
+  const [battlesWon, setBattlesWon] = useState(0);
+  const [battleCount, setBattleCount] = useState(0);
   const { data: supplyData, isLoading } = useTokenSupply(
     meme.tokenAddress as Address
   );
-  const { address } = useAccount()
-  console.log(supplyData);
+  const { address } = useAccount();
+  // console.log(supplyData);
   useEffect(() => {
     if (meme.tokenAddress && address) {
       getMemeBattles(meme.tokenAddress).then((res) => {
-        setBattlesWon(res.filter((battle) => battle.winner === meme.tokenAddress).length)
-        setBattleCount(res.filter((battle) => battle.memeA !== "0x0000000000000000000000000000000000000000" &&
-          battle.memeB !== "0x0000000000000000000000000000000000000000").length)
-      })
+        setBattlesWon(
+          res.filter((battle) => battle.winner === meme.tokenAddress).length
+        );
+        setBattleCount(
+          res.filter(
+            (battle) =>
+              battle.memeA !== "0x0000000000000000000000000000000000000000" &&
+              battle.memeB !== "0x0000000000000000000000000000000000000000"
+          ).length
+        );
+      });
     }
-  }, [meme.tokenAddress, address])
+  }, [meme.tokenAddress, address]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,7 +118,11 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({
                 {stats?.totalEngagements || 0}/100
               </span>
             </div>
-            <Progress value={stats?.engagementRate || 0} className="h-3" />
+            <Progress
+              value={stats?.totalEngagements ? stats.totalEngagements % 100 : 0}
+              max={100}
+              className="h-3 w-full bg-gray-200"
+            />
           </div>
 
           <div className="space-y-3">

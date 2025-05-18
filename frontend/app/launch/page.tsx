@@ -26,31 +26,15 @@ export default function LaunchPage() {
   const { signWithConnectKit } = useConnectKitSign();
   const { address, chain } = useAccount();
   const toast = useCustomToast();
-  const [memeImage, setMemeImage] = useState<string | null>(
-    "bafkreibh4leq5nkyviyxhurdztupcl44l47i2zvbhtxlxrruutk6je7g7m"
-  );
+  const [memeImage, setMemeImage] = useState<string | null>("");
   const [step, setStep] = useState(1);
   // const [isUploading, setIsUploading] = useState(false)
   const [isMinting, setIsMinting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [memeTitle, setMemeTitle] = useState<string>("Timer");
-  const [memeDescription, setMemeDescription] = useState<string>(
-    "A brief journey through time"
-  );
-  const [memeSymbol, setMemeSymbol] = useState<string>("TIM");
+  const [memeTitle, setMemeTitle] = useState<string>("");
+  const [memeDescription, setMemeDescription] = useState<string>("");
+  const [memeSymbol, setMemeSymbol] = useState<string>("");
   const { switchToChain } = useChainSwitch();
-
-  // console.log({
-  //   memeTitle,
-  //   memeDescription,
-  //   memeImage,
-  //   step,
-  //   isMinting,
-  //   showSuccess,
-  //   selectedAccount,
-  //   accounts,
-  //   memeSymbol,
-  // });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -83,6 +67,10 @@ export default function LaunchPage() {
 
     setIsMinting(true);
 
+    //ensure we are on mainnet
+    if (chain && chain?.id !== chains.mainnet.id) {
+      switchToChain(TransactionType.accountCreation);
+    }
     try {
       // Generate timestamp
       const timestamp = Date.now();
@@ -152,13 +140,6 @@ export default function LaunchPage() {
     }
   };
 
-  //check chain and ensure we are in mainnet
-  useEffect(() => {
-    if (chain && chain?.id !== chains.mainnet.id) {
-      switchToChain(TransactionType.accountCreation);
-    }
-  }, [chain, switchToChain]);
-
   if (showSuccess) {
     return (
       <>
@@ -190,30 +171,34 @@ export default function LaunchPage() {
                     className="object-contain"
                   />
                 </div>
-                <h2 className="mb-2 text-2xl font-bold">DOGE Token</h2>
-                <p className="mb-4 text-gray-600">$DOGE • 1,000,000 supply</p>
+                <h2 className="mb-2 text-2xl font-bold">{memeTitle} Token</h2>
+                <p className="mb-4 text-gray-600">
+                  ${memeSymbol} • 1,000,000,000 supply
+                </p>
                 <div className="flex justify-center gap-4">
-                  <Button className="gap-2 bg-primary hover:shadow-2xl hover:bg-primary/90">
+                  {/* <Button className="gap-2 bg-primary hover:shadow-2xl hover:bg-primary/90">
                     <LinkIcon className="w-4 h-4" />
                     Share
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="gap-2 border-2 border-black text-black hover:shadow-2xl"
-                  >
-                    View on Explorer
-                  </Button>
+                  </Button> */}
+                  <Link href={`/explore`}>
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-2 border-black text-black hover:shadow-2xl cursor-pointer"
+                    >
+                      View on Explorer
+                    </Button>
+                  </Link>
                 </div>
               </div>
 
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
                 <Link href="/profile/mememaster">
-                  <Button
+                  {/* <Button
                     size="lg"
                     className="w-full hover:shadow-2xl cursor-pointer gap-2 bg-primary hover:bg-primary/90 sm:w-auto"
                   >
                     View Your Profile
-                  </Button>
+                  </Button> */}
                 </Link>
                 <Link href="/launch">
                   <Button

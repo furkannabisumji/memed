@@ -39,8 +39,6 @@ export default function ExplorePage() {
     isPending: isPendingCreators,
   } = useCreators({ category: "creators" });
 
-  console.log(creatorsData);
-
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
     const activeTabElement = tabRefs.current[activeTab];
@@ -128,7 +126,7 @@ export default function ExplorePage() {
                 ))}
               </TabsList>
               <div
-                className="absolute bottom-0 h-0.5 bg-black transition-all duration-300 ease-in-out"
+                className="absolute bottom-0 h-0.5 bg-green-400 transition-all duration-300 ease-in-out"
                 style={{
                   left: underlineStyle.left,
                   width: underlineStyle.width,
@@ -214,9 +212,8 @@ export default function ExplorePage() {
             )}
           </div>
         </div>
-
-        <Footer />
       </main>
+      <Footer />
     </>
   );
 }

@@ -20,6 +20,7 @@ export const config = createConfig(
       [chains.mainnet.id]: http(chains.mainnet.rpcUrls.default.http[0]!),
       [chains.testnet.id]: http(chains.testnet.rpcUrls.default.http[0]!),
     },
+
     walletConnectProjectId, // Use the explicit value
     appName: "Memed.fun",
     appDescription: "Turn your memes into tokens.",

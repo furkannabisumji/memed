@@ -293,7 +293,12 @@ export default function MemeViewPage() {
                         </span>
                       </div>
                       <Progress
-                        value={stats?.engagementRate || 0}
+                        value={
+                          stats?.totalEngagements
+                            ? stats.totalEngagements % 100
+                            : 0
+                        }
+                        max={100}
                         className="h-2 w-full bg-gray-200"
                       />
                       <div className="flex justify-end mt-1">
