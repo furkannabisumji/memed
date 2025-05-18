@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${albertsans.className} antialiased`}>
+      <body className={`${albertsans.className} antialiased h-full p-0`}>
         <QueryProvider>
           <Web3Provider>
             <ToastProvider>{children}</ToastProvider>

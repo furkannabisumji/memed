@@ -39,7 +39,7 @@ export default function Header() {
   }, [address, isConnected]);
 
   return (
-    <header className={`${albertsans.className} `}>
+    <header className={`${albertsans.className}`}>
       {/* Desktop Nav */}
       <div className="md:flex justify-end my-2 px-2 relative hidden">
         <nav className="cursor-pointer mx-auto flex justify-center items-center bg-[#DCDCDC] p-1 rounded-md">
@@ -125,12 +125,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Add bottom padding to main content to account for fixed nav */}
-      <style jsx global>{`
-        body {
-          padding-bottom: 4rem;
-        }
-      `}</style>
+      
     </header>
   );
 }
