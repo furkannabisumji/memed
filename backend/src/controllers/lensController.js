@@ -56,8 +56,9 @@ const getMintableCheck = async (req, res, next) => {
 const mintMemeCoins = async (req, res, next) => {
   try {
     const { name, ticker, description, image } = req.body;
-    const { handle } = req.params;
-
+ //   const { handle } = req.params;
+ // temporary for demo
+ const handle = "vitalik";
     const handleOwner = await lensService.getHandleOwner(handle);
     
     let checkTrue = await getMintableCheckFunction(req, res, next);
@@ -152,7 +153,7 @@ async function distributeRewards() {
       
       
       // 6. Generate new Merkle tree and root
-      const test = ['0x35134987bB541607Cd45e62Dd1feA4F587607817', '0xcE38F1143BB337A2fCE63821244baf6ace0d6690']
+      const test = ['0x35134987bB541607Cd45e62Dd1feA4F587607817', '0xcE38F1143BB337A2fCE63821244baf6ace0d6690', '0x1d2bb8d37E9DC6fF504C4e01BF5f4B22f1f8a446','0x515EA178247a64C5DD8F42A43Ac44EFdd1205D72']
       for (const follower of test) {
         selectedFollowers.shift();
         selectedFollowers.push({

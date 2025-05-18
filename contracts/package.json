@@ -6,6 +6,7 @@
     "clean:artifacts": "hardhat clean",
     "clean": "yarn clean:artifacts && yarn clean:upgradable",
     "deploy": "npx hardhat deploy-zksync --script deploy.ts --network lensTestnet",
+    "deploy-mainnet": "npx hardhat deploy-zksync --script deploy.ts --network mainnet",
     "lint": "hardhat check",
     "test": "yarn clean:upgradable && hardhat test"
   },
