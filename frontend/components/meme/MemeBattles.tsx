@@ -106,7 +106,6 @@ const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description:
       const axiosErr = error as AxiosError<{ message?: string }>;
       const message =
         axiosErr.response?.data?.message || axiosErr.message || "Failed to fetch Claims";
-
       throw new Error(message);
     })
 }
@@ -168,7 +167,6 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   const fetchMemeBattles = async () => {
     setIsLoadingMemeBattles(true)
     const memeBattles = await getMemeBattles(meme.tokenAddress)
-
     const battleRes = await Promise.all(
       memeBattles
         .filter((battle) => battle.memeA !== "0x0000000000000000000000000000000000000000" &&
