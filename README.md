@@ -78,8 +78,8 @@ GET /creators
 
 ## 🙏 Acknowledgments
 
-- Lens Protocol for the social graph
-- OpenZeppelin for secure contracts
+- Lens Protocol for making the infrastructure for all this to happen
+- The Family app for its amazing UX
 - The amazing Web3 community
 
 ---
