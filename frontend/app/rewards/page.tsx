@@ -328,7 +328,7 @@ export default function RewardsPage() {
   // Search Reward
   useEffect(() => {
     if (searchQuery && !isLoading) {
-      const filterRewards = rewards.filter((reward) => reward.name.includes(searchQuery) || reward.handle.includes(searchQuery))
+      const filterRewards = rewards.filter((reward) => reward.name.toLowerCase().includes(searchQuery) || reward.handle.toLowerCase().includes(searchQuery))
       console.log(filterRewards, searchQuery)
       setSearchRewards(filterRewards)
     } else {

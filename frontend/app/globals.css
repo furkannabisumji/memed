@@ -31,7 +31,9 @@
 .clip-right {
   clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%, 20% 0%);
 }
-
+body {
+  padding-bottom: 0;
+}
 @theme inline {
   --shadow-2xl: 3px 3px 0px rgba(0, 0, 0, 1);
   --color-background: var(--background);
@@ -231,7 +233,7 @@
 
 /* For WebKit browsers (Chrome, Safari) */
 * {
-  overflow: auto;
+
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
