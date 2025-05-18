@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount } from "wagmi";
 
 import { useCustomToast } from "@/components/ui/custom-toast";
 import Header from "@/components/shared/Header";
@@ -11,13 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2,
-  Gift,
-  CheckCircle2,
-  AlertCircle,
-  Search,
-  Filter,
-  TrendingUp,
-  Zap,
+  Gift, AlertCircle,
+  Search, Zap
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,145 +20,20 @@ import RewardHistory from "@/components/rewards/RewardHistory";
 
 import { useClaimData } from "@/hooks/rewards/useClaimData";
 import { ClaimProof, MemeDetails } from "../types";
-import { useRecordClaim } from "@/hooks/rewards/useRecordClaim";
-import { Abi, parseUnits, WalletClient } from "viem";
+import { Abi, parseUnits } from "viem";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import CONTRACTS from "@/config/contracts";
-import { simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import { simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core';
 import { config } from "@/providers/Web3Provider";
 
 
-import EngageToEarn from '@/config/memedEngageToEarnABI.json'
+import EngageToEarn from '@/config/memedEngageToEarnABI.json';
 
-type RewardToken = {
-  id: string;
-  tokenAddress: string;
-  tokenName: string;
-  tokenTicker: string;
-  tokenImage: string;
-  handle: string;
-  amount: string;
-  formattedAmount: string;
-  type: "initial" | "engagement";
-  createdAt: string;
-};
 
-// Dummy data for available rewards
-const dummyAvailableReward = [
-  {
-    id: "1",
-    tokenTicker: "MEME",
-    token: "0xabc123...001",
-    handle: "memeQueen",
-    amount: "1200",
-    proof: ["0xproof1", "0xproof2"],
-    leaf: "0xleaf1",
-    index: 0,
-    type: "Airdrop"
-  },
-  {
-    id: "2",
-    tokenTicker: "LOL",
-    token: "0xabc123...002",
-    handle: "jokeKing",
-    amount: "8500",
-    proof: ["0xproof3", "0xproof4"],
-    leaf: "0xleaf2",
-    index: 1,
-    type: "Reward"
-  },
-  {
-    id: "3",
-    tokenTicker: "ROFL",
-    token: "0xabc123...003",
-    handle: "giggleBot",
-    amount: "340",
-    proof: ["0xproof5"],
-    leaf: "0xleaf3",
-    index: 2,
-    type: "Engage-to-Earn"
-  },
-  {
-    id: "4",
-    tokenTicker: "MEME",
-    token: "0xabc123...004",
-    handle: "chuckleCat",
-    amount: "2100",
-    proof: ["0xproof6", "0xproof7"],
-    leaf: "0xleaf4",
-    index: 3,
-    type: "Airdrop"
-  },
-  {
-    id: "5",
-    tokenTicker: "FUN",
-    token: "0xabc123...005",
-    handle: "punLord",
-    amount: "9999",
-    proof: ["0xproof8"],
-    leaf: "0xleaf5",
-    index: 4,
-    type: "Referral"
-  },
-  {
-    id: "6",
-    tokenTicker: "LOL",
-    token: "0xabc123...006",
-    handle: "banterWizard",
-    amount: "4350",
-    proof: ["0xproof9", "0xproof10"],
-    leaf: "0xleaf6",
-    index: 5,
-    type: "Engage-to-Earn"
-  },
-  {
-    id: "7",
-    tokenTicker: "GAG",
-    token: "0xabc123...007",
-    handle: "roflGuru",
-    amount: "560",
-    proof: ["0xproof11"],
-    leaf: "0xleaf7",
-    index: 6,
-    type: "Airdrop"
-  },
-  {
-    id: "8",
-    tokenTicker: "MEME",
-    token: "0xabc123...008",
-    handle: "humorTank",
-    amount: "4200",
-    proof: ["0xproof12", "0xproof13"],
-    leaf: "0xleaf8",
-    index: 7,
-    type: "Reward"
-  },
-  {
-    id: "9",
-    tokenTicker: "XD",
-    token: "0xabc123...009",
-    handle: "laughGuru",
-    amount: "300",
-    proof: ["0xproof14"],
-    leaf: "0xleaf9",
-    index: 8,
-    type: "Referral"
-  },
-  {
-    id: "10",
-    tokenTicker: "LOL",
-    token: "0xabc123...010",
-    handle: "smileDealer",
-    amount: "777",
-    proof: ["0xproof15", "0xproof16"],
-    leaf: "0xleaf10",
-    index: 9,
-    type: "Reward"
-  }
-];
+
 
 
 const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; ticker: string }> => {
@@ -177,6 +47,7 @@ const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description:
       throw new Error(message);
     })
 }
+
 export default function RewardsPage() {
   const { address } = useAccount();
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -192,17 +63,6 @@ export default function RewardsPage() {
 
   // Fetch Meme Detail
 
-  // Record Claim
-  const {
-    mutate: recordClaim
-  } = useRecordClaim()
-
-
-  useEffect(() => {
-    if (fetchedrewards) {
-      console.log("Fetched Rewards: ", fetchedrewards)
-    }
-  }, [fetchedrewards])
 
   const [isLoading, setIsLoading] = useState(true);
   const [rewards, setRewards] = useState<MemeDetails[]>([]);
@@ -495,17 +355,7 @@ export default function RewardsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button
-              variant="outline"
-              className="gap-2 border-2 border-black text-black hover:bg-black hover:text-white"
-            >
-              <Filter size={16} />
-              <span>Filters</span>
-            </Button>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 hover:shadow-2xl">
-              <TrendingUp size={16} />
-              <span>Highest Value</span>
-            </Button>
+            
           </div>
           <Tabs
             defaultValue="available"
