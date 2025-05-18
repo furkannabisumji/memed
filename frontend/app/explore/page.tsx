@@ -39,8 +39,6 @@ export default function ExplorePage() {
     isPending: isPendingCreators,
   } = useCreators({ category: "creators" });
 
-  console.log(creatorsData);
-
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
     const activeTabElement = tabRefs.current[activeTab];
