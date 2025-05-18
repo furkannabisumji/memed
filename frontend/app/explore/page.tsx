@@ -214,9 +214,8 @@ export default function ExplorePage() {
             )}
           </div>
         </div>
-
-        <Footer />
       </main>
+      <Footer />
     </>
   );
 }
