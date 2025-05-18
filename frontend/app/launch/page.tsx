@@ -33,20 +33,8 @@ export default function LaunchPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [memeTitle, setMemeTitle] = useState<string>("");
   const [memeDescription, setMemeDescription] = useState<string>("");
-  const [memeSymbol, setMemeSymbol] = useState<string>("TIM");
+  const [memeSymbol, setMemeSymbol] = useState<string>("");
   const { switchToChain } = useChainSwitch();
-
-  // console.log({
-  //   memeTitle,
-  //   memeDescription,
-  //   memeImage,
-  //   step,
-  //   isMinting,
-  //   showSuccess,
-  //   selectedAccount,
-  //   accounts,
-  //   memeSymbol,
-  // });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
