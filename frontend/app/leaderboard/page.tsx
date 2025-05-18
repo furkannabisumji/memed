@@ -104,7 +104,7 @@ export default function LeaderboardPage() {
   return (
     <>
       <Header />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 min-h-screen">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-3xl font-bold text-center mb-2">Leaderboard</h1>
           <p className="text-gray-600 text-center mb-6">
