@@ -132,7 +132,7 @@ async function distributeRewards() {
     
     // 1. Get followers of the handle
     const followers = await lensService.getFollowers(handle);
-    5
+    
     // 2. Select random followers (or all if less than limit)
     const followerCount = Math.min(followers.length, limit);
 
