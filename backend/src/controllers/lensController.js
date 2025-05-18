@@ -56,54 +56,18 @@ const getMintableCheck = async (req, res, next) => {
 
 const mintMemeCoins = async (req, res, next) => {
   try {
-    const { name, ticker, description, image, message, signature, timestamp } = req.body;
+    const { name, ticker, description, image } = req.body;
     const { handle } = req.params;
 
-    // 1. Check timestamp is recent (e.g., within 5 minutes)
-    const now = Date.now();
-    const FIVE_MINUTES = 5 * 60 * 1000;
-    // if (!timestamp || Math.abs(now - Number(timestamp)) > FIVE_MINUTES) {
-    //   return res.status(400).json({ error: 'Timestamp is too old or invalid' });
-    // }
-
-    // 2. Verify the signature
-    let recoveredAddress;
-    // try {
-    //   recoveredAddress = ethers.verifyMessage(message, signature);
-    //   console.log({recoveredAddress});
-    // } catch (err) {
-    //   return res.status(400).json({ error: 'Invalid signature' });
-    // }
-
-    // 3. Check that the message is in the expected format
-    const expectedMessage = `Mint meme for handle: ${handle} at ${timestamp}`;
-    // if (message !== expectedMessage) {
-    //   return res.status(400).json({ error: 'Invalid message format' });
-    // }
-
-    // 4. Check that the recovered address matches the Lens handle owner
     const handleOwner = await lensService.getHandleOwner(handle);
-    // console.log({handleOwner});
-    // if (recoveredAddress.toLowerCase() !== handleOwner.toLowerCase()) {
-    //   return res.status(403).json({ error: 'Signature does not match handle owner' });
-    // }
-
-    // 5. Mintable check
+    
     let checkTrue = await getMintableCheckFunction(req, res, next);
     if (checkTrue) {
       try {
-        // Create the meme token
         const tx = await factory_contract.createMeme(handleOwner, handle, name, ticker, description, image);
-        console.log({tx});
-        // Wait for transaction receipt to get the token address
         const receipt = await tx.wait();
-
-        
-        // In a production scenario, we would extract the token address from the event
-        // For now, simulate it
         let tokenAddress;
         try {
-          // Try to find the TokenCreated event to get the token address
           const event = receipt.logs
             .filter(log => log.topics[0] === ethers.id("TokenCreated(address,address,string,string,string,string,string,uint256)"))
             .map(log => factory_contract.interface.parseLog(log))[0];
@@ -113,7 +77,6 @@ const mintMemeCoins = async (req, res, next) => {
           console.error('Error parsing event logs:', error);
         }
         
-        // Store token info
         await Token.findOneAndUpdate(
           { handle },
           { 
@@ -124,8 +87,6 @@ const mintMemeCoins = async (req, res, next) => {
             description,
             image,
             creator: handleOwner,
-            lastRewardDistribution: Date.now(),
-            totalDistributed: "0"
           },
           { upsert: true }
         );
