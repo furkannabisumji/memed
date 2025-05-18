@@ -44,24 +44,15 @@ import { chains } from "@lens-chain/sdk/viem";
 import { config } from "@/providers/Web3Provider";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import factoryAbi from "@/config/factoryABI.json";
-import { Meme } from "@/app/types";
+import { Meme, MemeBattle } from "@/app/types";
 import MemeBattleCard from "./MemeBattleCard";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
 import Link from "next/link";
+import { getMemeBattles } from "@/utils/getMemeBattles";
 
 
 // Mock data for potential opponents
-
-interface MemeBattle {
-  battleId: bigint
-  endTime: bigint
-  memeA: `0x${string}`
-  memeB: `0x${string}`
-  resolved: boolean
-  startTime: bigint
-  winner: `0x${string}`
-}
 
 export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
   memeA: {
@@ -106,23 +97,7 @@ const getMemeHeatScore = async (token: string) => {
   }
 };
 
-const getMemeBattles = async (token: string): Promise<MemeBattle[]> => {
-  try {
 
-    if (!token) return [];
-
-    const result: any = await readContract(config, {
-      abi: MemedBattleABI as Abi,
-      address: CONTRACTS.memedBattle as `0x${string}`,
-      functionName: 'getUserBattles',
-      args: [token as `0x${string}`],
-    })
-    return result // this will be a TokenData[] array
-  } catch (err) {
-    console.error('Error fetching tokens:', err)
-    return []
-  }
-}
 
 const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; tokenAddress: string }> => {
   return axiosInstance.get(`/api/tokens/${tokenAddress}`)
@@ -348,21 +323,21 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             className="flex items-center gap-1 cursor-pointer  "
           >
             <Clock size={16} />
-            Ongoing ({0})
+            Ongoing ({battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").length})
           </TabsTrigger>
           <TabsTrigger
             value="won"
             className="flex items-center gap-1 cursor-pointer"
           >
             <CheckCircle size={16} />
-            Won ({0})
+            Won ({battles.filter((battle) => battle.winner === meme.tokenAddress).length})
           </TabsTrigger>
           <TabsTrigger
             value="lost"
             className="flex items-center gap-1 cursor-pointer"
           >
             <XCircle size={16} />
-            Lost ({0})
+            Lost ({battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").length})
           </TabsTrigger>
         </TabsList>
 
@@ -375,7 +350,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           ) : battles && battles.length !== 0 ? battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
             <MemeBattleCard key={battle.battleId} battle={battle} />
           )) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center justify-center py-16 text-center col-span-2">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
               <h2 className="mb-2 text-2xl font-bold">No Ongoing Meme Battle Found</h2>
               <p className="mb-6 text-gray-600">

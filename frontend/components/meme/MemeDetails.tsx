@@ -28,10 +28,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { Meme } from "@/app/types";
+import { getMemeBattles } from "@/utils/getMemeBattles";
+import { useAccount } from "wagmi";
 
 interface MemeDetailsProps {
   meme: Meme;
 }
+
 
 // Mock price history data
 const generatePriceData = () => {
@@ -102,16 +105,20 @@ const recentTrades = [
   },
 ];
 
+
+
 const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [priceData, setPriceData] = useState<any[]>([]);
   const [chartTimeframe, setChartTimeframe] = useState("7d");
+  const [battlesWon, setBattlesWon] = useState(0)
+  const [battleCount, setBattleCount] = useState(0)
   const [priceChange, setPriceChange] = useState({
     value: 0,
     percentage: 0,
     isPositive: true,
   });
-
+  const { address } = useAccount()
   useEffect(() => {
     // Generate mock price data when component mounts
     const data = generatePriceData();
@@ -140,13 +147,22 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
       chartTimeframe === "24h"
         ? 1
         : chartTimeframe === "7d"
-        ? 7
-        : chartTimeframe === "30d"
-        ? 30
-        : 90;
+          ? 7
+          : chartTimeframe === "30d"
+            ? 30
+            : 90;
 
     return priceData.slice(-days - 1);
   };
+  useEffect(() => {
+    if (meme.tokenAddress && address) {
+      getMemeBattles(meme.tokenAddress).then((res) => {
+        setBattlesWon(res.filter((battle) => battle.winner === meme.tokenAddress).length)
+        setBattleCount(res.filter((battle) => battle.memeA !== "0x0000000000000000000000000000000000000000" &&
+          battle.memeB !== "0x0000000000000000000000000000000000000000").length)
+      })
+    }
+  }, [meme.tokenAddress, address])
 
   const filteredData = getFilteredData();
   return (
@@ -219,11 +235,10 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                       ${meme.ticker} Price Chart
                     </span>
                     <Badge
-                      className={`${
-                        priceChange.isPositive
-                          ? "bg-green-500 hover:bg-green-500"
-                          : "bg-red-500 hover:bg-red-500"
-                      } text-white`}
+                      className={`${priceChange.isPositive
+                        ? "bg-green-500 hover:bg-green-500"
+                        : "bg-red-500 hover:bg-red-500"
+                        } text-white`}
                     >
                       {priceChange.isPositive ? (
                         <ArrowUpRight size={14} />
@@ -306,18 +321,15 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                                 preserveAspectRatio="none"
                               >
                                 <path
-                                  d={`M0,${
-                                    100 - parseFloat("0") * 1000
-                                  } ${filteredData
-                                    .map(
-                                      (point, i) =>
-                                        `L${
-                                          (i / (filteredData.length - 1)) * 100
-                                        },${
-                                          100 - parseFloat(point.price) * 1000
-                                        }`
-                                    )
-                                    .join(" ")}`}
+                                  d={`M0,${100 - parseFloat("0") * 1000
+                                    } ${filteredData
+                                      .map(
+                                        (point, i) =>
+                                          `L${(i / (filteredData.length - 1)) * 100
+                                          },${100 - parseFloat(point.price) * 1000
+                                          }`
+                                      )
+                                      .join(" ")}`}
                                   fill="none"
                                   stroke={
                                     priceChange.isPositive
@@ -496,7 +508,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
             <div className="flex items-center gap-2">
               <Trophy size={16} className="text-amber-500" />
               <span className="text-gray-700">
-                Won 2 out of 3 recent battles
+                Won {battlesWon} out of {battleCount} recent battles
               </span>
             </div>
           </div>
