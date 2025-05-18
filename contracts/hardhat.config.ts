@@ -27,6 +27,13 @@ const config: HardhatUserConfig = {
       zksync: true,
       loggingEnabled: true,
     },
+    mainnet: {
+      chainId: 232,
+      ethNetwork: "mainnet",  
+      url: "https://rpc.lens.xyz",
+      zksync: true,
+      verifyURL: "https://api-explorer-verify.lens.matterhosted.dev/contract_verification"
+    }
   },
 };
 
