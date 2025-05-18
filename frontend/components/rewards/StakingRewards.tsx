@@ -12,276 +12,158 @@ import Link from 'next/link';
 import { useCustomToast } from '../ui/custom-toast';
 import CONTRACTS from '@/config/contracts';
 
-import { simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import { simulateContract, waitForTransactionReceipt, writeContract, readContract } from '@wagmi/core'
 import EngageToEarn from '@/config/memedEngageToEarnABI.json'
 import { config } from '@/providers/Web3Provider';
-import { Abi } from 'viem';
-
-// const stakingRewards = [
-//     {
-//         _id: "1",
-//         ticker: "MEME",
-//         tokenAddress: "0x123abc...def",
-//         handle: "0xbruh",
-//         amount: "2500",
-//         proof: ["0xabc", "0xdef", "0xghi"],
-//         leaf: "0xleaf1",
-//         index: 0,
-//         type: "Airdrop"
-//     },
-//     {
-//         _id: "2",
-//         ticker: "LOL",
-//         tokenAddress: "0x456def...abc",
-//         handle: "memeLord",
-//         amount: "15000",
-//         proof: ["0x123", "0x456", "0x789"],
-//         leaf: "0xleaf2",
-//         index: 1,
-//         type: "Reward"
-//     },
-//     {
-//         _id: "3",
-//         ticker: "GIGGLE",
-//         tokenAddress: "0x789ghi...xyz",
-//         handle: "gagMaster",
-//         amount: "320",
-//         proof: ["0xaaa", "0xbbb"],
-//         leaf: "0xleaf3",
-//         index: 2,
-//         type: "Engage-to-Earn"
-//     }
-// ];
-
-const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; }> => {
-    return axiosInstance.get(`/tokens/${tokenAddress}`)
-        .then((res) => res.data)
-        .catch((error) => {
-            const axiosErr = error as AxiosError<{ message?: string }>;
-            const message =
-                axiosErr.response?.data?.message || axiosErr.message || "Failed to fetch Claims";
-
-            throw new Error(message);
-        })
-}
-export default function StakingRewards({ ticker }: { ticker: string }) {
+import { Abi, formatEther } from 'viem';
+import MemedStakingABI from '@/config/memedStakingABI.json'
+import { motion } from 'motion/react'
+export default function StakingRewards({ ticker, tokenAddress }: { ticker: string, tokenAddress: string }) {
     const { address, isConnecting } = useAccount()
-    const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [rewards, setRewards] = useState<ClaimProof[]>([])
-    const [claimingToken, setClaimingToken] = useState<string | null>(null);
-    const [hasMore, setHasMore] = useState<boolean>(false)
-    const [page, setPage] = useState<number>(1)
-    const { accounts, getFirstAccount } = useAccountStore()
-    const ITEMS_PER_PAGE = 1;
+    const [reward, setReward] = useState(0n)
+    const [rewardAmount, setRewardAmount] = useState()
+    const [isPending, setIsPending] = useState<boolean>(false)
+    const [loadingStake, setLoadingStake] = useState<boolean>(true)
     const toast = useCustomToast();
-    // Get Rewards
-    const {
-        data: fetchedRewards,
-        isLoading: REWARDS_LOADING,
-    } = useClaimData(address);
 
 
-    const fetchRewards = async (
-        pageNum: number,
-        tabType = "available",
-        reset: boolean = false
-    ) => {
 
-        // Fetch Rewards
-        if (pageNum === 1) {
-            setIsLoading(true);
+    const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
+
+    const getReward = async (token: string) => {
+        try {
+            if (!token) return;
+            setLoadingStake(true)
+            const result: any = await readContract(config, {
+                abi: MemedStakingABI as Abi,
+                address: CONTRACTS.memedStaking as `0x${string}`,
+                functionName: 'stakes',
+                args: [token as `0x${string}`, address!],
+            })
+            console.log("Reward: ", result)
+
+            return result // this will be a TokenData[] array
+        } catch (err) {
+            console.error('Error fetching tokens:', err)
+            setLoadingStake(false)
+            return []
+        } finally {
+            setLoadingStake(false)
         }
-        // Get the appropriate data based on tab
-        if (fetchedRewards == null) {
-            setIsLoading(false)
-            return;
-        }
-        // Sort claims based Only Conected Users 
-        let sourceData = fetchedRewards.filter((reward) => reward.userAddress === address)
-
-        // Simulate paginated data fetch
-        const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const paginatedRewards = sourceData.slice(startIndex, endIndex);
-
-        console.log("Paginated", paginatedRewards)
-
-
-        // Check if there are more items to load
-        setHasMore(endIndex < sourceData.length);
-
-        // Reset
-        if (reset) {
-            if (tabType === "available") {
-                setRewards(paginatedRewards);
-            } else {
-                const sliced = sourceData.slice(0, endIndex);
-                setRewards(sliced);
-            }
-        } else {
-            setRewards((prev) => [...prev, ...paginatedRewards]);
-        }
-
-
-        // Set Page
-        setPage(pageNum)
-
-        setIsLoading(false)
     }
 
-    // Initial Fetch
     useEffect(() => {
-        if (address && fetchedRewards) {
-            fetchRewards(1, "available", true)
-
-        } else {
-            setIsLoading(false)
-            setRewards([])
+        if (address && tokenAddress) {
+            getReward(tokenAddress).then((res) => {
+                const amount = res?.[0] ?? 0n;
+                const reward = res?.[1] ?? 0n;
+                setReward(reward)
+                setRewardAmount(amount)
+            })
         }
-    }, [address, fetchedRewards])
+    }, [address, tokenAddress])
 
-
-    // Handle load more button click
-    const handleLoadMore = () => {
-        if (!isLoading && hasMore) {
-            fetchRewards(page + 1, "available");
+    const claim = async (tokenAddress: string) => {
+        if (!tokenAddress) {
+            toast.error("Invalid Token")
+            return
         }
-    };
-
-
-    const handleClaim = async ({ tokenAddress, amount, index, proof }: {
-        tokenAddress: string, amount: string, index: number, proof: string[]
-    }) => {
-
-        if (!address) {
-            toast.error("Wallet not connected");
-            return;
-        }
-
-        setClaimingToken(tokenAddress);
-
+        setIsPending(true)
         try {
-            // Simulate API delay
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const { request } = await simulateContract(config, {
+                abi: MemedStakingABI as Abi,
+                address: CONTRACTS.memedStaking as `0x${string}`,
+                functionName: "claimReward",
+                args: [tokenAddress as `0x${string}`],
+            });
+            const hash = await writeContract(config, request);
 
+            const receipt = await waitForTransactionReceipt(config, { hash });
 
-            // On chain transaction
-            try {
-                console.log("🚀 Claiming reward...");
+            const isSuccess = receipt.status === "success";
 
-                const { request } = await simulateContract(config, {
-                    abi: EngageToEarn as Abi,
-                    address: CONTRACTS.memedEngageToEarn as `0x${string}`,
-                    functionName: 'claim',
-                    args: [
-                        tokenAddress as `0x${string}`,
-                        BigInt(amount),
-                        BigInt(index),
-                        proof as `0x${string}`[],
-                    ],
-                    account: address,
+            if (isSuccess) {
+                toast.success("Reward claimed!", {
+                    description: `You've successfully claimed your reward for this meme.`,
                 });
-
-                const hash = await writeContract(config, request);
-
-                console.log('✅ Claim transaction sent:', hash);
-
-                const receipt = await waitForTransactionReceipt(config, { hash });
-                const isSuccess = receipt.status === "success";
-
-                // Find the token data
-                const tokenData = rewards.find((r) => r.tokenAddress === tokenAddress);
-
-                if (!tokenData) {
-                    throw new Error("Token data not found");
-                }
-
-                // Success - update UI
-                if (isSuccess) {
-                    toast.success(
-                        `Successfully claimed ${tokenData.amount} ${tokenData.ticker}`
-                    );
-                }
-
-            } catch (err: any) {
-                console.error('❌ Error sending claim transaction:', err);
-                const message =
-                    err?.shortMessage ||
-                    err?.message ||
-                    "Something went wrong while claiming the reward";
-                throw new Error(message);
+                setIsPending(false)
             }
-            // Remove the claimed token from the list
-            setRewards(rewards.filter((r) => r.tokenAddress !== tokenAddress));
+            console.log("✅ Reward claim tx sent:", hash);
+        } catch (err: any) {
 
-        } catch (error) {
-            console.error("Claim error:", error);
-            toast.error(
-                error instanceof Error ? error.message : "Failed to claim rewards"
-            );
+            const message =
+                err?.shortMessage ||
+                err?.message ||
+                "Something went wrong while claiming the reward";
+
+            toast.error(message)
+            throw new Error(message);
         } finally {
-            setClaimingToken(null);
+            setIsPending(false)
         }
-    };
+
+    }
+
 
     return (
-        <div className='flex flex-col gap-4'>
-            {isLoading || isConnecting ? (
-                <div className="flex justify-center items-center py-8">
-                    <span className="animate-spin h-5 w-5 border-2 border-t-transparent border-primary rounded-full" />
-                    <span className="ml-2 text-gray-500">Loading rewards...</span>
-                </div>
-            ) : rewards && rewards.length !== 0 ? (
-                rewards.map((reward) => (
-                    <div
-                        key={reward._id}
-                        className="flex justify-between items-center p-3 border border-gray-200 rounded-lg"
-                    >
-                        <div>
-                            <p className="font-medium">@{reward.handle}</p>
-                            {/* <p className="text-sm text-gray-500">Type: {reward.type}</p> */}
-                            <Badge className="bg-primary hover:bg-primary text-white">
-                                +{parseFloat(reward.amount).toLocaleString()} ${reward.ticker}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
+        <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="rounded-2xl flex flex-col items-center gap-2 p-10 justify-center text-center"
+        >
+            <motion.div
+                animate={reward && reward > 0n ? {
+                    scale: [1, 1.05, 1],
+                    rotate: [0, -5, 5, -5, 0], // Shake effect
+                } : {}}
+                transition={{
+                    repeat: Infinity,
+                    duration: 1,
+                    ease: "easeInOut",
+                }}
+            >
+                <Gift className="w-20 h-20 drop-shadow-md" style={{ color: "#28d358" }} />
+            </motion.div>
 
-                            <button
-                                className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md flex items-center gap-2"
-                                onClick={() => handleClaim({
-                                    amount: reward.amount,
-                                    index: reward.index,
-                                    proof: reward.proof,
-                                    tokenAddress: reward.tokenAddress
-                                })}
-                            >
-                                {claimingToken === reward.tokenAddress ? (
-                                    <>
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        Claiming...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Gift className="w-3 h-3" />
-                                        Claim
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                ))
-            ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <Gift className="w-12 h-12 mb-4 text-gray-400" />
-                    <h2 className="mb-2 text-2xl font-bold">No Rewards Yet</h2>
-                    <p className="mb-6 text-gray-600">
-                        You don't have any unclaimed rewards at the moment.
+
+            <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white mt-3">
+                Claim Your Reward
+            </h2>
+
+            {loadingStake ? (
+                <p className="text-gray-600 dark:text-gray-300 animate-pulse">
+                    Loading reward...
+                </p>
+            ) : reward && reward > 0n ? (
+                <>
+                    <p className="text-lg mb-2" style={{ color: "#000" }}>
+                        🎉 You have  tokens to claim!
                     </p>
-                </div>
+
+                    <motion.button
+                        onClick={() => claim(tokenAddress)}
+                        disabled={isPending}
+                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.05 }}
+                        className="text-white cursor-pointer font-semibold px-6 py-3 rounded-full shadow-md transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{
+                            backgroundColor: "#28d358",
+                            // optional hover color
+                        }}
+                    >
+                        {isPending ? (
+                            <div className="flex items-center justify-center gap-2">
+                                Claiming Reward <Loader2 className="animate-spin w-5 h-5" />
+                            </div>
+                        ) : (
+                            "Claim Reward"
+                        )}
+                    </motion.button>
+                </>
+            ) : (
+                <p className="text-gray-500 dark:text-gray-400">No rewards available to claim.</p>
             )}
-            {hasMore &&
-                <Button className='ml-auto' variant={'outline'} onClick={handleLoadMore}>Load More</Button>
-            }
-        </div>
+        </motion.div>
     )
 }

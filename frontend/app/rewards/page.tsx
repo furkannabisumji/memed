@@ -379,7 +379,7 @@ export default function RewardsPage() {
 
     try {
       // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
 
 
       // On chain transaction
