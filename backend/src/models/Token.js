@@ -35,14 +35,6 @@ const TokenSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  lastRewardDistribution: {
-    type: Date,
-    default: Date.now
-  },
-  totalDistributed: {
-    type: String,
-    default: "0"
-  },
   likesCount: {
     type: Number,
     default: 0
