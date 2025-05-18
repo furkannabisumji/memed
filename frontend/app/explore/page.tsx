@@ -77,24 +77,13 @@ export default function ExplorePage() {
           </h1>
 
           <div className="flex flex-col gap-4 mb-8 md:flex-row">
-            <div className="relative flex-1 justify-center item-center">
+            <div className="relative w-full max-w-[1000px] m-auto justify-center item-center">
               <Search className="absolute top-[25%] left-3 h-5 w-5 text-gray-400" />
               <Input
                 placeholder="Search memes, creators, or tokens..."
                 className="pl-10 bg-white border-2 border-black"
               />
             </div>
-            <Button
-              variant="outline"
-              className="gap-2 border-2 border-black text-black hover:bg-black hover:text-white "
-            >
-              <Filter size={16} />
-              <span>Filters</span>
-            </Button>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 hover:shadow-2xl">
-              <TrendingUp size={16} />
-              <span>Trending</span>
-            </Button>
           </div>
 
           <Tabs
