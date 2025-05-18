@@ -90,7 +90,8 @@ export interface ClaimProof {
   _id: string;
   ticker: string;
   airdrop: {
-    index: number
+    _id:string,
+    index: number,
   }
   tokenAddress: string;
   handle: string;
@@ -110,6 +111,7 @@ export interface MemeDetails extends ClaimProof {
   description: string;
   image: string;
   handle: string;
+  ticker:string
 }
 
 export interface Meme {

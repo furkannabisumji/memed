@@ -56,7 +56,7 @@ export default function StakingRewards({ ticker, tokenAddress }: { ticker: strin
         if (address && tokenAddress) {
             getReward(tokenAddress).then((res) => {
                 const amount = res?.[0] ?? 0n;
-                const reward = res?.[1] ?? 0n;
+                const reward = res?.[1]   ?? 0n;
                 setReward(reward)
                 setRewardAmount(amount)
             })
@@ -138,7 +138,7 @@ export default function StakingRewards({ ticker, tokenAddress }: { ticker: strin
             ) : reward && reward > 0n ? (
                 <>
                     <p className="text-lg mb-2" style={{ color: "#000" }}>
-                        🎉 You have  tokens to claim!
+                        🎉 You have {(Number(reward) * 1e-18).toFixed(18).replace(/\.?0+$/, '')} tokens to claim!
                     </p>
 
                     <motion.button
