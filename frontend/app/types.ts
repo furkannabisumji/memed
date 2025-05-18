@@ -19,19 +19,19 @@ export type Account = {
     bio?: string;
     name?: string;
     picture:
-      | string
-      | {
-          original?: { url: string };
-          optimized?: { url: string };
-          uri?: string;
-        };
+    | string
+    | {
+      original?: { url: string };
+      optimized?: { url: string };
+      uri?: string;
+    };
     coverPicture?:
-      | string
-      | {
-          original?: { url: string };
-          optimized?: { url: string };
-          uri?: string;
-        };
+    | string
+    | {
+      original?: { url: string };
+      optimized?: { url: string };
+      uri?: string;
+    };
     attributes?: Array<{
       type?: string;
       key?: string;
@@ -87,15 +87,18 @@ export interface AccountState {
 }
 
 export interface ClaimProof {
-  id: string;
-  tokenTicker: string;
-  token: string;
+  _id: string;
+  ticker: string;
+  tokenAddress: string;
   handle: string;
   amount: string;
   proof: string[];
   leaf: string;
   index: number;
   type: string;
+  airdrop: "68284238176c30eb6dfb5993"
+  createdAt: "2025-05-17T08:01:27.916Z"
+  userAddress: string
 }
 
 export interface MemeDetails extends ClaimProof {
@@ -144,4 +147,14 @@ export interface TokenStats {
   quotes: number;
   totalEngagements: number;
   engagementRate: number;
+}
+
+export interface MemeBattle {
+  battleId: bigint
+  endTime: bigint
+  memeA: `0x${string}`
+  memeB: `0x${string}`
+  resolved: boolean
+  startTime: bigint
+  winner: `0x${string}`
 }

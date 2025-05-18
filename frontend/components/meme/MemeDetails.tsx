@@ -29,9 +29,17 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { Meme } from "@/app/types";
 
+import { useTokenSupply } from "@/hooks/useTokenSupply";
+import { Address } from "viem";
+import { TokenStats } from "@/app/types";
+
+
 interface MemeDetailsProps {
   meme: Meme;
+  stats?: TokenStats | null;
 }
+
+
 
 // Mock price history data
 const generatePriceData = () => {
@@ -102,16 +110,20 @@ const recentTrades = [
   },
 ];
 
+
+
 const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [priceData, setPriceData] = useState<any[]>([]);
   const [chartTimeframe, setChartTimeframe] = useState("7d");
+  const [battlesWon, setBattlesWon] = useState(0)
+  const [battleCount, setBattleCount] = useState(0)
   const [priceChange, setPriceChange] = useState({
     value: 0,
     percentage: 0,
     isPositive: true,
   });
-
+  const { address } = useAccount()
   useEffect(() => {
     // Generate mock price data when component mounts
     const data = generatePriceData();
@@ -140,62 +152,73 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
       chartTimeframe === "24h"
         ? 1
         : chartTimeframe === "7d"
-        ? 7
-        : chartTimeframe === "30d"
-        ? 30
-        : 90;
+          ? 7
+          : chartTimeframe === "30d"
+            ? 30
+            : 90;
 
     return priceData.slice(-days - 1);
   };
+  useEffect(() => {
+    if (meme.tokenAddress && address) {
+      getMemeBattles(meme.tokenAddress).then((res) => {
+        setBattlesWon(res.filter((battle) => battle.winner === meme.tokenAddress).length)
+        setBattleCount(res.filter((battle) => battle.memeA !== "0x0000000000000000000000000000000000000000" &&
+          battle.memeB !== "0x0000000000000000000000000000000000000000").length)
+      })
+    }
+  }, [meme.tokenAddress, address])
 
-  const filteredData = getFilteredData();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card className="border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <Card className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-2xl bg-white">
         <CardContent className="p-6">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <BarChart3 size={20} className="text-primary" />
+          <h3 className="text-2xl font-semibold mb-6 flex items-center gap-2 text-gray-800">
+            <BarChart3 size={24} className="text-primary" />
             Token Details
           </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Supply Stats Card */}
-            <Card className="border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <h4 className="text-lg font-semibold mb-4">Supply Metrics</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Total Supply</span>
-                    <span className="font-medium">{0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Circulating Supply</span>
-                    <span className="font-medium">{0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Holders</span>
-                    <span className="font-medium">{0}</span>
-                  </div>
+            <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-xl bg-gray-50">
+              <CardContent className="p-5">
+                <h4 className="text-lg font-medium mb-4 text-gray-700">
+                  Supply Metrics
+                </h4>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Total Supply</span>
+                  <span className="font-semibold text-gray-800">
+                    {isLoading ? (
+                      <span className="animate-pulse text-gray-400">
+                        Loading...
+                      </span>
+                    ) : !supplyData ? (
+                      "N/A"
+                    ) : (
+                      Number(supplyData).toLocaleString()
+                    )}
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Token Symbol Card */}
-            <Card className="border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <h4 className="text-lg font-semibold mb-4">Token Information</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Token Symbol</span>
-                    <span className="font-medium">${meme.ticker}</span>
-                  </div>
-                  {/* <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Current Price</span>
-                    <span className="font-medium">{0} {meme.ticker}</span>
-                  </div> */}
+            <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-xl bg-gray-50">
+              <CardContent className="p-5">
+                <h4 className="text-lg font-medium mb-4 text-gray-700">
+                  Token Information
+                </h4>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Token Symbol</span>
+                  <span className="font-semibold text-gray-800">
+                    ${meme.ticker}
+                  </span>
                 </div>
               </CardContent>
             </Card>
           </div>
+
 
           <div className="grid grid-cols-2 gap-4 mt-6">
             {/* <Button className="bg-primary hover:bg-primary/90 hover:shadow-2xl cursor-pointer">
@@ -219,11 +242,10 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                       ${meme.ticker} Price Chart
                     </span>
                     <Badge
-                      className={`${
-                        priceChange.isPositive
-                          ? "bg-green-500 hover:bg-green-500"
-                          : "bg-red-500 hover:bg-red-500"
-                      } text-white`}
+                      className={`${priceChange.isPositive
+                        ? "bg-green-500 hover:bg-green-500"
+                        : "bg-red-500 hover:bg-red-500"
+                        } text-white`}
                     >
                       {priceChange.isPositive ? (
                         <ArrowUpRight size={14} />
@@ -306,18 +328,15 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
                                 preserveAspectRatio="none"
                               >
                                 <path
-                                  d={`M0,${
-                                    100 - parseFloat("0") * 1000
-                                  } ${filteredData
-                                    .map(
-                                      (point, i) =>
-                                        `L${
-                                          (i / (filteredData.length - 1)) * 100
-                                        },${
-                                          100 - parseFloat(point.price) * 1000
-                                        }`
-                                    )
-                                    .join(" ")}`}
+                                  d={`M0,${100 - parseFloat("0") * 1000
+                                    } ${filteredData
+                                      .map(
+                                        (point, i) =>
+                                          `L${(i / (filteredData.length - 1)) * 100
+                                          },${100 - parseFloat(point.price) * 1000
+                                          }`
+                                      )
+                                      .join(" ")}`}
                                   fill="none"
                                   stroke={
                                     priceChange.isPositive
@@ -464,6 +483,7 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
               </DialogContent>
             </Dialog>
           </div>
+
         </CardContent>
       </Card>
 
@@ -477,26 +497,30 @@ const MemeDetails: React.FC<MemeDetailsProps> = ({ meme }: { meme: Meme }) => {
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-500">Current Heat Score:</span>
-              <span className="font-bold text-xl">{0}/100</span>
+              <span className="font-bold text-xl">
+                {stats?.totalEngagements || 0}/100
+              </span>
             </div>
-            <Progress value={0} className="h-3" />
+            <Progress value={stats?.engagementRate || 0} className="h-3" />
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <ThumbsUp size={16} className="text-blue-500" />
-              <span className="text-gray-700">
-                Engagement rate is above average
-              </span>
+              <span className="text-gray-700">Engagement rate coming up</span>
             </div>
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-green-500" />
-              <span className="text-gray-700">Trending in 3 communities</span>
+              <span className="text-gray-700">
+                Trending in {stats?.totalEngagements || 0} communities
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Trophy size={16} className="text-amber-500" />
               <span className="text-gray-700">
-                Won 2 out of 3 recent battles
+
+                Won {battlesWon} out of {battleCount} recent battles
+
               </span>
             </div>
           </div>
