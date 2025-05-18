@@ -25,7 +25,7 @@ export default function Header() {
   const isActive = (path: string) => {
     return pathname === path || (path !== '/' && pathname.startsWith(path));
   };
-  
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -38,7 +38,7 @@ export default function Header() {
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    
+
     // Clean up
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -67,36 +67,36 @@ export default function Header() {
         <nav className="cursor-pointer mx-auto flex justify-center gap-2 items-center bg-[#DCDCDC] p-1 rounded-md">
           <Link href={"/"}>
             <div className="relative logo w-[40px] h-[40px] bg-[#28D358] text-white font-bold rounded-md">
-              <Image alt={"memed"} src={'/icon/android-chrome-512x512.png'} fill/>
+              <Image alt={"memed"} src={'/icon/android-chrome-512x512.png'} fill />
             </div>
           </Link>
           <Link href={"/explore"}>
-            <Button 
-              variant={"ghost"} 
+            <Button
+              variant={"ghost"}
               className={`cursor-pointer ${isActive('/explore') ? 'bg-white/50' : ''} hover:bg-white/30`}
             >
               Explore
             </Button>
           </Link>
           <Link href={"/rewards"}>
-            <Button 
-              variant={"ghost"} 
+            <Button
+              variant={"ghost"}
               className={`cursor-pointer ${isActive('/rewards') ? 'bg-white/50' : ''} hover:bg-white/30`}
             >
               Rewards
             </Button>
           </Link>
           <Link href={"/launch"}>
-            <Button 
-              variant={"ghost"} 
+            <Button
+              variant={"ghost"}
               className={`cursor-pointer ${isActive('/launch') ? 'bg-white/50' : ''} hover:bg-white/30`}
             >
               Launch Meme
             </Button>
           </Link>
           <Link href={"/leaderboard"}>
-            <Button 
-              variant={"ghost"} 
+            <Button
+              variant={"ghost"}
               className={`cursor-pointer ${isActive('/leaderboard') ? 'bg-white/50' : ''} hover:bg-white/30`}
             >
               Leaderboard
@@ -110,10 +110,10 @@ export default function Header() {
 
       {/* Mobile Nav - Simple Top Bar */}
       <div className="md:hidden justify-between my-2 px-2 relative flex">
-        <nav className="cursor-pointer flex justify-center items-center bg-[#DCDCDC] p-1 rounded-md">
+        <nav className="cursor-pointer flex justify-center items-center  p-1 rounded-md">
           <Link href={"/"}>
-            <div className={`logo p-2 ${isActive('/') ? 'bg-[#1ea54c]' : 'bg-[#28D358]'} text-white font-bold rounded-md`}>
-              MF
+            <div className={`w-[40px] h-[40px] ${isActive('/') ? 'bg-[#1ea54c]' : 'bg-[#28D358]'} relative text-white font-bold rounded-md`}>
+              <Image alt={"memed"} src={'/icon/android-chrome-512x512.png'} fill />
             </div>
           </Link>
         </nav>
@@ -207,7 +207,7 @@ export default function Header() {
         </div>
       )}
 
-      
+
     </header>
   );
 }
