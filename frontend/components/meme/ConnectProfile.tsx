@@ -16,10 +16,9 @@ export default function ConnectProfile({
   const {
     data: tokenData,
     isPending: isLoadingTokenData,
-  }: { data: TokenData | null; isLoading: boolean } = useTokenData(
+  }: { data: TokenData | null; isPending: boolean } = useTokenData(
     selectedAccount?.username.localName || ""
   );
-
   // console.log(selectedAccount?.username.localName);
   // console.log(tokenData);
 
