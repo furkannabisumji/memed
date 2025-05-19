@@ -2,6 +2,10 @@
 
 Where memes meet money, and creators become legends. Memed.Fun is a platform that lets creators mint their own meme tokens, battle for supremacy, and reward their community through the power of Lens Protocol.
 
+<img width="2204" alt="image" src="https://github.com/user-attachments/assets/b9a58958-8647-4cb1-98fe-87af10c3aaeb" />
+
+
+
 ## What's the Hype?
 
 Imagine if your favorite meme creator could:
@@ -11,6 +15,10 @@ Imagine if your favorite meme creator could:
 - Build a staking ecosystem
 
 That's Memed.Fun - a playground where social influence meets token economics.
+
+<img width="2204" alt="image" src="https://github.com/user-attachments/assets/b4c0ecd6-29cf-42d7-b7e9-4b626fb22e4e" />
+
+
 
 ## How It Works
 
