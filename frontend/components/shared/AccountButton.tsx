@@ -60,7 +60,7 @@ export function AccountButton({ className }: AccountButtonProps) {
     if (isConnecting && isMounted) {
       connectionTimeoutRef.current = setTimeout(() => {
         setConnectionTimedOut(true);
-      }, 10000); // 10 second timeout
+      }, 60000); // 1 minute timeout
     } else {
       // If no longer connecting, clear the timeout
       if (connectionTimeoutRef.current) {
