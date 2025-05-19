@@ -242,7 +242,7 @@ export default function MemeViewPage() {
 
                       {/* Address with improved styling */}
                       <Link
-                        href={`https://testnet.lenscan.io/address/${memeToken.tokenAddress}`}
+                        href={`https://explorer.lens.xyz/address/${memeToken.tokenAddress}`}
                         target="_blank"
                         className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-1"
                       >

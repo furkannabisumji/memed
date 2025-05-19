@@ -19,6 +19,7 @@ import { useAccountStore } from "@/store/accountStore";
 import { chains } from "@lens-chain/sdk/viem";
 import { useChainSwitch } from "@/hooks/useChainSwitch";
 import { TransactionType } from "@/hooks/useChainSwitch";
+import { truncateAddress } from "@/lib/helpers";
 
 export function Welcome() {
   // Add client-side only rendering to prevent hydration errors
@@ -34,6 +35,7 @@ export function Welcome() {
   const [autoRefreshing, setAutoRefreshing] = useState(false);
   const { switchToChain } = useChainSwitch();
   const [imageProcessing, setImageProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState("create");
 
   // Use the account store for all account-related state
   const {
@@ -45,10 +47,65 @@ export function Welcome() {
     setIsLoading: setIsLoadingStore,
   } = useAccountStore();
 
+  // Track if an account fetch is in progress to prevent duplicate requests
+  const isFetchingRef = useRef(false);
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+  // Debounce timer for loading state changes
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Last accounts count to prevent unnecessary updates
+  const lastAccountsCountRef = useRef<number>(0);
+
+  // Safer way to set loading state with debounce
+  const safeSetLoading = useCallback(
+    (isLoading: boolean) => {
+      // Clear any pending timer
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+
+      // Set loading with debounce
+      if (isLoading) {
+        // Set loading immediately when turning on
+        setIsLoadingStore(true);
+      } else {
+        // Delay turning off loading state to prevent flicker
+        loadingTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setIsLoadingStore(false);
+          }
+        }, 300);
+      }
+    },
+    [setIsLoadingStore]
+  );
+
   // Use useEffect to set isClient to true after component mounts
   useEffect(() => {
     setIsClient(true);
-  }, []);
+
+    // Set mounted ref to true and track last accounts count
+    isMountedRef.current = true;
+    lastAccountsCountRef.current = accountsStore.length;
+
+    return () => {
+      isMountedRef.current = false;
+
+      // Clear any pending timers
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+
+      // Ensure loading state is reset on unmount
+      useAccountStore.getState().setIsLoading(false);
+
+      // Dismiss all toasts when component unmounts
+      if (toast && toast.dismissAll) {
+        toast.dismissAll();
+      }
+    };
+  }, [accountsStore.length]);
 
   //check chain
   useEffect(() => {
@@ -57,78 +114,105 @@ export function Welcome() {
     }
   }, [chain, switchToChain]);
 
+  // Use a separate effect for resetting store state on disconnect
   useEffect(() => {
-    // Only provide a cleanup function for unmount
-    return () => {
-      // Dismiss all toasts when component unmounts
-      if (toast && toast.dismissAll) {
-        toast.dismissAll();
-      }
-    };
-  }, []); // Add empty dependency array to prevent infinite loops
-
-  // Function to fetch accounts - let the store handle loading state
-  const fetchAccounts = useCallback(async () => {
-    if (!address) return;
-
-    try {
-      setIsLoadingStore(true);
-      const accounts = await fetchAccountsStore(address);
-
-      console.log(`Fetched ${accounts.length} accounts from the store`);
-    } catch (error) {
-      console.error("Error fetching accounts:", error);
-      toast.error("Failed to fetch your profiles");
-    } finally {
-      setIsLoadingStore(false);
-    }
-  }, [address, toast, fetchAccountsStore]);
-
-  // Fetch accounts on initial load and when address changes
-  // Using a ref to prevent infinite loops
-  const hasFetchedRef = useRef(false);
-
-  // Use a separate effect for resetting store state to avoid infinite loops
-  useEffect(() => {
-    // Only reset the store when disconnecting
     if (!address || !isConnected) {
       // Reset the account store state when disconnected
-      // Use a timeout to ensure this happens after the component state updates
-      setTimeout(() => {
-        useAccountStore.getState().resetStore();
-      }, 0);
-    }
-  }, [address, isConnected]);
+      useAccountStore.getState().resetStore();
 
-  // Handle initial fetch and state reset separately
-  useEffect(() => {
-    if (address && isConnected && isClient && !hasFetchedRef.current) {
-      // Initial fetch
-      fetchAccounts();
-      hasFetchedRef.current = true;
-    } else if (!address || !isConnected) {
-      // Reset component state when disconnected
-      hasFetchedRef.current = false;
+      // Reset component state
       setImage("");
       setLocalName("");
       setTxHash("");
       setIsGenerating(false);
+      isFetchingRef.current = false;
     }
-  }, [address, isConnected, fetchAccounts, isClient]);
+  }, [address, isConnected]);
+
+  // Function to fetch accounts with debounce and state safety
+  const fetchAccounts = useCallback(async () => {
+    // Skip if no address or already fetching
+    if (!address || isFetchingRef.current || !isMountedRef.current) return [];
+
+    // Set fetching flag to prevent duplicate requests
+    isFetchingRef.current = true;
+
+    try {
+      // Only set loading if we're actually going to fetch
+      safeSetLoading(true);
+
+      // Add a small delay to ensure UI stability
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Fetch accounts
+      const accounts = await fetchAccountsStore(address);
+
+      // Only log and update if accounts changed
+      if (accounts.length !== lastAccountsCountRef.current) {
+        console.log(`Fetched ${accounts.length} accounts from the store`);
+        lastAccountsCountRef.current = accounts.length;
+      }
+
+      return accounts;
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+      if (isMountedRef.current) {
+        toast.error("Failed to fetch your profiles");
+      }
+      return [];
+    } finally {
+      // Turn off loading after a delay to avoid UI flicker
+      if (isMountedRef.current) {
+        safeSetLoading(false);
+      }
+
+      // Reset fetching flag after a small delay
+      setTimeout(() => {
+        isFetchingRef.current = false;
+      }, 500);
+    }
+  }, [address, toast, fetchAccountsStore, safeSetLoading]);
+
+  // Initial fetch when component mounts with address
+  useEffect(() => {
+    // Only fetch once on initial mount with address
+    if (address && isConnected && isClient && !isFetchingRef.current) {
+      fetchAccounts();
+    }
+  }, [address, isConnected, isClient, fetchAccounts]);
+
+  // Monitor accounts changes to avoid unnecessary loading state changes
+  useEffect(() => {
+    // If we have accounts and loading is true, turn it off after a delay
+    if (accountsStore.length > 0 && isLoadingStore) {
+      const timer = setTimeout(() => {
+        if (isMountedRef.current) {
+          safeSetLoading(false);
+        }
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [accountsStore, isLoadingStore, safeSetLoading]);
 
   // Simple function to refresh accounts
   const refetchAccts = async () => {
+    // Skip if already fetching
+    if (isFetchingRef.current) return;
+
     try {
       await fetchAccounts();
     } catch (error) {
       console.error("Error refreshing accounts:", error);
-      toast.error("Failed to refresh profiles");
+      if (isMountedRef.current) {
+        toast.error("Failed to refresh profiles");
+      }
     }
   };
 
-  // Function to periodically refresh accounts data - simplified to use store state
+  // Function to periodically refresh accounts data
   const startAutoRefresh = useCallback(() => {
-    if (autoRefreshing || !isClient) return;
+    if (autoRefreshing || !isClient || !address) return;
 
     // Dismiss any existing toasts first
     toast.dismissAll();
@@ -137,8 +221,7 @@ export function Welcome() {
     setAutoRefreshing(true);
 
     let refreshCount = 0;
-    const maxRefreshes = 6; // Increased to 6 refreshes (60 seconds total)
-    let foundNewAccount = false;
+    const maxRefreshes = 6; // 60 seconds total
 
     // Use a unique ID for this toast
     const refreshStartId = `auto-refresh-start-${Date.now()}`;
@@ -149,40 +232,40 @@ export function Welcome() {
     });
 
     const refreshInterval = setInterval(async () => {
-      // Fetch new accounts using the store
-      await fetchAccountsStore(address || "");
+      // Skip if already fetching or component unmounted
+      if (isFetchingRef.current || !isMountedRef.current) return;
+
       refreshCount++;
 
-      // Check if we have a new account by comparing counts
-      const currentAccountCount = accountsStore.length || 0;
+      try {
+        // Fetch new accounts
+        await fetchAccounts();
+      } catch (err) {
+        console.error("Error in auto-refresh:", err);
+      }
 
-      if (refreshCount >= maxRefreshes && !foundNewAccount) {
-        // Max attempts reached without finding new account
+      // Check if we've reached max refresh attempts
+      if (refreshCount >= maxRefreshes) {
+        // Max attempts reached
         clearInterval(refreshInterval);
-        setAutoRefreshing(false);
-        toast.dismissAll();
-        toast.info("Your profile may take longer to appear", {
-          id: `refresh-complete-${Date.now()}`,
-          description: "Check back in a few minutes if you don't see it yet",
-          duration: 5000,
-        });
+        if (isMountedRef.current) {
+          setAutoRefreshing(false);
+          toast.dismissAll();
+          toast.info("Your profile may take longer to appear", {
+            id: `refresh-complete-${Date.now()}`,
+            description: "Check back in a few minutes if you don't see it yet",
+            duration: 5000,
+          });
+        }
       }
     }, 10000); // Refresh every 10 seconds
 
+    // Return cleanup function
     return () => {
       clearInterval(refreshInterval);
       setAutoRefreshing(false);
     };
-  }, [
-    toast,
-    autoRefreshing,
-    isClient,
-    fetchAccountsStore,
-    address,
-    accountsStore,
-    selectedAccountStore,
-    setSelectedAccount,
-  ]);
+  }, [toast, autoRefreshing, isClient, address, fetchAccounts]);
 
   // Username validation rules for Lens Protocol
   const validateUsername = (username: string) => {
@@ -324,8 +407,12 @@ export function Welcome() {
             });
 
             // Start auto-refreshing to detect the new account
-            await fetchAccountsStore(address || "");
-            startAutoRefresh();
+            if (isMountedRef.current) {
+              setIsLoadingStore(true);
+              await fetchAccountsStore(address || "");
+              setIsLoadingStore(false);
+              startAutoRefresh();
+            }
           }
           // If we got an account object, we can use it directly
           else if (typeof result === "object" && "address" in result) {
@@ -338,7 +425,11 @@ export function Welcome() {
 
             try {
               // First refresh accounts to make sure we have the latest list
-              await fetchAccountsStore(address || "");
+              if (isMountedRef.current) {
+                setIsLoadingStore(true);
+                await fetchAccountsStore(address || "");
+                setIsLoadingStore(false);
+              }
 
               // Then select the new account - use the result directly since we have it
               // This ensures we're selecting the newly created account
@@ -372,7 +463,9 @@ export function Welcome() {
         );
       }
     } finally {
-      setIsGenerating(false);
+      if (isMountedRef.current) {
+        setIsGenerating(false);
+      }
     }
   };
 
@@ -403,110 +496,247 @@ export function Welcome() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen px-3">
-      {isConnected ? (
-        <>
-          <ImageUploader
-            image={image}
-            setImage={handleImageChange}
-            setImageProcessing={setImageProcessing}
-          />
-          <div className="w-full max-w-sm flex flex-col gap-4 py-5">
-            {/* Create Profile Section */}
-            <div className="border border-gray-200 min-h-[200px] rounded-lg p-4 mb-2">
-              <h2 className="text-lg font-semibold mb-3">Create New Profile</h2>
-              <div className="h-12 flex items-center w-full mb-2">
-                <Input
-                  value={localName}
-                  onChange={(e) =>
-                    setLocalName(e.target.value.toLocaleLowerCase())
-                  }
-                  disabled={isGenerating}
-                  placeholder="Choose username"
-                  className="bg-background h-full w-full outline-none"
-                />
-              </div>
-              <Button
-                onClick={createAccount}
-                disabled={isGenerating || imageProcessing}
-                className="w-full h-12 font-semibold cursor-pointer"
-              >
-                {isGenerating
-                  ? "Generating..."
-                  : imageProcessing
-                  ? "Uploading..."
-                  : "Get a profile"}
-              </Button>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 md:p-6">
+      <div className="w-full max-w-md">
+        {isConnected ? (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-slate-800">
+                Create Your Lens Profile
+              </h1>
+              <p className="text-slate-500 mt-2">
+                Join the decentralized social network
+              </p>
             </div>
 
-            {/* Existing Accounts Section */}
-            <div className="border border-gray-200 min-h-[200px] rounded-lg p-4">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-semibold">Your Profiles</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetchAccts()}
-                  disabled={isLoadingStore}
-                  className="cursor-pointer"
+            {/* Card Container */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200">
+                <button
+                  className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
+                    activeTab === "create"
+                      ? "text-green-600 border-b-2 border-green-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("create")}
                 >
-                  {isLoadingStore ? "Loading..." : "Refresh"}
-                </Button>
+                  Create Profile
+                </button>
+                <button
+                  className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
+                    activeTab === "manage"
+                      ? "text-green-600 border-b-2 border-green-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("manage")}
+                >
+                  Your Profiles
+                </button>
               </div>
 
-              {isLoadingStore ? (
-                <div className="text-center py-4 text-gray-500">
-                  Loading your profiles...
+              {/* Create Profile Tab */}
+              {activeTab === "create" && (
+                <div className="p-6">
+                  <div className="mb-6">
+                    <ImageUploader
+                      image={image}
+                      setImage={handleImageChange}
+                      setImageProcessing={setImageProcessing}
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <Input
+                        value={localName}
+                        onChange={(e) =>
+                          setLocalName(e.target.value.toLowerCase())
+                        }
+                        disabled={isGenerating}
+                        placeholder="e.g. satoshi"
+                        className="bg-white pr-12 h-12 border-gray-300 focus:ring-green-500 focus:border-green-500 rounded-lg w-full"
+                      />
+                      {/* <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                        .lens
+                      </div> */}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Choose a unique username for your Lens profile
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={createAccount}
+                    disabled={isGenerating || imageProcessing || !localName}
+                    className="w-full h-12 font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    {isGenerating ? (
+                      <span className="flex items-center justify-center">
+                        <span className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Generating...
+                      </span>
+                    ) : imageProcessing ? (
+                      <span className="flex items-center justify-center">
+                        <span className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Uploading Image...
+                      </span>
+                    ) : (
+                      "Create Profile"
+                    )}
+                  </Button>
                 </div>
-              ) : accountsStore && accountsStore.length > 0 ? (
-                <AccountsList
-                  accountsAvailable={{
-                    // @ts-ignore
-                    items: accountsStore.map((acc) => ({
-                      account: acc.account,
-                    })),
-                    pageInfo: { next: null, prev: null },
-                  }}
-                />
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  No profiles found. Create one above or connect a different
-                  wallet.
+              )}
+
+              {/* Manage Profiles Tab */}
+              {activeTab === "manage" && (
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      Your Profiles
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetchAccts()}
+                      disabled={
+                        (isLoadingStore &&
+                          (!accountsStore || accountsStore.length === 0)) ||
+                        isFetchingRef.current
+                      }
+                      className="text-green-600 border-green-300 hover:bg-green-50"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      {isLoadingStore &&
+                      (!accountsStore || accountsStore.length === 0)
+                        ? "Loading..."
+                        : "Refresh"}
+                    </Button>
+                  </div>
+
+                  {isLoadingStore &&
+                  (!accountsStore || accountsStore.length === 0) ? (
+                    <div className="py-12 text-center">
+                      <div className="inline-block h-8 w-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-4"></div>
+                      <p className="text-gray-500">Loading your profiles...</p>
+                    </div>
+                  ) : accountsStore && accountsStore.length > 0 ? (
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                      <AccountsList
+                        accountsAvailable={{
+                          items: accountsStore.map((acc) => ({
+                            account: acc.account,
+                            addedAt: acc.addedAt,
+                          })),
+                          pageInfo: { next: null, prev: null },
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center">
+                      <div className="text-gray-400 mb-3">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-12 w-12 mx-auto"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 mb-2">No profiles found</p>
+                      <p className="text-sm text-gray-400">
+                        Create a new profile or connect a different wallet
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-2">
-              <DisconnectWalletButton className="mt-4" />
+
+            {/* Wallet Section */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-green-100 p-2 rounded-full mr-3">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-green-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Wallet Connected</p>
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                      {truncateAddress(address as string)}
+                    </p>
+                  </div>
+                </div>
+                <DisconnectWalletButton />
+              </div>
             </div>
           </div>
-        </>
-      ) : (
-        <div className="text-center py-8 border border-gray-200 rounded-lg p-6 mb-4 w-full max-w-sm">
-          <div className="text-amber-600 mb-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+        ) : (
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="text-green-600 mb-6">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-16 w-16 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-3">Connect Your Wallet</h3>
+            <p className="text-gray-600 mb-6">
+              Please connect your wallet to create and manage your Lens profiles
+            </p>
+            <AccountButton className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" />
+            <p className="mt-4 text-xs text-gray-400">
+              New to Web3? You'll need a blockchain wallet to continue.
+            </p>
           </div>
-          <h3 className="text-lg font-medium mb-2">Wallet Not Connected</h3>
-          <p className="text-gray-600 mb-4">
-            Please connect your wallet to create or manage Lens profiles.
-          </p>
-          <div className="flex justify-center">
-            <AccountButton />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
