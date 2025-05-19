@@ -2,7 +2,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Filter, Search, TrendingUp, Loader2 } from "lucide-react";
+import { Filter, Search, TrendingUp, Loader2, X } from "lucide-react";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
 import MemeCard from "@/components/meme/MemeCard";
@@ -12,16 +12,23 @@ import { useCreators } from "@/hooks/useCreators";
 import { CreatorCard } from "@/components/meme/CreatorCard";
 import { ExploreCardSkeleton } from "@/components/shared/skeletons/ExploreCardSkeleton";
 import { RewardCardSkeleton } from "@/components/shared/skeletons/RewardCardSkeleton";
+import { useDebounce } from "@/hooks/useDebounce";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState("tokens");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 });
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({
     all: null,
     tokens: null,
     creators: null,
   });
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const {
     memes: tokenMemesData,
@@ -57,6 +64,19 @@ export default function ExplorePage() {
     }
   }, [activeTab]);
 
+  // Filter memes based on search query
+  const filteredMemes = debouncedSearchQuery
+    ? tokenMemesData.filter((meme) => {
+        const searchLower = debouncedSearchQuery.toLowerCase();
+        return (
+          meme.name?.toLowerCase().includes(searchLower) ||
+          meme.ticker?.toLowerCase().includes(searchLower) ||
+          meme.handle?.toLowerCase().includes(searchLower) ||
+          meme.description?.toLowerCase().includes(searchLower)
+        );
+      })
+    : [];
+
   // Update underline position on window resize
   useEffect(() => {
     window.addEventListener("resize", updateUnderlinePosition);
@@ -69,34 +89,137 @@ export default function ExplorePage() {
   useEffect(() => {
     updateUnderlinePosition();
   }, [activeTab]);
+
+  // Handle click outside to close the search results
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchRef.current &&
+        event.target instanceof Node &&
+        !searchRef.current.contains(event.target)
+      ) {
+        setIsSearchOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Open search results when typing
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      setIsSearchOpen(true);
+    }
+  }, [debouncedSearchQuery]);
+
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white md:mt-20">
+      <main className="min-h-screen bg-white md:mt-20 relative">
         <div className="md:px-20 px-5 py-12 mx-auto">
           <h1 className="mb-8 md:text-6xl text-3xl font-bold text-black font-clash">
             Explore Memes
           </h1>
-
-          <div className="flex flex-col gap-4 mb-8 md:flex-row">
-            <div className="relative flex-1 justify-center item-center">
-              <Search className="absolute top-[25%] left-3 h-5 w-5 text-gray-400" />
+          <div className="relative flex-1 mb-10" ref={searchRef}>
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 h-5 w-5 text-gray-400" />
               <Input
                 placeholder="Search memes, creators, or tokens..."
-                className="pl-10 bg-white border-2 border-black"
+                className="pl-10 bg-white border-2 border-black pr-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  if (debouncedSearchQuery) setIsSearchOpen(true);
+                }}
               />
+              {searchQuery && (
+                <button
+                  className="absolute right-3"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setIsSearchOpen(false);
+                  }}
+                >
+                  <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
             </div>
-            <Button
-              variant="outline"
-              className="gap-2 border-2 border-black text-black hover:bg-black hover:text-white "
-            >
-              <Filter size={16} />
-              <span>Filters</span>
-            </Button>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 hover:shadow-2xl">
-              <TrendingUp size={16} />
-              <span>Trending</span>
-            </Button>
+
+            {/* Search Results Dropdown */}
+            {isSearchOpen && debouncedSearchQuery && (
+              <div className="absolute z-50 w-full mt-1 bg-white border-2 border-black rounded-md shadow-lg max-h-96 overflow-y-auto">
+                <div className="p-2 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-500">
+                    {filteredMemes.length} results for "{debouncedSearchQuery}"
+                  </p>
+                </div>
+
+                {filteredMemes.length > 0 ? (
+                  <div className="divide-y divide-gray-100">
+                    {filteredMemes.slice(0, 5).map((meme) => (
+                      <Link
+                        href={`/meme/${meme.tokenAddress}`}
+                        key={meme.tokenAddress}
+                        className="flex items-center p-3 hover:bg-gray-50 transition-colors"
+                        onClick={() => setIsSearchOpen(false)}
+                      >
+                        <div className="flex-shrink-0 h-12 w-12 relative overflow-hidden rounded-md">
+                          {meme.image ? (
+                            <Image
+                              src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${meme.image}`}
+                              alt={meme.name || ""}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-xs text-gray-500">
+                                No image
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {meme.name || ""}
+                          </p>
+                          {meme.ticker && (
+                            <p className="text-xs text-gray-500">
+                              {meme.ticker}
+                            </p>
+                          )}
+                          {meme.handle && (
+                            <p className="text-xs text-gray-400">
+                              by {meme.handle}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                    {/* {filteredMemes.length > 5 && (
+                      <div className="p-3 text-center">
+                        <Link
+                          href={`/search?q=${encodeURIComponent(
+                            debouncedSearchQuery
+                          )}`}
+                          className="text-sm text-primary font-medium hover:underline"
+                          onClick={() => setIsSearchOpen(false)}
+                        >
+                          View all {filteredMemes.length} results
+                        </Link>
+                      </div>
+                    )} */}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center">
+                    <p className="text-gray-500">No results found</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <Tabs
@@ -122,8 +245,8 @@ export default function ExplorePage() {
                     {tab === "tokens"
                       ? "Tokens"
                       : tab === "creators"
-                        ? "Creators"
-                        : "Collections"}
+                      ? "Creators"
+                      : "Collections"}
                   </TabsTrigger>
                 ))}
               </TabsList>
