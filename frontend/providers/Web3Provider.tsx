@@ -15,10 +15,10 @@ const walletConnectProjectId = process.env
 
 export const config = createConfig(
   getDefaultConfig({
-    chains: [chains.mainnet, chains.testnet],
+    chains: [chains.mainnet],
     transports: {
       [chains.mainnet.id]: http(chains.mainnet.rpcUrls.default.http[0]!),
-      [chains.testnet.id]: http(chains.testnet.rpcUrls.default.http[0]!),
+      // [chains.testnet.id]: http(chains.testnet.rpcUrls.default.http[0]!),
     },
 
     walletConnectProjectId, // Use the explicit value
