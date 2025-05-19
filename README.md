@@ -45,6 +45,10 @@ That's Memed.Fun - a playground where social influence meets token economics.
 - Fair distribution through Merkle trees
 - Creator and user rewards
 
+<img width="2204" alt="image" src="https://github.com/user-attachments/assets/f3af0107-9e95-4049-9479-869de8f513df" />
+
+
+
 ## Tech Stack
 
 - **Smart Contracts**: Solidity, OpenZeppelin
