@@ -97,7 +97,7 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                                         <span className="text-lg font-semibold">{battle.memeA.heatScoreA}</span>
                                     </div>
                                     {battle.memeA.isLeading && (
-                                        <span className="mt-1 inline-block text-xs bg-red-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                                        <span className="mt-1 inline-block text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
                                             Leading
                                         </span>
                                     )}
