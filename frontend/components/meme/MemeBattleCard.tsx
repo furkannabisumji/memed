@@ -161,7 +161,10 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                             <motion.div
                                 className="absolute left-0 top-0 h-full bg-yellow-400"
                                 initial={{ width: 0 }}
-                                animate={{ width: `${battle.memeA.heatScoreA / (battle.memeA.heatScoreA + battle.memeB.heatScoreB)}%` }}
+                                animate={{
+                                    width: `${(Number(battle.memeB.heatScoreB) / Number(battle.memeA.heatScoreA + battle.memeB.heatScoreB)) * 100
+                                        }%`
+                                }}
                                 transition={{ delay: 0.5, duration: 0.8 }}
                             />
                         </div>
