@@ -19,7 +19,7 @@ import { ClaimProof, MemeDetails } from "../types";
 import { Abi, parseUnits } from "viem";
 import axiosInstance from "@/lib/axios";
 import { AxiosError } from "axios";
-import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { TransactionType, useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import CONTRACTS from "@/config/contracts";
 import {
@@ -97,8 +97,9 @@ export default function RewardsPage() {
 
   //check chain
   useEffect(() => {
-    if (chain?.id !== chains.testnet.id) {
-      switchToChain();
+    //switch to mainnet
+    if (chain && chain?.id !== chains.mainnet.id) {
+      switchToChain(TransactionType.accountCreation);
     }
   }, [chain, switchToChain]);
 
@@ -383,8 +384,8 @@ export default function RewardsPage() {
                     {tab === "available"
                       ? "All Rewards"
                       : tab === "initial"
-                        ? "Initial Rewards"
-                        : "Engagement Rewards"}
+                      ? "Initial Rewards"
+                      : "Engagement Rewards"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -403,7 +404,6 @@ export default function RewardsPage() {
                   <RewardCardSkeleton key={index} />
                 ))}
               </div>
-
             ) : !address ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <AlertCircle className="w-12 h-12 mb-4 text-amber-500" />
@@ -515,16 +515,18 @@ export default function RewardsPage() {
                     Loading...
                   </>
                 ) : !hasMore[activeTab as TabType] ? (
-                  `No More ${activeTab === "initial"
-                    ? "Initial"
-                    : activeTab === "engagement"
+                  `No More ${
+                    activeTab === "initial"
+                      ? "Initial"
+                      : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
                 ) : (
-                  `Load More ${activeTab === "initial"
-                    ? "Initial"
-                    : activeTab === "engagement"
+                  `Load More ${
+                    activeTab === "initial"
+                      ? "Initial"
+                      : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`

@@ -39,7 +39,7 @@ import { useMemes } from "@/hooks/useMemes";
 import { useAccount } from "wagmi";
 import { Abi } from "viem";
 import CONTRACTS from "@/config/contracts";
-import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { TransactionType, useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import { config } from "@/providers/Web3Provider";
 import { waitForTransactionReceipt } from "wagmi/actions";
@@ -52,10 +52,9 @@ import Link from "next/link";
 import { getMemeBattles } from "@/utils/getMemeBattles";
 import { BattleCardSkeleton } from "../shared/skeletons/BattleCardSkeleton";
 
-
 // Mock data for potential opponents
 
-export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
+export interface Battle extends Omit<MemeBattle, "memeA" | "memeB"> {
   memeA: {
     name: string;
     description: string;
@@ -63,7 +62,7 @@ export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
     handle: string;
     heatScoreA: bigint;
     isLeading: boolean;
-  },
+  };
   memeB: {
     name: string;
     description: string;
@@ -71,13 +70,12 @@ export interface Battle extends Omit<MemeBattle, 'memeA' | 'memeB'> {
     handle: string;
     heatScoreB: bigint;
     isLeading: boolean;
-  },
-  ending: Date
+  };
+  ending: Date;
 }
 
-
 interface MemeDetails extends Meme {
-  heat: bigint
+  heat: bigint;
 }
 
 const getMemeHeatScore = async (token: string) => {
@@ -87,46 +85,55 @@ const getMemeHeatScore = async (token: string) => {
     const result: any = await readContract(config, {
       abi: factoryAbi as Abi,
       address: CONTRACTS.factory as `0x${string}`,
-      functionName: 'getTokens',
+      functionName: "getTokens",
       args: [token as `0x${string}`],
-    })
+    });
 
-    return result[0].heat  // this will be a TokenData[] array
+    return result[0].heat; // this will be a TokenData[] array
   } catch (err) {
-    console.error('Error fetching tokens:', err)
-    return []
+    console.error("Error fetching tokens:", err);
+    return [];
   }
 };
 
-
-
-const getMemeInfo = (tokenAddress: string): Promise<{ name: string; description: string; image: string; handle: string; tokenAddress: string }> => {
-  return axiosInstance.get(`/api/tokens/${tokenAddress}`)
+const getMemeInfo = (
+  tokenAddress: string
+): Promise<{
+  name: string;
+  description: string;
+  image: string;
+  handle: string;
+  tokenAddress: string;
+}> => {
+  return axiosInstance
+    .get(`/api/tokens/${tokenAddress}`)
     .then((res) => res.data.data)
     .catch((error) => {
       const axiosErr = error as AxiosError<{ message?: string }>;
       const message =
-        axiosErr.response?.data?.message || axiosErr.message || "Failed to fetch Claims";
+        axiosErr.response?.data?.message ||
+        axiosErr.message ||
+        "Failed to fetch Claims";
       throw new Error(message);
-    })
-}
+    });
+};
 
 const MemeBattles = ({ meme }: { meme: Meme }) => {
   const { address } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loadingMemes, setLoadingMemes] = useState<boolean>(true)
+  const [loadingMemes, setLoadingMemes] = useState<boolean>(true);
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false);
 
-  const [battles, setBattles] = useState<Battle[]>([])
+  const [battles, setBattles] = useState<Battle[]>([]);
   const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
   const { chain, switchToChain } = useChainSwitch();
-  const [opponents, setOpponents] = useState<MemeDetails[]>([])
-  const [filteredOpponents, setFilteredOpponents] = useState<MemeDetails[]>([])
-  const [isLoadingMemeBattles, setIsLoadingMemeBattles] = useState<boolean>(true)
-
+  const [opponents, setOpponents] = useState<MemeDetails[]>([]);
+  const [filteredOpponents, setFilteredOpponents] = useState<MemeDetails[]>([]);
+  const [isLoadingMemeBattles, setIsLoadingMemeBattles] =
+    useState<boolean>(true);
 
   const {
     memes,
@@ -137,46 +144,53 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     error,
   } = useMemes({ initialLimit: 10, category: "tokens" });
 
-
   //check chain
   useEffect(() => {
-    if (chain?.id !== chains.testnet.id) {
-      switchToChain();
+    //switch to mainnet
+    if (chain && chain?.id !== chains.mainnet.id) {
+      switchToChain(TransactionType.accountCreation);
     }
   }, [chain, switchToChain]);
 
-
-
-
-
   useEffect(() => {
     if (searchQuery) {
-      setFilteredOpponents(opponents.filter(
-        (currMeme) => currMeme.tokenAddress !== meme.tokenAddress && (
-          currMeme?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          currMeme?.ticker?.toLowerCase().includes(searchQuery.toLowerCase())
-        ) && currMeme.handle !== meme.handle
-      ));
+      setFilteredOpponents(
+        opponents.filter(
+          (currMeme) =>
+            currMeme.tokenAddress !== meme.tokenAddress &&
+            (currMeme?.name
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+              currMeme?.ticker
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase())) &&
+            currMeme.handle !== meme.handle
+        )
+      );
     } else {
-      setFilteredOpponents(opponents.filter(
-        (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
-      ));
-
+      setFilteredOpponents(
+        opponents.filter(
+          (currMeme) => currMeme.tokenAddress !== meme.tokenAddress
+        )
+      );
     }
-  }, [searchQuery, opponents])
+  }, [searchQuery, opponents]);
 
   const fetchMemeBattles = async () => {
-    setIsLoadingMemeBattles(true)
-    const memeBattles = await getMemeBattles(meme.tokenAddress)
+    setIsLoadingMemeBattles(true);
+    const memeBattles = await getMemeBattles(meme.tokenAddress);
     const battleRes = await Promise.all(
       memeBattles
-        .filter((battle) => battle.memeA !== "0x0000000000000000000000000000000000000000" &&
-          battle.memeB !== "0x0000000000000000000000000000000000000000")
+        .filter(
+          (battle) =>
+            battle.memeA !== "0x0000000000000000000000000000000000000000" &&
+            battle.memeB !== "0x0000000000000000000000000000000000000000"
+        )
         .map(async (battle) => {
-          const memeA = await getMemeInfo(battle.memeA)
-          const memeB = await getMemeInfo(battle.memeB)
-          const heatScoreA = await getMemeHeatScore(memeA.tokenAddress)
-          const heatScoreB = await getMemeHeatScore(memeB.tokenAddress)
+          const memeA = await getMemeInfo(battle.memeA);
+          const memeB = await getMemeInfo(battle.memeB);
+          const heatScoreA = await getMemeHeatScore(memeA.tokenAddress);
+          const heatScoreB = await getMemeHeatScore(memeB.tokenAddress);
 
           return {
             ...battle,
@@ -184,36 +198,35 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             memeA: {
               ...memeA,
               heatScoreA,
-              isLeading: heatScoreA > heatScoreB
+              isLeading: heatScoreA > heatScoreB,
             },
             memeB: {
               ...memeB,
               heatScoreB,
-              isLeading: heatScoreB > heatScoreA
-            }
-          }
+              isLeading: heatScoreB > heatScoreA,
+            },
+          };
         })
-    )
-    setBattles(battleRes)
-    setIsLoadingMemeBattles(false)
-  }
+    );
+    setBattles(battleRes);
+    setIsLoadingMemeBattles(false);
+  };
   const fetchOpponents = async () => {
-    setLoadingMemes(true)
+    setLoadingMemes(true);
     // Filter opponents based on search query
     const filteredOpponentsWithHeat = await Promise.all(
       memes.map(async (opp) => {
-        const heatScore = await getMemeHeatScore(opp.tokenAddress)
+        const heatScore = await getMemeHeatScore(opp.tokenAddress);
         return {
           ...opp,
-          heat: heatScore
-        }
+          heat: heatScore,
+        };
       })
-    )
-    setLoadingMemes(false)
+    );
+    setLoadingMemes(false);
 
-    return filteredOpponentsWithHeat
-  }
-
+    return filteredOpponentsWithHeat;
+  };
 
   const handleChallenge = async () => {
     try {
@@ -277,30 +290,25 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     }
   };
 
-
+  useEffect(() => {
+    if (memes && address) {
+      fetchOpponents()
+        .then((res) => setOpponents(res))
+        .catch((err) => console.log(err));
+    }
+  }, [isLoading, address]);
 
   useEffect(() => {
     if (memes && address) {
-      fetchOpponents().then((res) => setOpponents(res)).catch((err) => console.log(err))
+      fetchMemeBattles();
     }
-  }, [isLoading, address])
-
-  useEffect(() => {
-    if (memes && address) {
-      fetchMemeBattles()
-    }
-  }, [isLoading, address])
-
-
+  }, [isLoading, address]);
 
   useEffect(() => {
     if (battles) {
-      console.log(battles)
+      console.log(battles);
     }
-  }, [battles])
-
-
-
+  }, [battles]);
 
   return (
     <>
@@ -322,38 +330,73 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             className="flex items-center gap-1 cursor-pointer  "
           >
             <Clock size={16} />
-            Ongoing ({battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").length})
+            Ongoing (
+            {
+              battles.filter(
+                (battle) =>
+                  battle.winner === "0x0000000000000000000000000000000000000000"
+              ).length
+            }
+            )
           </TabsTrigger>
           <TabsTrigger
             value="won"
             className="flex items-center gap-1 cursor-pointer"
           >
             <CheckCircle size={16} />
-            Won ({battles.filter((battle) => battle.winner === meme.tokenAddress).length})
+            Won (
+            {
+              battles.filter((battle) => battle.winner === meme.tokenAddress)
+                .length
+            }
+            )
           </TabsTrigger>
           <TabsTrigger
             value="lost"
             className="flex items-center gap-1 cursor-pointer"
           >
             <XCircle size={16} />
-            Lost ({battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").length})
+            Lost (
+            {
+              battles.filter(
+                (battle) =>
+                  battle.winner !== meme.tokenAddress &&
+                  battle.winner !== "0x0000000000000000000000000000000000000000"
+              ).length
+            }
+            )
           </TabsTrigger>
         </TabsList>
 
-
-        <TabsContent value="ongoing" className="space-y-4 grid md:grid-cols-2 grid-cols-1 gap-4">
+        <TabsContent
+          value="ongoing"
+          className="space-y-4 grid md:grid-cols-2 grid-cols-1 gap-4"
+        >
           {isLoadingMemeBattles ? (
             <div className="grid md:grid-cols-2 grid-cols-1 gap-4 col-span-2">
               <BattleCardSkeleton />
               <BattleCardSkeleton />
             </div>
-
-          ) : battles && battles.length !== 0 ? battles.filter((battle) => battle.winner === "0x0000000000000000000000000000000000000000").map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} winner={false} pending={true} />
-          )) : (
+          ) : battles && battles.length !== 0 ? (
+            battles
+              .filter(
+                (battle) =>
+                  battle.winner === "0x0000000000000000000000000000000000000000"
+              )
+              .map((battle) => (
+                <MemeBattleCard
+                  key={battle.battleId}
+                  battle={battle}
+                  winner={false}
+                  pending={true}
+                />
+              ))
+          ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center col-span-2">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
-              <h2 className="mb-2 text-2xl font-bold">No Ongoing Meme Battle Found</h2>
+              <h2 className="mb-2 text-2xl font-bold">
+                No Ongoing Meme Battle Found
+              </h2>
               <p className="mb-6 text-gray-600">
                 You don't have any Ongoing meme battle at the moment.
               </p>
@@ -364,23 +407,38 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
               </Link>
             </div>
           )}
-
         </TabsContent>
 
-        <TabsContent value="won" className="space-y-4 grid md:grid-cols-2 gap-4">
+        <TabsContent
+          value="won"
+          className="space-y-4 grid md:grid-cols-2 gap-4"
+        >
           {isLoadingMemeBattles ? (
             <div className="grid md:grid-cols-2 grid-cols-1 gap-4 col-span-2">
               <BattleCardSkeleton />
               <BattleCardSkeleton />
             </div>
-          ) : battles.filter((battle) => battle.winner === meme.tokenAddress).length !== 0 ? battles.filter((battle) => battle.winner === meme.tokenAddress).map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} winner={true} pending={false} />
-          )) : (
+          ) : battles.filter((battle) => battle.winner === meme.tokenAddress)
+              .length !== 0 ? (
+            battles
+              .filter((battle) => battle.winner === meme.tokenAddress)
+              .map((battle) => (
+                <MemeBattleCard
+                  key={battle.battleId}
+                  battle={battle}
+                  winner={true}
+                  pending={false}
+                />
+              ))
+          ) : (
             <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
-              <h2 className="mb-2 text-2xl font-bold">Still waiting for that first meme battle victory.</h2>
+              <h2 className="mb-2 text-2xl font-bold">
+                Still waiting for that first meme battle victory.
+              </h2>
               <p className="mb-6 text-gray-600">
-                Hasn't claimed a win in any meme battles yet — the grind for glory continues.
+                Hasn't claimed a win in any meme battles yet — the grind for
+                glory continues.
               </p>
               <Link href="/explore">
                 <Button className="gap-2 bg-primary hover:bg-primary/90">
@@ -391,18 +449,40 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
           )}
         </TabsContent>
 
-        <TabsContent value="lost" className="space-y-4 grid md:grid-cols-2 gap-4">
+        <TabsContent
+          value="lost"
+          className="space-y-4 grid md:grid-cols-2 gap-4"
+        >
           {isLoadingMemeBattles ? (
             <div className="grid md:grid-cols-2 grid-cols-1 gap-4 col-span-2">
               <BattleCardSkeleton />
               <BattleCardSkeleton />
             </div>
-          ) : battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").length !== 0 ? battles.filter((battle) => battle.winner !== meme.tokenAddress && battle.winner !== "0x0000000000000000000000000000000000000000").map((battle) => (
-            <MemeBattleCard key={battle.battleId} battle={battle} winner={false} pending={false} />
-          )) : (
+          ) : battles.filter(
+              (battle) =>
+                battle.winner !== meme.tokenAddress &&
+                battle.winner !== "0x0000000000000000000000000000000000000000"
+            ).length !== 0 ? (
+            battles
+              .filter(
+                (battle) =>
+                  battle.winner !== meme.tokenAddress &&
+                  battle.winner !== "0x0000000000000000000000000000000000000000"
+              )
+              .map((battle) => (
+                <MemeBattleCard
+                  key={battle.battleId}
+                  battle={battle}
+                  winner={false}
+                  pending={false}
+                />
+              ))
+          ) : (
             <div className="flex flex-col items-center col-span-2 justify-center py-16 text-center">
               <Swords className="w-12 h-12 mb-4 text-gray-400" />
-              <h2 className="mb-2 text-2xl font-bold">Still undefeated in meme battles.</h2>
+              <h2 className="mb-2 text-2xl font-bold">
+                Still undefeated in meme battles.
+              </h2>
               <p className="mb-6 text-gray-600">
                 Never known defeat — still going strong.
               </p>
@@ -414,7 +494,6 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             </div>
           )}
         </TabsContent>
-
       </Tabs>
 
       <div className="mt-6">
@@ -435,7 +514,6 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
             </DialogHeader>
 
             <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
-
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -456,12 +534,11 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                   filteredOpponents.map((opponent) => (
                     <div
                       key={opponent._id}
-
-                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?._id === opponent._id
-                        ? "bg-gray-50"
-                        : ""
-                        }`}
-
+                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
+                        selectedOpponent?._id === opponent._id
+                          ? "bg-gray-50"
+                          : ""
+                      }`}
                       onClick={() => setSelectedOpponent(opponent)}
                     >
                       <div className="flex items-center gap-3">
@@ -483,8 +560,10 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                       </div>
                       <Badge className="bg-amber-500 hover:bg-amber-500 flex items-center gap-1">
                         <Flame size={12} />
-                        {Intl.NumberFormat('en', { notation: 'compact' }).format(Number(opponent.heat))
-                        } {/* HeatScore Update */}
+                        {Intl.NumberFormat("en", {
+                          notation: "compact",
+                        }).format(Number(opponent.heat))}{" "}
+                        {/* HeatScore Update */}
                       </Badge>
                     </div>
                   ))
