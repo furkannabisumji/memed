@@ -51,6 +51,7 @@ import { AxiosError } from "axios";
 import Link from "next/link";
 import { getMemeBattles } from "@/utils/getMemeBattles";
 import { BattleCardSkeleton } from "../shared/skeletons/BattleCardSkeleton";
+import { useAccountStore } from "@/store/accountStore";
 
 // Mock data for potential opponents
 
@@ -132,6 +133,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   const { chain, switchToChain } = useChainSwitch();
   const [opponents, setOpponents] = useState<MemeDetails[]>([]);
   const [filteredOpponents, setFilteredOpponents] = useState<MemeDetails[]>([]);
+  const [memeA, setMemeA] = useState<any>()
   const [isLoadingMemeBattles, setIsLoadingMemeBattles] =
     useState<boolean>(true);
 
@@ -143,6 +145,16 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
     isLoading,
     error,
   } = useMemes({ initialLimit: 10, category: "tokens" });
+
+  // Get Handle 
+  const {
+    selectedAccount: selectedAccountStore,
+
+  } = useAccountStore();
+
+  useEffect(() => {
+    console.log(memeA)
+  },[memeA])
 
   //check chain
   useEffect(() => {
@@ -419,7 +431,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
               <BattleCardSkeleton />
             </div>
           ) : battles.filter((battle) => battle.winner === meme.tokenAddress)
-              .length !== 0 ? (
+            .length !== 0 ? (
             battles
               .filter((battle) => battle.winner === meme.tokenAddress)
               .map((battle) => (
@@ -459,10 +471,10 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
               <BattleCardSkeleton />
             </div>
           ) : battles.filter(
-              (battle) =>
-                battle.winner !== meme.tokenAddress &&
-                battle.winner !== "0x0000000000000000000000000000000000000000"
-            ).length !== 0 ? (
+            (battle) =>
+              battle.winner !== meme.tokenAddress &&
+              battle.winner !== "0x0000000000000000000000000000000000000000"
+          ).length !== 0 ? (
             battles
               .filter(
                 (battle) =>
@@ -534,12 +546,14 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                   filteredOpponents.map((opponent) => (
                     <div
                       key={opponent._id}
-                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
-                        selectedOpponent?._id === opponent._id
-                          ? "bg-gray-50"
-                          : ""
-                      }`}
-                      onClick={() => setSelectedOpponent(opponent)}
+                      className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${selectedOpponent?._id === opponent._id
+                        ? "bg-gray-50"
+                        : ""
+                        }`}
+                      onClick={() => {
+                        setSelectedOpponent(opponent)
+                        setMemeA(opponents.filter((opp) => opp.handle === selectedAccountStore?.username.localName))
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         <Avatar>
@@ -594,21 +608,21 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                 </div>
               </div>
 
-              {selectedOpponent && (
+              {selectedOpponent && memeA[0] && (
                 <div className="p-4 border rounded-md bg-gray-50">
                   <h4 className="font-medium mb-2">Battle Summary</h4>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Avatar>
                         <AvatarImage
-                          src={selectedOpponent.image}
-                          alt={selectedOpponent.name}
+                          src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${memeA[0].image}`}
+                          alt={memeA[0].name}
                         />
                         <AvatarFallback>
-                          {selectedOpponent.name.substring(0, 2)}
+                          {memeA[0].name}
                         </AvatarFallback>
                       </Avatar>
-                      <span>{selectedOpponent.name}</span>
+                      <span>{memeA[0].name}</span>
                     </div>
 
                     <ArrowRight size={16} className="text-gray-500" />
@@ -616,7 +630,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                     <div className="flex items-center gap-2">
                       <Avatar>
                         <AvatarImage
-                          src={selectedOpponent.image}
+                          src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${selectedOpponent.image}`}
                           alt={selectedOpponent.name}
                         />
                         <AvatarFallback>
