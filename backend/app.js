@@ -10,6 +10,9 @@ const errorHandler = require('./src/middleware/errorHandler');
 const rewardScheduler = require('./src/schedulers/rewardScheduler');
 const heatScheduler = require('./src/schedulers/heatScheduler');
 
+// Import contract service to initialize WebSocket event listeners
+const contractService = require('./src/services/contractService');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
