@@ -95,6 +95,6 @@ contract MemedStaking is Ownable {
     }
 
     function isRewardable(address meme) external view returns (bool) {
-        return IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100;
+        return (IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100) && (stakers.length > 0) ;
     }
 }

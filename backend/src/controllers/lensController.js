@@ -56,9 +56,7 @@ const getMintableCheck = async (req, res, next) => {
 const mintMemeCoins = async (req, res, next) => {
   try {
     const { name, ticker, description, image } = req.body;
- //   const { handle } = req.params;
- // temporary for demo
- const handle = "vitalik";
+    const { handle } = req.params;
     const handleOwner = await lensService.getHandleOwner(handle);
     
     let checkTrue = await getMintableCheckFunction(req, res, next);
