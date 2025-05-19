@@ -104,14 +104,15 @@ export default function LeaderboardTable() {
       <TabsContent value="memes" className="w-full">
         {isLeaderboardLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <ExploreCardSkeleton key={index} />
-          ))} </div>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <ExploreCardSkeleton key={index} />
+            ))}{" "}
+          </div>
         ) : (
           <div className="flex flex-col w-full">
             {/* Horizontal scrollable on mobile, grid on larger screens */}
             <div className="md:hidden flex overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide gap-4">
-              {topMemes.map((meme, index) => (
+              {topMemes?.slice(0, 6)?.map((meme, index) => (
                 <Link
                   href={`/meme/${meme.tokenAddress}`}
                   key={index}
@@ -189,7 +190,7 @@ export default function LeaderboardTable() {
 
             {/* Grid layout for tablet and desktop */}
             <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {topMemes.map((meme, index) => (
+              {topMemes?.slice(0, 6)?.map((meme, index) => (
                 <Link href={`/meme/${meme.tokenAddress}`} key={index}>
                   <Card className="overflow-hidden border-2 border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] transition-all duration-300">
                     <div className="relative">
@@ -318,7 +319,7 @@ export default function LeaderboardTable() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {topCreators.map((creator, index) => (
+                  {topCreators?.slice(0, 10)?.map((creator, index) => (
                     <tr
                       key={creator.creator}
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
