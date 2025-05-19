@@ -57,6 +57,14 @@ That's Memed.Fun - a playground where social influence meets token economics.
 - **Social Graph**: Lens Protocol
 - **Web3**: ethers.js, viem
 
+## Applications Shots 
+
+<img width="2204" alt="image" src="https://github.com/user-attachments/assets/70e7f606-d4a3-4d11-bcc5-b4eb6b249278" />
+<img width="2204" alt="image" src="https://github.com/user-attachments/assets/f7c8e5c3-8bb6-4c47-971a-a0ecbf8c781e" />
+
+
+
+
 ## API Endpoints
 
 ### Creator Endpoints
