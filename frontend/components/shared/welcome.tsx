@@ -511,7 +511,7 @@ export function Welcome() {
             </div>
 
             {/* Card Container */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden max-h-[510px]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden ]">
               {/* Tabs */}
               <div className="flex border-b border-gray-200">
                 <button
@@ -573,7 +573,7 @@ export function Welcome() {
                   <Button
                     onClick={createAccount}
                     disabled={isGenerating || imageProcessing || !localName}
-                    className="w-full h-12 font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                    className="w-full h-12 font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors cursor-pointer"
                   >
                     {isGenerating ? (
                       <span className="flex items-center justify-center">
