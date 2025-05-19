@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Button } from "../ui/button";
 import { AccountsList } from "./AccountList";
 import { ConnectKitButton } from "connectkit";
-import { Copy, LogOut } from "lucide-react";
+import { Copy, LogIn, LogOut, UserPlus } from "lucide-react";
 import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
 import { useAccountStore } from "@/store/accountStore";
 
@@ -367,11 +367,11 @@ export function AccountButton({ className }: AccountButtonProps) {
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-medium">Account</h3>
               <button
-                onClick={handleDisconnect}
-                className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm cursor-pointer"
+                onClick={goToWelcomePage}
+                className="text-green-500 hover:text-green-700 flex items-center gap-1 text-sm cursor-pointer"
               >
-                <LogOut size={14} />
-                Disconnect
+                <UserPlus size={14} />
+                Create account
               </button>
             </div>
 
