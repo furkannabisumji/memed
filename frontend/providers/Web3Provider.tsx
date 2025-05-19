@@ -24,8 +24,8 @@ export const config = createConfig(
     walletConnectProjectId, // Use the explicit value
     appName: "Memed.fun",
     appDescription: "Turn your memes into tokens.",
-    appUrl: "https://memed.fun",
-    appIcon: "https://memed.fun/icon.png",
+    appUrl: "https://www.memed.fun/",
+    appIcon: "https://www.memed.fun/icon.png",
   })
 );
 
