@@ -1,10 +1,8 @@
 const CONTRACTS = {
-
-  factory: "0xcC7697cB9C6b4beB4531F5cF0B1cba164c8e7230",
-  memedStaking: "0x3899f73D98562c58d3cf6fcAbe25C46e48c31017",
-  memedBattle: "0xEa75d405Df61356Df5B8B1fF286475CC36E3D192",
-  memedEngageToEarn: "0xa04Eea6bEc9971F27e05F5Ce9c9bCACd40Ef774D",
-
+  factory: "0xf8Ab58385CeE9650941fF870aa046aFb90a382c5",
+  memedStaking: "0xCe0aaEeBb073e5Fe6e9983bD4F80eef27aE0b9e5",
+  memedBattle: "0x78F6B3E85f00ca5F38B17B520850eefaa121136f",
+  memedEngageToEarn: "0x9F0dbf0CA6DF44D886117bAEc51a094716382766",
 };
 
 export default CONTRACTS;

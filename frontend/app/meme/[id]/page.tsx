@@ -34,7 +34,7 @@ import MemeDetails from "@/components/meme/MemeDetails";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import CommentModal from "@/components/meme/CommentModal";
 import MirrorModal from "@/components/meme/MirrorModal";
-import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { TransactionType, useChainSwitch } from "@/hooks/useChainSwitch";
 import { chains } from "@lens-chain/sdk/viem";
 import { useAccount } from "wagmi";
 import { useMemeToken } from "@/hooks/useMemeToken";
@@ -112,8 +112,9 @@ export default function MemeViewPage() {
 
   //check chain
   useEffect(() => {
-    if (chain?.id !== chains.testnet.id) {
-      switchToChain();
+    //switch to mainnet
+    if (chain && chain?.id !== chains.mainnet.id) {
+      switchToChain(TransactionType.accountCreation);
     }
   }, [chain, switchToChain]);
 
