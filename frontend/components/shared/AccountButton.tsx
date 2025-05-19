@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount, useDisconnect, useBalance } from "wagmi";
-import { getAvailableAccounts } from "@/lib/lens";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { AccountsList } from "./AccountList";
 import { ConnectKitButton } from "connectkit";
-import { Copy, LogOut, ExternalLink } from "lucide-react";
+import { Copy, LogOut } from "lucide-react";
 import { accountEvents, ACCOUNT_CREATED } from "@/lib/accountEvents";
 import { useAccountStore } from "@/store/accountStore";
 
@@ -20,7 +19,9 @@ export function AccountButton({ className }: AccountButtonProps) {
   // Reference for the button element
   const buttonRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
-  const { isConnected, address, isConnecting } = useAccount();
+
+  // Wagmi hooks
+  const { isConnected, address, isConnecting, status } = useAccount();
   const { disconnect } = useDisconnect();
   const { data: balanceData } = useBalance({ address });
 
@@ -28,6 +29,10 @@ export function AccountButton({ className }: AccountButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  // Add a timeout tracker for connection state
+  const [connectionTimedOut, setConnectionTimedOut] = useState(false);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get account state from the store
   const {
@@ -41,7 +46,33 @@ export function AccountButton({ className }: AccountButtonProps) {
   // Set mounted state after hydration
   useEffect(() => {
     setIsMounted(true);
+    return () => {
+      // Clear any timeouts on unmount
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+    };
   }, []);
+
+  // Handle connection timeout
+  useEffect(() => {
+    // If connecting starts, set a timeout
+    if (isConnecting && isMounted) {
+      connectionTimeoutRef.current = setTimeout(() => {
+        setConnectionTimedOut(true);
+      }, 10000); // 10 second timeout
+    } else {
+      // If no longer connecting, clear the timeout
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      // Reset timeout state if we're connected successfully
+      if (isConnected) {
+        setConnectionTimedOut(false);
+      }
+    }
+  }, [isConnecting, isMounted, isConnected]);
 
   // State for accounts data
   const [accountsAvailable, setAccountsAvailable] = useState<any>(null);
@@ -70,14 +101,6 @@ export function AccountButton({ className }: AccountButtonProps) {
 
       // Only update local state if needed for UI purposes
       setAccountsAvailable({ accountsAvailable: accountsFormat });
-
-      // Only redirect to accounts page if user has no accounts, we're not already on the accounts page,
-      // and we're not in a loading state
-      // if (storeAccounts.length === 0 &&
-      //     !window.location.pathname.startsWith('/accounts') &&
-      //     !isLoadingStore) {
-      //   router.push("/accounts");
-      // }
     } catch (error) {
       console.error("Error fetching accounts:", error);
       if (!accountsAvailable) {
@@ -118,12 +141,11 @@ export function AccountButton({ className }: AccountButtonProps) {
 
   // Fetch accounts on mount and when address changes
   useEffect(() => {
-    if (address && isMounted) {
+    if (address && isMounted && isConnected) {
       // Initial fetch
       fetchAccounts();
 
       // Set up a refresh interval to check for new accounts
-      // This is especially important after account creation
       const refreshInterval = setInterval(() => {
         fetchAccounts();
       }, 5000); // Check every 5 seconds
@@ -131,7 +153,6 @@ export function AccountButton({ className }: AccountButtonProps) {
       // Set up event listener for account creation
       const unsubscribe = accountEvents.on(ACCOUNT_CREATED, async () => {
         console.log("Account creation event received in AccountButton");
-        // Force an immediate refresh when a new account is created
         await fetchAccounts();
       });
 
@@ -140,7 +161,7 @@ export function AccountButton({ className }: AccountButtonProps) {
         unsubscribe(); // Clean up event listener
       };
     }
-  }, [address, isMounted, fetchAccounts]);
+  }, [address, isMounted, isConnected, fetchAccounts]);
 
   // Format address for display
   const formatAddress = (addr: string | undefined) => {
@@ -199,7 +220,6 @@ export function AccountButton({ className }: AccountButtonProps) {
 
     // If we're opening the modal, force a refresh of accounts
     if (!isModalOpen) {
-      // Force a fresh fetch of accounts when opening the modal
       fetchAccounts();
     }
 
@@ -211,8 +231,14 @@ export function AccountButton({ className }: AccountButtonProps) {
     router.push("/accounts");
   };
 
+  // Handle retrying connection after timeout
+  const handleRetryConnection = () => {
+    setConnectionTimedOut(false);
+    // Force a page refresh to restart the connection process
+    window.location.reload();
+  };
+
   // Don't render anything complex during server-side rendering
-  // Handle mounting state first
   if (!isMounted) {
     return (
       <div
@@ -221,8 +247,24 @@ export function AccountButton({ className }: AccountButtonProps) {
     );
   }
 
+  // Handle connection timed out state
+  if (connectionTimedOut) {
+    return (
+      <div
+        className={`flex items-center justify-center h-10 ${className || ""}`}
+      >
+        <button
+          onClick={handleRetryConnection}
+          className="flex items-center gap-2 bg-red-100 text-red-700 px-3 py-2 rounded-md hover:bg-red-200 transition-colors"
+        >
+          <span className="text-sm">Connection failed, retry</span>
+        </button>
+      </div>
+    );
+  }
+
   // Handle connecting state
-  if (isConnecting) {
+  if (isConnecting || status === "reconnecting") {
     return (
       <div
         className={`flex items-center justify-center h-10 ${className || ""}`}
@@ -378,7 +420,6 @@ export function AccountButton({ className }: AccountButtonProps) {
             {selectedAccount && (
               <div className="mb-3">
                 <h4 className="text-md font-medium mb-2">Selected Account</h4>
-                {/* Log metadata for debugging */}
                 <div className="bg-primary/10 rounded-md p-3 flex items-center gap-3">
                   {(selectedAccount || firstAccount)?.metadata?.picture ? (
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
