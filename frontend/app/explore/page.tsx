@@ -10,6 +10,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useMemes } from "@/hooks/useMemes";
 import { useCreators } from "@/hooks/useCreators";
 import { CreatorCard } from "@/components/meme/CreatorCard";
+import { ExploreCardSkeleton } from "@/components/shared/skeletons/ExploreCardSkeleton";
+import { RewardCardSkeleton } from "@/components/shared/skeletons/RewardCardSkeleton";
 
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState("tokens");
@@ -120,8 +122,8 @@ export default function ExplorePage() {
                     {tab === "tokens"
                       ? "Tokens"
                       : tab === "creators"
-                      ? "Creators"
-                      : "Collections"}
+                        ? "Creators"
+                        : "Collections"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -136,8 +138,10 @@ export default function ExplorePage() {
 
             <TabsContent value="tokens" className="mt-8">
               {isPendingTokenMemes ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="h-8 w-8 animate-spin text-black" />
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <ExploreCardSkeleton key={index} />
+                  ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -156,8 +160,10 @@ export default function ExplorePage() {
 
             <TabsContent value="creators" className="mt-8">
               {isPendingCreators ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="h-8 w-8 animate-spin text-black" />
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <RewardCardSkeleton key={index} />
+                  ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">

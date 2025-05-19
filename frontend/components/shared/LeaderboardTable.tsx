@@ -12,6 +12,7 @@ import { formatNumber, truncateAddress } from "@/lib/helpers";
 import { UserImage } from "@/components/shared/UserImage";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "../ui/button";
+import { ExploreCardSkeleton } from "./skeletons/ExploreCardSkeleton";
 // Types
 export type LeaderboardTab = "memes" | "creators";
 
@@ -102,9 +103,10 @@ export default function LeaderboardTable() {
       {/* Memes Tab Content */}
       <TabsContent value="memes" className="w-full">
         {isLeaderboardLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <ExploreCardSkeleton key={index} />
+          ))} </div>
         ) : (
           <div className="flex flex-col w-full">
             {/* Horizontal scrollable on mobile, grid on larger screens */}
