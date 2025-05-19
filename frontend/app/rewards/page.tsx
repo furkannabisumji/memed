@@ -31,6 +31,7 @@ import { config } from "@/providers/Web3Provider";
 
 import EngageToEarn from "@/config/memedEngageToEarnABI.json";
 import { RewardCardSkeleton } from "@/components/shared/skeletons/RewardCardSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
 
 const getMemeInfo = (
   tokenAddress: string
@@ -65,7 +66,7 @@ export default function RewardsPage() {
     useClaimData(address);
 
   // Fetch Meme Detail
-
+  const queryClient = useQueryClient()
   const [isLoading, setIsLoading] = useState(true);
   const [rewards, setRewards] = useState<MemeDetails[]>([]);
   const [searchRewards, setSearchRewards] = useState<MemeDetails[]>([]);
@@ -302,7 +303,10 @@ export default function RewardsPage() {
         throw new Error(message);
       }
       // Remove the claimed token from the list
-      setRewards(rewards.filter((r) => r.tokenAddress !== tokenAddress));
+      setRewards(searchRewards.filter((r) => r._id !== id));
+      queryClient.invalidateQueries({
+        queryKey: ['claim-data', address],
+      });
     } catch (error) {
       console.error("Claim error:", error);
       toast.error(
@@ -384,8 +388,8 @@ export default function RewardsPage() {
                     {tab === "available"
                       ? "All Rewards"
                       : tab === "initial"
-                      ? "Initial Rewards"
-                      : "Engagement Rewards"}
+                        ? "Initial Rewards"
+                        : "Engagement Rewards"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -515,18 +519,16 @@ export default function RewardsPage() {
                     Loading...
                   </>
                 ) : !hasMore[activeTab as TabType] ? (
-                  `No More ${
-                    activeTab === "initial"
-                      ? "Initial"
-                      : activeTab === "engagement"
+                  `No More ${activeTab === "initial"
+                    ? "Initial"
+                    : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
                 ) : (
-                  `Load More ${
-                    activeTab === "initial"
-                      ? "Initial"
-                      : activeTab === "engagement"
+                  `Load More ${activeTab === "initial"
+                    ? "Initial"
+                    : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
