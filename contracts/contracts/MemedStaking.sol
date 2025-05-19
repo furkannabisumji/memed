@@ -14,7 +14,7 @@ contract MemedStaking is Ownable {
         uint256 amount;
         uint256 reward;
     }
-    address[] public stakers;
+    mapping(address => address[]) stakers;
     mapping(address => mapping(address => Stake)) public stakes; // meme => user => Stake
     mapping(address => uint256) public totalStakedPerMeme;
 
@@ -28,7 +28,7 @@ contract MemedStaking is Ownable {
         require(IERC20(meme).balanceOf(msg.sender) >= amount, "Not enough tokens");
         IERC20(meme).transferFrom(msg.sender, address(this), amount);
         if(stakes[meme][msg.sender].amount == 0) {
-            stakers.push(msg.sender);
+            stakers[meme].push(msg.sender);
         }
         stakes[meme][msg.sender].amount += amount;
         totalStakedPerMeme[meme] += amount;
@@ -48,10 +48,10 @@ contract MemedStaking is Ownable {
         stakes[meme][msg.sender].amount -= amount;
         totalStakedPerMeme[meme] -= amount;
         if(stakes[meme][msg.sender].amount == 0) {
-            for(uint i = 0; i < stakers.length; i++) {
-                if(stakers[i] == msg.sender) {
-                    stakers[i] = stakers[stakers.length - 1];
-                    stakers.pop();
+            for(uint i = 0; i < stakers[meme].length; i++) {
+                if(stakers[meme][i] == msg.sender) {
+                    stakers[meme][i] = stakers[meme][stakers[meme].length - 1];
+                    stakers[meme].pop();
                     break;
                 }
             }
@@ -78,8 +78,8 @@ contract MemedStaking is Ownable {
     function reward(address meme, address _creator) external {
         require(IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100, "Not enough tokens");
         require(msg.sender == address(factory), "unauthorized");
-        for(uint i = 0; i < stakers.length; i++) {
-            address user = stakers[i];
+        for(uint i = 0; i < stakers[meme].length; i++) {
+            address user = stakers[meme][i];
             uint totalReward = MAX_REWARD * 2 / 100;
             uint256 userStakedAmount = stakes[meme][user].amount;
             uint256 userAmount = userStakedAmount * totalReward / totalStakedPerMeme[meme];
@@ -95,6 +95,10 @@ contract MemedStaking is Ownable {
     }
 
     function isRewardable(address meme) external view returns (bool) {
-        return (IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100) && (stakers.length > 0) ;
+        return (IERC20(meme).balanceOf(address(this)) >= (MAX_REWARD * 3) / 100) && (stakers[meme].length > 0) ;
+    }
+
+    function getStakers(address meme) external view returns (address[] memory) {
+        return stakers[meme];
     }
 }
