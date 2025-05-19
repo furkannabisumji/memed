@@ -490,7 +490,10 @@ export function AccountButton({ className }: AccountButtonProps) {
             ) : (
               <div className="text-center py-4">
                 <p className="text-gray-500 mb-3">No Lens accounts found</p>
-                <Button onClick={goToWelcomePage} className="w-full">
+                <Button
+                  onClick={goToWelcomePage}
+                  className="w-full cursor-pointer"
+                >
                   Create Account
                 </Button>
               </div>

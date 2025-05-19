@@ -496,8 +496,8 @@ export function Welcome() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 md:p-6">
-      <div className="w-full max-w-md">
+    <div className="flex flex-col items-center justify-center min-h-[100vh] bg-gradient-to-b from-slate-50 to-slate-100 p-4 md:p-6">
+      <div className="w-full max-w-md h-[600px]">
         {isConnected ? (
           <div className="space-y-6">
             {/* Header */}
@@ -506,16 +506,16 @@ export function Welcome() {
                 Create Your Lens Profile
               </h1>
               <p className="text-slate-500 mt-2">
-                Join the decentralized social network
+                This account will be linked to your wallet and your meme
               </p>
             </div>
 
             {/* Card Container */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden max-h-[510px]">
               {/* Tabs */}
               <div className="flex border-b border-gray-200">
                 <button
-                  className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
+                  className={`flex-1 cursor-pointer py-4 px-6 font-medium text-center transition-colors ${
                     activeTab === "create"
                       ? "text-green-600 border-b-2 border-green-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -525,7 +525,7 @@ export function Welcome() {
                   Create Profile
                 </button>
                 <button
-                  className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
+                  className={`flex-1 cursor-pointer py-4 px-6 font-medium text-center transition-colors ${
                     activeTab === "manage"
                       ? "text-green-600 border-b-2 border-green-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -678,7 +678,7 @@ export function Welcome() {
             </div>
 
             {/* Wallet Section */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="bg-green-100 p-2 rounded-full mr-3">
@@ -697,7 +697,7 @@ export function Welcome() {
                       />
                     </svg>
                   </div>
-                  <div>
+                  <div className="">
                     <p className="text-sm text-gray-500">Wallet Connected</p>
                     <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
                       {truncateAddress(address as string)}
@@ -730,7 +730,9 @@ export function Welcome() {
             <p className="text-gray-600 mb-6">
               Please connect your wallet to create and manage your Lens profiles
             </p>
-            <AccountButton className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" />
+            <div className="flex justify-center">
+              <AccountButton className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" />
+            </div>
             <p className="mt-4 text-xs text-gray-400">
               New to Web3? You'll need a blockchain wallet to continue.
             </p>
