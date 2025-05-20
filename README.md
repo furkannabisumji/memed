@@ -70,7 +70,7 @@ That's Memed.Fun — a playground where social influence meets token economics.
 * **Social Graph**: Lens Protocol SDK, Lens API
 * **Indexing**: The Graph
 * **Web3**: ethers.js, viem
-* **Storage**: Bundlr, Arweave for meme media
+* **Storage**: IPFS
 * **Reward Distribution**: Merkle trees (via scripts)
 
 ---
