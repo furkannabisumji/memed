@@ -128,7 +128,6 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
   const [challengingMeme, setChallengingMeme] = useState<boolean>(false);
 
   const [battles, setBattles] = useState<Battle[]>([]);
-  const [battleDuration, setBattleDuration] = useState("24"); // Default 24 hours
   const toast = useCustomToast();
   const { chain, switchToChain } = useChainSwitch();
   const [opponents, setOpponents] = useState<MemeDetails[]>([]);
@@ -272,7 +271,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
 
         if (isSuccess) {
           toast.success("Challenge sent!", {
-            description: `You've challenged ${selectedOpponent.name} to a ${battleDuration}-hour battle`,
+            description: `You've challenged ${selectedOpponent.name} to a 24-hour battle`,
           });
         }
 
@@ -289,7 +288,6 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
 
       setIsModalOpen(false);
       setSelectedOpponent(null);
-      setBattleDuration("24");
       setSearchQuery("");
     } catch (error: any) {
       setChallengingMeme(false);
@@ -588,25 +586,7 @@ const MemeBattles = ({ meme }: { meme: Meme }) => {
                 )}
               </div>
 
-              <div className="p-4 border rounded-md">
-                <h4 className="font-medium mb-2">Battle Duration</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {["24", "48", "72"].map((hours) => (
-                    <Button
-                      key={hours}
-                      variant={battleDuration === hours ? "default" : "outline"}
-                      className={
-                        battleDuration === hours
-                          ? "bg-primary hover:bg-primary/90"
-                          : ""
-                      }
-                      onClick={() => setBattleDuration(hours)}
-                    >
-                      {hours} hours
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              
 
               {selectedOpponent && memeA[0] && (
                 <div className="p-4 border rounded-md bg-gray-50">
