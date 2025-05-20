@@ -45,18 +45,19 @@ That's Memed.Fun — a playground where social influence meets token economics.
 * Boost meme heat score based on staked amount
 * Stakers earn a share of:
 
-  * Meme's token trading volume fees
-  * Engagement airdrops
-* Rewards claimed via Merkle proof
+  * Meme's battle wins
+  * Engagement rewards
+* Rewards claimed via smart contract
 
 ### 4. Engagement Rewards
 
 * Lens engagement tracked using Lens API and The Graph
-* Top engagers per meme get airdropped rewards
+* Top engagers per meme get rewards
 * Engagement metrics weighted:
 
   * Mirror > Comment > Like
-* Weekly or battle-period based Merkle airdrops
+* Battle wins
+* Rewards claimed via merkle tree
 
 ![Reward Flow](https://github.com/user-attachments/assets/f3af0107-9e95-4049-9479-869de8f513df)
 
@@ -68,8 +69,8 @@ That's Memed.Fun — a playground where social influence meets token economics.
 * **Backend**: Node.js, Express.js
 * **Database**: MongoDB
 * **Social Graph**: Lens Protocol SDK, Lens API
-* **Indexing**: The Graph
-* **Web3**: ethers.js, viem
+* **Indexing**: Node.js(cronjobs)
+* **Web3**: Wagmi, Family ConnectKit
 * **Storage**: IPFS
 * **Reward Distribution**: Merkle trees (via scripts)
 
