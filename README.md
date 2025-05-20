@@ -21,6 +21,11 @@ That's Memed.Fun — a playground where social influence meets token economics.
 
 ---
 
+## Architecture
+
+<img width="2088" alt="image" src="https://github.com/user-attachments/assets/b1375b00-c38b-444e-be45-78d8699ff30d" />
+
+
 ## How It Works
 
 ### 1. Create Your Meme Token
