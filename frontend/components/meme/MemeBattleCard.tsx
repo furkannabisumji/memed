@@ -157,17 +157,15 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                                 className={`h-3 w-3 mr-1.5 ${battle.memeB.isLeading ? "text-yellow-500" : "text-gray-400"}`}
                             /></span>
                         </div>
-                        <div className={`relative h-1.5  rounded-full overflow-hidden ${
-                                    Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA)
-                                      ? 'bg-yellow-500' // darker yellow for bigger
-                                      : 'bg-yellow-100' // lighter yellow for smaller
-                                  }`}>
+                        <div className={`relative h-1.5  rounded-full overflow-hidden ${Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA)
+                                ? 'bg-yellow-500' // darker yellow for bigger
+                                : 'bg-yellow-100' // lighter yellow for smaller
+                            }`}>
                             <motion.div
-                                className={`absolute left-0 top-0 h-full bg-yellow-100 ${
-                                    Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA)
-                                      ? 'bg-yellow-100' // darker yellow for bigger
-                                      : 'bg-yellow-500' // lighter yellow for smaller
-                                  }`}
+                                className={`absolute left-0 top-0 h-full  ${Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA)
+                                        ? 'bg-yellow-100' // darker yellow for bigger
+                                        : 'bg-yellow-500' // lighter yellow for smaller
+                                    }`}
                                 initial={{ width: 0 }}
                                 animate={{
                                     width: `${(Number(battle.memeA.heatScoreA) / Number(battle.memeA.heatScoreA + battle.memeB.heatScoreB)) * 100
@@ -276,11 +274,15 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                                 className={`h-3 w-3 mr-1.5 ${battle.memeB.isLeading ? "text-[#28d358]" : "text-gray-400"}`}
                             /></span>
                         </div>
-                        <div className="relative h-1.5 bg-[#28d358]/10 rounded-full overflow-hidden">
+                        <div className={`relative h-1.5 rounded-full overflow-hidden ${Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA) ? "bg-[#28d358]" : "bg-[#28d358]/10"
+                            }`}>
                             <motion.div
-                                className="absolute left-0 top-0 h-full bg-[#28d358]"
+                                 className={`absolute left-0 top-0 h-full $${Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA) ? "bg-[#28d358]/10" : "bg-[#28d358]/60"
+                                  }`}
                                 initial={{ width: 0 }}
-                                animate={{ width: `${battle.memeA.heatScoreA / (battle.memeA.heatScoreA + battle.memeB.heatScoreB)}%` }}
+                                animate={{
+                                    width: `${(Number(battle.memeA.heatScoreA) / Number(battle.memeA.heatScoreA + battle.memeB.heatScoreB)) * 100}%`
+                                }}
                                 transition={{ delay: 0.5, duration: 0.8 }}
                             />
                         </div>
@@ -384,11 +386,17 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                                 className={`h-3 w-3 mr-1.5 ${battle.memeB.isLeading ? "text-red-500" : "text-gray-400"}`}
                             /></span>
                         </div>
-                        <div className="relative h-1.5 bg-red-4 00 rounded-full overflow-hidden">
+                        <div className={`relative h-1.5 bg-red-400 rounded-full overflow-hidden ${Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA)
+                                ? 'bg-red-500' // darker yellow for bigger
+                                : 'bg-red-100' // lighter yellow for smaller
+                            } `}>
                             <motion.div
-                                className="absolute left-0 top-0 h-full bg-red-100"
+                                className={`absolute left-0 top-0 h-full bg-red-100 ${Number(battle.memeB.heatScoreB) > Number(battle.memeA.heatScoreA)
+                                    ? 'bg-red-100' // darker yellow for bigger
+                                    : 'bg-red-500' // lighter yellow for smaller
+                                }`}
                                 initial={{ width: 0 }}
-                                animate={{ width: `${battle.memeA.heatScoreA / (battle.memeA.heatScoreA + battle.memeB.heatScoreB)}%` }}
+                                animate={{  width: `${(Number(battle.memeA.heatScoreA) / Number(battle.memeA.heatScoreA + battle.memeB.heatScoreB)) * 100}%` }}
                                 transition={{ delay: 0.5, duration: 0.8 }}
                             />
                         </div>
