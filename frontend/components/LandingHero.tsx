@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAccountStore } from "@/store/accountStore";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
-import { motion } from 'motion/react'
+import { motion } from "motion/react";
 export default function LandingHero() {
   const router = useRouter();
   const { isConnected } = useAccount();
@@ -27,7 +27,7 @@ export default function LandingHero() {
       {/* Floating Coins */}
       <motion.div
         className="absolute left-0 md:-top-0 top-0 coin-floating"
-        animate={{ y: [0, -20, 0], }}
+        animate={{ y: [0, -20, 0] }}
         transition={{ repeat: Infinity, duration: 3 }}
       >
         <Image alt="reward-coin" src="/coin2.png" width={250} height={100} />
@@ -44,7 +44,7 @@ export default function LandingHero() {
       {/* Hero Text */}
       <motion.div
         className="font-clash md:text-8xl text-3xl font-bold text-center md:max-w-11/12"
-        initial={{ opacity: 0, y: -20,zIndex:-10 }}
+        initial={{ opacity: 0, y: -20, zIndex: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
@@ -72,9 +72,9 @@ export default function LandingHero() {
           <Button
             onClick={() => {
               if (hasAccounts && selectedAccount) {
-                router.push('/launch');
+                router.push("/launch");
               } else {
-                router.push('/accounts');
+                router.push("/accounts");
               }
             }}
             className="py-3 md:px-8 font-bold cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-2xl transition-all duration-300"
@@ -82,7 +82,8 @@ export default function LandingHero() {
             Launch your meme
           </Button>
         )}
-        <Link href="#process">
+
+        <Link href={"/process"}>
           <Button
             variant="outline"
             className="py-3 md:px-8 border border-black font-bold cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-2xl transition-all duration-300"
@@ -91,6 +92,6 @@ export default function LandingHero() {
           </Button>
         </Link>
       </motion.div>
-    </motion.div >
+    </motion.div>
   );
 }
