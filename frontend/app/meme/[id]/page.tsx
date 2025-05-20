@@ -57,6 +57,7 @@ export default function MemeViewPage() {
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isMirrorModalOpen, setIsMirrorModalOpen] = useState(false);
   const { data: memeToken, isLoading } = useMemeToken(memeId);
+  const [copySuccess, setCopySuccess] = useState(false);
   const { data: tokenData }: { data: TokenData | null } = useTokenData(
     memeToken?.handle
   );
@@ -80,6 +81,15 @@ export default function MemeViewPage() {
   const toast = useCustomToast();
 
   const { switchToChain } = useChainSwitch();
+
+  // Copy link to clipboard
+  const copyLinkToClipboard = () => {
+    if (!tokenData) return;
+    const link = `https://www.memed.fun/meme/${tokenData?.token}`;
+    navigator.clipboard.writeText(link);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
 
   // Function to update the underline position based on the active tab
   const updateUnderlinePosition = useCallback(() => {
@@ -217,11 +227,17 @@ export default function MemeViewPage() {
                   {/* Add share button below image on mobile */}
                   <div className="mt-4 flex justify-center md:hidden">
                     <Button
+                      onClick={copyLinkToClipboard}
                       variant="outline"
-                      className="gap-2 border-2 border-primary hover:bg-primary hover:text-white transition-colors duration-300"
+                      className="gap-2 border-2 border-green-500 cursor-pointer   transition-colors duration-300"
                     >
-                      <Share size={16} />
-                      Share
+                      {copySuccess ? (
+                        <span className="text-green-500 text-xs">Copied!</span>
+                      ) : (
+                        <>
+                          <Share size={16} /> Share
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -266,11 +282,19 @@ export default function MemeViewPage() {
                     {/* Share button - Hidden on mobile, shown on desktop */}
                     <div className="hidden md:block">
                       <Button
+                        onClick={copyLinkToClipboard}
                         variant="outline"
-                        className="gap-2 border-2 border-primary hover:bg-primary hover:text-white transition-colors duration-300"
+                        className="gap-2 border-2 border-green-500 cursor-pointer   transition-colors duration-300"
                       >
-                        <Share size={16} />
-                        Share
+                        {copySuccess ? (
+                          <span className="text-green-500 text-xs">
+                            Copied!
+                          </span>
+                        ) : (
+                          <>
+                            <Share size={16} /> Share
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>

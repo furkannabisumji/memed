@@ -80,7 +80,7 @@ export const useTokenData = (lensUsername?: string) => {
     return false;
   };
 
-  console.log(rawTokenData);
+  // console.log(rawTokenData);
   // Safe type assertion with proper structure checking
   const transformedData: TokenData | null =
     rawTokenData &&

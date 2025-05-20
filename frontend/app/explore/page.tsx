@@ -127,7 +127,7 @@ export default function ExplorePage() {
             <div className="relative flex items-center">
               <Search className="absolute left-3 h-5 w-5 text-gray-400" />
               <Input
-                placeholder="Search memes, creators, or tokens..."
+                placeholder="Search memes..."
                 className="pl-10 bg-white border-2 border-black pr-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
