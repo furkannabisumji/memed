@@ -496,8 +496,8 @@ export function Welcome() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100vh] bg-gradient-to-b from-slate-50 to-slate-100 p-4 md:p-6">
-      <div className="w-full max-w-md h-[600px]">
+    <div className="flex flex-col items-center justify-start min-h-[100vh] pb-20 relative bg-gradient-to-b from-slate-50 to-slate-100 p-4 md:p-6">
+      <div className="w-full max-w-md  overflow-auto relative ">
         {isConnected ? (
           <div className="space-y-6">
             {/* Header */}
