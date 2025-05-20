@@ -10,7 +10,7 @@ import { UserImage } from "../shared/UserImage";
 
 export default function MemeCard({ meme }: { meme: Meme }) {
   const { data: tokenData } = useTokenData(meme.handle);
-  console.log(meme);
+  // console.log(meme);
   return (
     <Link href={`/meme/${meme.tokenAddress}`}>
       <div className="relative overflow-hidden rounded-md transition-all duration-300 bg-white border-2 border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px]">

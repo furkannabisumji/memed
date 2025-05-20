@@ -66,7 +66,7 @@ export default function RewardsPage() {
     useClaimData(address);
 
   // Fetch Meme Detail
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [rewards, setRewards] = useState<MemeDetails[]>([]);
   const [searchRewards, setSearchRewards] = useState<MemeDetails[]>([]);
@@ -305,7 +305,7 @@ export default function RewardsPage() {
       // Remove the claimed token from the list
       setRewards(searchRewards.filter((r) => r._id !== id));
       queryClient.invalidateQueries({
-        queryKey: ['claim-data', address],
+        queryKey: ["claim-data", address],
       });
     } catch (error) {
       console.error("Claim error:", error);
@@ -352,7 +352,7 @@ export default function RewardsPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white md:mt-20">
+      <main className="min-h-screen bg-white md:mt-20 relative ">
         <div className="md:px-20 px-5 py-12 mx-auto">
           <h1 className="mb-8 md:text-6xl text-3xl font-bold text-black font-clash">
             Your Rewards
@@ -388,8 +388,8 @@ export default function RewardsPage() {
                     {tab === "available"
                       ? "All Rewards"
                       : tab === "initial"
-                        ? "Initial Rewards"
-                        : "Engagement Rewards"}
+                      ? "Initial Rewards"
+                      : "Engagement Rewards"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -519,16 +519,18 @@ export default function RewardsPage() {
                     Loading...
                   </>
                 ) : !hasMore[activeTab as TabType] ? (
-                  `No More ${activeTab === "initial"
-                    ? "Initial"
-                    : activeTab === "engagement"
+                  `No More ${
+                    activeTab === "initial"
+                      ? "Initial"
+                      : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
                 ) : (
-                  `Load More ${activeTab === "initial"
-                    ? "Initial"
-                    : activeTab === "engagement"
+                  `Load More ${
+                    activeTab === "initial"
+                      ? "Initial"
+                      : activeTab === "engagement"
                       ? "Engagement"
                       : ""
                   } Rewards`
