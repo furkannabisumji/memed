@@ -84,17 +84,17 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                         >
 
                             <div className="flex items-center mb-2">
-                                <div className="md:w-32 md:h-32 w-20 h-20 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="md:w-32 md:h-32 w-16 h-16 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeA.image}` || "/coing.png"} alt={battle.memeA.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1"> {battle.memeA.name}</h3>
+                                    <h3 className="md:text-sm text-xs font-medium mb-1"> {battle.memeA.name}</h3>
 
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeA.isLeading ? "text-yellow-500" : "text-gray-400"}`}
                                         />
-                                        <span className="text-lg font-semibold">{battle.memeA.heatScoreA}</span>
+                                        <span className="md:text-lg text-sm font-semibold">{battle.memeA.heatScoreA}</span>
                                     </div>
                                     {battle.memeA.isLeading && (
                                         <span className="mt-1 inline-block text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
@@ -114,7 +114,7 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                             transition={{ delay: 0.4, type: 'spring' }}
                         >
                             <div className="flex flex-col items-center text-4xl font-bold text-gray-600 opacity-70">
-                                <Swords className='w-10 h-10' />
+                                <Swords className='md:w-10 md:h-10 w-6 h-6' />
                             </div>
                         </motion.div>
 
@@ -126,16 +126,16 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                         >
 
                             <div className="flex items-center mb-2">
-                                <div className="md:w-32 md:h-32 w-20 h-20 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="md:w-32 md:h-32 w-16 h-16 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeB.image}` || "/coing.png"} alt={battle.memeB.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1">{battle.memeB.name}</h3>
+                                    <h3 className="md:text-sm text-xs font-medium mb-1">{battle.memeB.name}</h3>
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeB.isLeading ? "text-yellow-500" : "text-gray-400"}`}
                                         />
-                                        <span className="text-lg font-semibold">{Intl.NumberFormat('en', { notation: 'compact' }).format(Number(battle.memeB.heatScoreB))}</span>
+                                        <span className="md:text-lg text-sm font-semibold">{Intl.NumberFormat('en', { notation: 'compact' }).format(Number(battle.memeB.heatScoreB))}</span>
                                     </div>
                                     {battle.memeB.isLeading && (
                                         <span className="mt-1 inline-block text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
@@ -203,17 +203,17 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                         >
 
                             <div className="flex items-center mb-2">
-                                <div className="md:w-32 md:h-32 w-20 h-20 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="md:w-32 md:h-32 w-16 h-16 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeA.image}` || "/coing.png"} alt={battle.memeA.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1"> {battle.memeA.name}</h3>
+                                    <h3 className="md:text-sm text-xs font-medium mb-1"> {battle.memeA.name}</h3>
 
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeA.isLeading ? "text-[#28d358]" : "text-gray-400"}`}
                                         />
-                                        <span className="text-lg font-semibold">{battle.memeA.heatScoreA}</span>
+                                        <span className="md:text-lg text-sm font-semibold">{battle.memeA.heatScoreA}</span>
                                     </div>
                                     {battle.memeA.isLeading && (
                                         <span className="mt-1 inline-block text-xs bg-red-100 text-[#28d358] px-2 py-0.5 rounded-full">
@@ -233,7 +233,7 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                             transition={{ delay: 0.4, type: 'spring' }}
                         >
                             <div className="flex flex-col items-center text-4xl font-bold text-gray-600 opacity-70">
-                                <Swords className='w-10 h-10' />
+                                <Swords className='md:w-10 md:h-10 w-6 h-6' />
                             </div>
                         </motion.div>
 
@@ -245,16 +245,16 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                         >
 
                             <div className="flex items-center mb-2">
-                                <div className="md:w-32 md:h-32 w-20 h-20 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="md:w-32 md:h-32 w-16 h-16 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeB.image}` || "/coing.png"} alt={battle.memeB.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1">{battle.memeB.name}</h3>
+                                    <h3 className="md:text-sm text-xs font-medium mb-1">{battle.memeB.name}</h3>
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeB.isLeading ? "text-[#28d358]" : "text-gray-400"}`}
                                         />
-                                        <span className="text-lg font-semibold">{Intl.NumberFormat('en', { notation: 'compact' }).format(Number(battle.memeB.heatScoreB))}</span>
+                                        <span className="md:text-lg text-sm font-semibold">{Intl.NumberFormat('en', { notation: 'compact' }).format(Number(battle.memeB.heatScoreB))}</span>
                                     </div>
                                     {battle.memeB.isLeading && (
                                         <span className="mt-1 inline-block text-xs bg-[#28d358]/10 text-[#28d358] px-2 py-0.5 rounded-full">
@@ -311,17 +311,17 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                         >
 
                             <div className="flex items-center mb-2">
-                                <div className="md:w-32 md:h-32 w-20 h-20 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="md:w-32 md:h-32 w-16 h-16 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeA.image}` || "/coing.png"} alt={battle.memeA.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1"> {battle.memeA.name}</h3>
+                                    <h3 className="md:text-sm text-xs font-medium mb-1"> {battle.memeA.name}</h3>
 
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeA.isLeading ? "text-red-500" : "text-gray-400"}`}
                                         />
-                                        <span className="text-lg font-semibold">{battle.memeA.heatScoreA}</span>
+                                        <span className="md:text-lg text-sm font-semibold">{battle.memeA.heatScoreA}</span>
                                     </div>
                                     {battle.memeA.isLeading && (
                                         <span className="mt-1 inline-block text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
@@ -353,16 +353,16 @@ export default function MemeBattleCard({ battle, winner, pending }: { battle: Ba
                         >
 
                             <div className="flex items-center mb-2">
-                                <div className="md:w-32 md:h-32 w-20 h-20 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
+                                <div className="md:w-32 md:h-32 w-16 h-16 relative  border-2 border-black bg-gray-100 rounded-md overflow-hidden mr-3">
                                     <Image src={`${process.env.NEXT_PUBLIC_LIGHTHOUSE_GATE_WAY}${battle.memeB.image}` || "/coing.png"} alt={battle.memeB.name} fill className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium mb-1">{battle.memeB.name}</h3>
+                                    <h3 className="md:text-sm text-xs font-medium mb-1">{battle.memeB.name}</h3>
                                     <div className="flex items-center">
                                         <FlameIcon
                                             className={`h-4 w-4 mr-1.5 ${battle.memeB.isLeading ? "text-red-500" : "text-gray-400"}`}
                                         />
-                                        <span className="text-lg font-semibold">{Intl.NumberFormat('en', { notation: 'compact' }).format(Number(battle.memeB.heatScoreB))}</span>
+                                        <span className="md:text-lg text-sm font-semibold">{Intl.NumberFormat('en', { notation: 'compact' }).format(Number(battle.memeB.heatScoreB))}</span>
                                     </div>
                                     {battle.memeB.isLeading && (
                                         <span className="mt-1 inline-block text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
