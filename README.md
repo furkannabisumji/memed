@@ -83,6 +83,11 @@ That's Memed.Fun — a playground where social influence meets token economics.
 
 ---
 
+## Roadmap Ahead
+
+<img width="2050" alt="image" src="https://github.com/user-attachments/assets/38f48580-a0b2-4104-a450-41cb6285ef2e" />
+
+
 ## API Endpoints
 
 ### Creator Endpoints
